@@ -1,19 +1,17 @@
-import { BarChart, Users, Utensils, CircleDollarSign, CalendarDays, Bell, UserCheck } from 'lucide-react';
-
 export const studentNavItems = [
-    { href: '/student', label: 'Dashboard', icon: BarChart },
-    { href: '/student/leave', label: 'Apply for Leave', icon: CalendarDays },
-    { href: '/student/attendance', label: 'My Attendance', icon: UserCheck },
-    { href: '/student/bills', label: 'My Bills', icon: CircleDollarSign },
-    { href: '/student/notifications', label: 'Notifications', icon: Bell },
+    { href: '/student', label: 'Dashboard', icon: 'BarChart' },
+    { href: '/student/leave', label: 'Apply for Leave', icon: 'CalendarDays' },
+    { href: '/student/attendance', label: 'My Attendance', icon: 'UserCheck' },
+    { href: '/student/bills', label: 'My Bills', icon: 'CircleDollarSign' },
+    { href: '/student/notifications', label: 'Notifications', icon: 'Bell' },
 ];
 
 export const adminNavItems = [
-    { href: '/admin', label: 'Dashboard', icon: BarChart },
-    { href: '/admin/students', label: 'Students', icon: Users },
-    { href: '/admin/menu', label: 'Meal Menu', icon: Utensils },
-    { href: '/admin/billing', label: 'Billing', icon: CircleDollarSign },
-    { href: '/admin/holidays', label: 'Holidays', icon: CalendarDays },
+    { href: '/admin', label: 'Dashboard', icon: 'BarChart' },
+    { href: '/admin/students', label: 'Students', icon: 'Users' },
+    { href: '/admin/menu', label: 'Meal Menu', icon: 'Utensils' },
+    { href: '/admin/billing', label: 'Billing', icon: 'CircleDollarSign' },
+    { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
 ];
 
 export const adminUser = {

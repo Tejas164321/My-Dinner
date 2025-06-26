@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import {
   SidebarProvider,
   Sidebar,
@@ -16,7 +16,19 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { UtensilsCrossed, Settings, User, LogOut } from 'lucide-react';
+import {
+  UtensilsCrossed,
+  Settings,
+  User,
+  LogOut,
+  BarChart,
+  Users,
+  Utensils,
+  CircleDollarSign,
+  CalendarDays,
+  Bell,
+  UserCheck
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -27,10 +39,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+const iconMap: Record<string, ComponentType<{ className?: string }>> = {
+  BarChart,
+  Users,
+  Utensils,
+  CircleDollarSign,
+  CalendarDays,
+  Bell,
+  UserCheck
+};
+
 export interface NavItem {
   href: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: string;
   active?: boolean;
 }
 
@@ -58,20 +80,23 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={item.label}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {navItems.map((item) => {
+                const Icon = iconMap[item.icon];
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith(item.href)}
+                      tooltip={item.label}
+                    >
+                      <Link href={item.href}>
+                        {Icon && <Icon />}
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+            })}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-2">
