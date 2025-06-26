@@ -33,14 +33,19 @@ export const attendanceData = [
   { name: 'Apr', total: 880, attended: 810 },
   { name: 'May', total: 930, attended: 890 },
   { name: 'Jun', total: 960, attended: 940 },
+  { name: 'Jul', total: 980, attended: 960 },
 ];
 
-export const studentBehaviorData = [
-  { name: 'Regular Leaves', value: 400 },
-  { name: 'Late Payments', value: 150 },
-  { name: 'Meal Skips', value: 300 },
-  { name: 'Special Requests', value: 200 },
+export const revenueData = [
+    { month: 'Jan', revenue: 250000 },
+    { month: 'Feb', revenue: 265000 },
+    { month: 'Mar', revenue: 275000 },
+    { month: 'Apr', revenue: 270000 },
+    { month: 'May', revenue: 280000 },
+    { month: 'Jun', revenue: 290000 },
+    { month: 'Jul', revenue: 285450 },
 ];
+
 
 export const joinRequests = [
     { id: '1', name: 'John Doe', studentId: 'B12345', date: '2023-10-27' },

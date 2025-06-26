@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'MessoMate',
+  title: 'Messo',
   description: 'Smart mess and canteen management system',
 };
 

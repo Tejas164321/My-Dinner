@@ -7,61 +7,65 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserCheck, Bell, PlusCircle } from 'lucide-react';
-import { AttendanceChart, BehaviorChart } from '@/components/admin/analytics-charts';
+import { Users, UserCheck, TrendingUp, AlertCircle, FileText, Settings, Bell, PlusCircle, ArrowRight } from 'lucide-react';
+import { AttendanceChart } from '@/components/admin/analytics-charts';
 import { StudentsTable } from '@/components/admin/students-table';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 export default function AdminDashboard() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <p className="text-muted-foreground">An overview of mess activities and student management.</p>
+      </div>
+      
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">125</div>
             <p className="text-xs text-muted-foreground">+5 since last month</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Attendance Today</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
+            <UserCheck className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">92%</div>
             <p className="text-xs text-muted-foreground">Up from 88% yesterday</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Join Requests</CardTitle>
-            <UserCheck className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium">This Month's Revenue</CardTitle>
+            <TrendingUp className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+3</div>
-            <p className="text-xs text-muted-foreground">Waiting for approval</p>
+            <div className="text-2xl font-bold">₹2,85,450</div>
+            <p className="text-xs text-muted-foreground">+12% from last month</p>
           </CardContent>
         </Card>
-        <Card className="bg-primary/10 border-primary/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Mess Join Code</CardTitle>
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Issues Reported</CardTitle>
+            <AlertCircle className="h-5 w-5 text-destructive" />
           </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="text-2xl font-mono tracking-widest">XF4G8K</div>
-            <Button size="sm">Regenerate</Button>
+          <CardContent>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-xs text-muted-foreground">2 pending, 1 resolved</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Tabs defaultValue="students">
+           <Tabs defaultValue="students">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <TabsList>
                     <TabsTrigger value="students">Students</TabsTrigger>
@@ -73,13 +77,13 @@ export default function AdminDashboard() {
                     <Button><Bell className="mr-2 h-4 w-4"/> Announce</Button>
                 </div>
             </div>
-            <TabsContent value="students" className="mt-4">
+            <TabsContent value="students" className="mt-4 animate-in fade-in-0 duration-500">
                 <StudentsTable />
             </TabsContent>
-            <TabsContent value="menu" className="mt-4">
+            <TabsContent value="menu" className="mt-4 animate-in fade-in-0 duration-500">
               <MenuSchedule />
             </TabsContent>
-             <TabsContent value="analytics" className="mt-4">
+             <TabsContent value="analytics" className="mt-4 animate-in fade-in-0 duration-500">
                 <Card>
                     <CardHeader>
                         <CardTitle>Attendance Trends</CardTitle>
@@ -92,37 +96,38 @@ export default function AdminDashboard() {
             </TabsContent>
           </Tabs>
         </div>
+        
         <div className="lg:col-span-1 flex flex-col gap-6">
-            <Card>
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
                 <CardHeader>
-                    <CardTitle>Student Behavior</CardTitle>
-                    <CardDescription>Breakdown of common student actions.</CardDescription>
+                    <CardTitle>Recent Activity</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[250px] p-0">
-                    <BehaviorChart />
+                <CardContent>
+                   <ul className="space-y-4 text-sm text-muted-foreground">
+                        <li className="flex items-start gap-3">
+                            <FileText className="h-4 w-4 mt-1 flex-shrink-0 text-primary"/>
+                            <p><span className="font-semibold text-foreground">Alex Doe</span> paid their monthly bill of ₹3,250.</p>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <UserCheck className="h-4 w-4 mt-1 flex-shrink-0 text-green-400"/>
+                            <p>New student <span className="font-semibold text-foreground">Jane Smith</span> was approved.</p>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <Settings className="h-4 w-4 mt-1 flex-shrink-0"/>
+                            <p>You updated the meal menu for next week.</p>
+                        </li>
+                   </ul>
                 </CardContent>
             </Card>
-            <Card>
+
+             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-500">
                 <CardHeader>
-                    <CardTitle>Leave Settings</CardTitle>
-                    <CardDescription>Configure leave locking policies.</CardDescription>
+                    <CardTitle>Mess Join Code</CardTitle>
+                    <CardDescription>Share this code with new students to allow them to join the mess system.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="locking-enabled">Enable Leave Locking</Label>
-                        <Switch id="locking-enabled" defaultChecked />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Locking Time for Lunch</Label>
-                        <p className="text-muted-foreground text-sm">Students cannot apply for leave after this time.</p>
-                        <p className="font-mono text-lg">10:00 AM</p>
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Locking Time for Dinner</Label>
-                        <p className="text-muted-foreground text-sm">Students cannot apply for leave after this time.</p>
-                        <p className="font-mono text-lg">05:00 PM</p>
-                    </div>
-                    <Button variant="outline" className="w-full">Update Settings</Button>
+                <CardContent className="flex items-center justify-between rounded-lg bg-secondary p-4">
+                    <div className="text-2xl font-mono tracking-widest text-primary">XF4G8K</div>
+                    <Button size="sm" variant="default">Regenerate</Button>
                 </CardContent>
             </Card>
         </div>
