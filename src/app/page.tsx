@@ -6,7 +6,8 @@ export default function Home() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
       <div className="absolute inset-0 grid-bg [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
-      <div className="glow-effect"></div>
+      <div className="glow-effect-1"></div>
+      <div className="glow-effect-2"></div>
       <div className="z-10 flex flex-col items-center text-center animate-in fade-in-0 slide-in-from-top-12 duration-1000">
         <div className="mb-6 rounded-full border border-primary/20 bg-primary/10 p-4 shadow-lg">
           <ChefHat className="h-14 w-14 text-primary" />

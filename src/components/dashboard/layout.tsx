@@ -118,6 +118,9 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
+        <div className="absolute inset-0 grid-bg -z-10 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+        <div className="glow-effect-1 -z-10" />
+        <div className="glow-effect-2 -z-10" />
         <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/50 px-6 backdrop-blur-lg">
           <SidebarTrigger />
           <div className="flex items-center gap-4">
