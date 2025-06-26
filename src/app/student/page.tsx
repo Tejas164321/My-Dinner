@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -16,13 +19,21 @@ import { menu } from "@/lib/data";
 const days = Object.keys(menu) as (keyof typeof menu)[];
 
 export default function StudentDashboard() {
-  const today = new Date();
+  const [date, setDate] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setDate(new Date());
+  }, []);
   
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Welcome back, Alex!</h1>
-        <p className="text-muted-foreground">Here's your dashboard for {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.</p>
+        <p className="text-muted-foreground">
+          {date
+            ? `Here's your dashboard for ${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.`
+            : 'Loading dashboard...'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
