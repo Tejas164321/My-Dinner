@@ -7,10 +7,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserCheck, TrendingUp, AlertCircle, FileText, Settings, Bell, PlusCircle, ArrowRight } from 'lucide-react';
+import { Users, UserCheck, TrendingUp, AlertCircle, FileText, Settings, Bell } from 'lucide-react';
 import { AttendanceChart } from '@/components/admin/analytics-charts';
-import { StudentsTable } from '@/components/admin/students-table';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
+import Link from "next/link";
 
 export default function AdminDashboard() {
   return (
@@ -65,21 +65,21 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-           <Tabs defaultValue="students">
+           <Tabs defaultValue="menu">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <TabsList>
-                    <TabsTrigger value="students">Students</TabsTrigger>
                     <TabsTrigger value="menu">Menu</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 </TabsList>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline"><PlusCircle className="mr-2 h-4 w-4"/> Add Holiday</Button>
+                    <Button asChild variant="outline">
+                        <Link href="/admin/students">
+                            <Users className="mr-2 h-4 w-4"/> Manage Students
+                        </Link>
+                    </Button>
                     <Button><Bell className="mr-2 h-4 w-4"/> Announce</Button>
                 </div>
             </div>
-            <TabsContent value="students" className="mt-4 animate-in fade-in-0 duration-500">
-                <StudentsTable />
-            </TabsContent>
             <TabsContent value="menu" className="mt-4 animate-in fade-in-0 duration-500">
               <MenuSchedule />
             </TabsContent>
