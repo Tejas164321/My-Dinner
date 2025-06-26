@@ -54,10 +54,12 @@ export const joinRequests = [
 ];
 
 export const joinedStudents = [
-    { id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15' },
-    { id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14' },
-    { id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13' },
-    { id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12' },
+    { id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15', attendance: '95%', bill: '₹0', status: 'Paid', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14', attendance: '88%', bill: '₹3,250', status: 'Due', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13', attendance: '98%', bill: '₹0', status: 'Paid', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12', attendance: '75%', bill: '₹3,250', status: 'Due', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: '8', name: 'Alex Doe', studentId: 'A56789', joinDate: '2023-09-11', attendance: '92%', bill: '₹0', status: 'Paid', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: '9', name: 'Sara Bell', studentId: 'C12378', joinDate: '2023-09-10', attendance: '99%', bill: '₹0', status: 'Paid', avatarUrl: 'https://placehold.co/100x100.png' },
 ];
 
 export const menu = {
