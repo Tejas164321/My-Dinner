@@ -53,15 +53,33 @@ export function MenuSchedule() {
     }, [selectedDate, menus]);
 
     const handleEdit = (meal: 'lunch' | 'dinner') => {
-        setTempLunchItems([...lunchItems]);
-        setTempDinnerItems([...dinnerItems]);
+        if (meal === 'lunch') {
+            setTempLunchItems([...lunchItems]);
+        } else {
+            setTempDinnerItems([...dinnerItems]);
+        }
         setIsEditing(meal);
     };
 
     const handleSave = () => {
         const dateKey = formatDateKey(selectedDate);
         const newMenus = new Map(menus);
-        newMenus.set(dateKey, { lunch: tempLunchItems, dinner: tempDinnerItems });
+        // When saving, we need to update both lunch and dinner from their temp states
+        // because the user might have edited one, then the other, before saving.
+        const currentMenu = newMenus.get(dateKey) || { lunch: lunchItems, dinner: dinnerItems };
+        
+        newMenus.set(dateKey, { 
+            lunch: isEditing === 'lunch' ? tempLunchItems : currentMenu.lunch, 
+            dinner: isEditing === 'dinner' ? tempDinnerItems : currentMenu.dinner 
+        });
+
+        // We also need to update the other meal's temp state if it was being edited before
+        if (isEditing === 'lunch') {
+            setDinnerItems(d => newMenus.get(dateKey)?.dinner || d);
+        } else {
+            setLunchItems(l => newMenus.get(dateKey)?.lunch || l);
+        }
+
         setMenus(newMenus);
         setIsEditing(false);
     };
@@ -99,11 +117,11 @@ export function MenuSchedule() {
     const renderMenuTags = (items: string[], meal: 'lunch' | 'dinner') => (
         <div className="flex flex-wrap gap-2 rounded-lg border bg-background/50 p-3 min-h-[120px]">
             {items.map((item, index) => (
-                <Badge key={`${meal}-${index}`} variant="secondary" className="text-base py-1 px-3 flex items-center gap-2">
+                <Badge key={`${meal}-${index}`} variant="secondary" className="text-sm py-1 px-2 flex items-center gap-1.5">
                     {item}
                     {isEditing === meal && (
-                        <button onClick={() => handleRemoveItem(meal, index)} className="rounded-full hover:bg-muted-foreground/20">
-                            <X className="h-3 w-3" />
+                        <button onClick={() => handleRemoveItem(meal, index)} className="rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
+                            <X className="h-3.5 w-3.5" />
                         </button>
                     )}
                 </Badge>
@@ -149,10 +167,15 @@ export function MenuSchedule() {
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Lunch Menu</CardTitle>
-                            {isEditing ? (
-                                isEditing === 'lunch' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button></div>
-                            ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
+                             {isEditing && isEditing !== 'lunch' ? null : (
+                                isEditing === 'lunch' ? (
+                                    <div className="flex gap-2">
+                                        <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
+                                        <Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button>
+                                    </div>
+                                ) : (
+                                    <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
+                                )
                             )}
                         </div>
                     </CardHeader>
@@ -187,11 +210,16 @@ export function MenuSchedule() {
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>Dinner Menu</CardTitle>
-                            {isEditing ? (
-                                isEditing === 'dinner' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button></div>
-                            ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
-                            )}
+                             {isEditing && isEditing !== 'dinner' ? null : (
+                                isEditing === 'dinner' ? (
+                                    <div className="flex gap-2">
+                                        <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
+                                        <Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button>
+                                    </div>
+                                ) : (
+                                    <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
+                                )
+                             )}
                         </div>
                     </CardHeader>
                     <CardContent className="flex-grow space-y-4">
