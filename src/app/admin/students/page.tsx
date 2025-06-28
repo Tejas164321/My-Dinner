@@ -16,15 +16,15 @@ export default function AdminStudentsPage() {
           <p className="text-muted-foreground">Approve new student requests and manage existing students.</p>
         </div>
         <div className="flex items-center gap-4">
-          <Select defaultValue="this-month">
+          <Select defaultValue="october">
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="this-month">This Month</SelectItem>
-              <SelectItem value="last-month">Last Month</SelectItem>
-              <SelectItem value="2-months-ago">2 Months Ago</SelectItem>
-              <SelectItem value="3-months-ago">3 Months Ago</SelectItem>
+              <SelectItem value="october">October</SelectItem>
+              <SelectItem value="september">September</SelectItem>
+              <SelectItem value="august">August</SelectItem>
+              <SelectItem value="july">July</SelectItem>
             </SelectContent>
           </Select>
         </div>
