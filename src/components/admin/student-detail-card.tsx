@@ -39,15 +39,38 @@ export function StudentDetailCard({ student }: { student: Student }) {
             {/* Left Column (Info & Stats) */}
             <div className="lg:col-span-1 flex flex-col gap-6">
                 <Card>
-                    <CardContent className="flex flex-col items-center text-center gap-4 p-6">
-                        <Avatar className="w-20 h-20 border-4 border-primary/20">
-                            <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-1">
-                            <h2 className="text-2xl font-bold">{student.name}</h2>
-                            <p className="text-muted-foreground">{student.studentId}</p>
+                    <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <Avatar className="w-20 h-20 border-4 border-primary/20">
+                                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-1">
+                                <h2 className="text-2xl font-bold">{student.name}</h2>
+                                <p className="text-muted-foreground">{student.studentId}</p>
+                            </div>
+                            <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize">{currentData.status}</Badge>
                         </div>
-                        <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize">{currentData.status}</Badge>
+                        
+                        <Separator className="my-4"/>
+                        
+                        <div className="space-y-3 text-sm">
+                            <div className="flex justify-between">
+                                <span className="font-semibold">Email:</span>
+                                <span className="text-muted-foreground truncate">{student.email}</span>
+                            </div>
+                             <div className="flex justify-between">
+                                <span className="font-semibold">Contact:</span>
+                                <span className="text-muted-foreground">{student.contact}</span>
+                            </div>
+                             <div className="flex justify-between">
+                                <span className="font-semibold">Room No:</span>
+                                <span className="text-muted-foreground">{student.roomNo}</span>
+                            </div>
+                             <div className="flex justify-between">
+                                <span className="font-semibold">Joined:</span>
+                                <span className="text-muted-foreground">{student.joinDate}</span>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
                 
@@ -84,25 +107,11 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         </CardContent>
                     </Card>
                 </div>
-
-                <Card>
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-base">Personal Information</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3 text-sm">
-                            <p><strong>Email:</strong> <span className="text-muted-foreground">{student.email}</span></p>
-                            <p><strong>Contact:</strong> <span className="text-muted-foreground">{student.contact}</span></p>
-                            <p><strong>Room No:</strong> <span className="text-muted-foreground">{student.roomNo}</span></p>
-                            <p><strong>Joined:</strong> <span className="text-muted-foreground">{student.joinDate}</span></p>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
 
             {/* Right Column (Calendar) */}
-            <div className="lg:col-span-2">
-                <Card className="h-full flex flex-col">
+            <div className="lg:col-span-2 flex">
+                <Card className="h-full flex flex-col flex-1">
                     <CardHeader>
                         <CardTitle>{format(month, 'MMMM yyyy')} Attendance</CardTitle>
                     </CardHeader>
