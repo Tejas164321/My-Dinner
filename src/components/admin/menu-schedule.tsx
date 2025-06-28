@@ -113,146 +113,142 @@ export function MenuSchedule() {
     );
     
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 flex flex-col gap-8">
-                <Card>
-                    <CardHeader>
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                             <div className="flex items-center gap-3">
-                                <Utensils className="h-6 w-6 text-primary"/>
-                                <div>
-                                    <CardTitle>Set Meal Menu</CardTitle>
-                                    <CardDescription>Select a date and set the menu for lunch and dinner.</CardDescription>
-                                </div>
-                            </div>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn("w-[280px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={selectedDate}
-                                    onSelect={(date) => date && setSelectedDate(startOfDay(date))}
-                                    initialFocus
-                                />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* Lunch Editor */}
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-lg font-semibold">Lunch Menu</h3>
-                                {isEditing ? (
-                                    isEditing === 'lunch' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save All</Button></div>
-                                ) : (
-                                    <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit Lunch</Button>
-                                )}
-                            </div>
-                            {renderMenuTags(isEditing === 'lunch' ? tempLunchItems : lunchItems, 'lunch')}
-                            {isEditing === 'lunch' && (
-                                <div className="space-y-3">
-                                    <div className="flex gap-2">
-                                        <Input 
-                                            placeholder="Add new item..." 
-                                            value={newLunchItem}
-                                            onChange={e => setNewLunchItem(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && handleAddItem('lunch')}
-                                        />
-                                        <Button onClick={() => handleAddItem('lunch')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground mb-2">Quick Add:</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {commonMenuItems.map(item => (
-                                                <Button key={item} variant="outline" size="sm" onClick={() => handleQuickAdd('lunch', item)}>{item}</Button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Dinner Editor */}
-                         <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-lg font-semibold">Dinner Menu</h3>
-                                {isEditing ? (
-                                    isEditing === 'dinner' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save All</Button></div>
-                                ) : (
-                                    <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit Dinner</Button>
-                                )}
-                            </div>
-                            {renderMenuTags(isEditing === 'dinner' ? tempDinnerItems : dinnerItems, 'dinner')}
-                            {isEditing === 'dinner' && (
-                                <div className="space-y-3">
-                                    <div className="flex gap-2">
-                                        <Input 
-                                            placeholder="Add new item..." 
-                                            value={newDinnerItem}
-                                            onChange={e => setNewDinnerItem(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && handleAddItem('dinner')}
-                                        />
-                                        <Button onClick={() => handleAddItem('dinner')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground mb-2">Quick Add:</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {commonMenuItems.map(item => (
-                                                <Button key={item} variant="outline" size="sm" onClick={() => handleQuickAdd('dinner', item)}>{item}</Button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="lg:col-span-1">
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <History className="h-6 w-6 text-primary"/>
+        <div className="flex flex-col gap-8">
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                            <Utensils className="h-6 w-6 text-primary"/>
                             <div>
-                                <CardTitle>Menu History</CardTitle>
-                                <CardDescription>Previous 7 days from selected date.</CardDescription>
+                                <CardTitle>Set Meal Menu</CardTitle>
+                                <CardDescription>Select a date and set the menu for lunch and dinner.</CardDescription>
                             </div>
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Day</TableHead>
-                                        <TableHead>Lunch</TableHead>
-                                        <TableHead>Dinner</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {menuHistory.map((item, index) => (
-                                        <TableRow key={index} className="text-muted-foreground">
-                                            <TableCell className="font-medium text-foreground">{format(item.date, 'EEE, MMM do')}</TableCell>
-                                            <TableCell>{item.lunch}</TableCell>
-                                            <TableCell>{item.dinner}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn("w-[280px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(date) => date && setSelectedDate(startOfDay(date))}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Lunch Editor */}
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold">Lunch Menu</h3>
+                            {isEditing ? (
+                                isEditing === 'lunch' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save All</Button></div>
+                            ) : (
+                                <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit Lunch</Button>
+                            )}
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
+                        {renderMenuTags(isEditing === 'lunch' ? tempLunchItems : lunchItems, 'lunch')}
+                        {isEditing === 'lunch' && (
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <Input 
+                                        placeholder="Add new item..." 
+                                        value={newLunchItem}
+                                        onChange={e => setNewLunchItem(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleAddItem('lunch')}
+                                    />
+                                    <Button onClick={() => handleAddItem('lunch')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-2">Quick Add:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {commonMenuItems.map(item => (
+                                            <Button key={item} variant="outline" size="sm" onClick={() => handleQuickAdd('lunch', item)}>{item}</Button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Dinner Editor */}
+                        <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold">Dinner Menu</h3>
+                            {isEditing ? (
+                                isEditing === 'dinner' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save All</Button></div>
+                            ) : (
+                                <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit Dinner</Button>
+                            )}
+                        </div>
+                        {renderMenuTags(isEditing === 'dinner' ? tempDinnerItems : dinnerItems, 'dinner')}
+                        {isEditing === 'dinner' && (
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <Input 
+                                        placeholder="Add new item..." 
+                                        value={newDinnerItem}
+                                        onChange={e => setNewDinnerItem(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleAddItem('dinner')}
+                                    />
+                                    <Button onClick={() => handleAddItem('dinner')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-2">Quick Add:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {commonMenuItems.map(item => (
+                                            <Button key={item} variant="outline" size="sm" onClick={() => handleQuickAdd('dinner', item)}>{item}</Button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-3">
+                        <History className="h-6 w-6 text-primary"/>
+                        <div>
+                            <CardTitle>Menu History</CardTitle>
+                            <CardDescription>Previous 7 days from selected date.</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Day</TableHead>
+                                    <TableHead>Lunch</TableHead>
+                                    <TableHead>Dinner</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {menuHistory.map((item, index) => (
+                                    <TableRow key={index} className="text-muted-foreground">
+                                        <TableCell className="font-medium text-foreground">{format(item.date, 'EEE, MMM do')}</TableCell>
+                                        <TableCell>{item.lunch}</TableCell>
+                                        <TableCell>{item.dinner}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
