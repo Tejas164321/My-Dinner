@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -7,12 +10,22 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserCheck, TrendingUp, AlertCircle, FileText, Settings, Bell } from 'lucide-react';
+import { Users, UserCheck, TrendingUp, AlertCircle, FileText, Settings, Bell, Utensils } from 'lucide-react';
 import { AttendanceChart } from '@/components/admin/analytics-charts';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
 
 export default function AdminDashboard() {
+  const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
+
+  useEffect(() => {
+    const currentHour = new Date().getHours();
+    // Assuming lunch is over after 3 PM (15:00)
+    if (currentHour >= 15) {
+      setMealInfo({ title: "Today's Dinner Count", count: 105 });
+    }
+  }, []);
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -20,7 +33,7 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground">An overview of mess activities and student management.</p>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Students</CardTitle>
@@ -43,6 +56,16 @@ export default function AdminDashboard() {
         </Card>
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{mealInfo.title}</CardTitle>
+            <Utensils className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mealInfo.count}</div>
+            <p className="text-xs text-muted-foreground">Estimated students for the meal</p>
+          </CardContent>
+        </Card>
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month's Revenue</CardTitle>
             <TrendingUp className="h-5 w-5 text-primary" />
           </CardHeader>
@@ -51,7 +74,7 @@ export default function AdminDashboard() {
             <p className="text-xs text-muted-foreground">+12% from last month</p>
           </CardContent>
         </Card>
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Issues Reported</CardTitle>
             <AlertCircle className="h-5 w-5 text-destructive" />
