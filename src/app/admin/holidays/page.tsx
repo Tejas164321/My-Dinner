@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { format, isFuture } from 'date-fns';
+import { format, isFuture, addDays, eachDayOfInterval } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -15,15 +16,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { holidays as initialHolidays, Holiday } from '@/lib/data';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
+type LeaveType = 'one_day' | 'long_leave';
 
 export default function HolidaysPage() {
   const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays.sort((a, b) => a.date.getTime() - b.date.getTime()));
-  const [newHolidayName, setNewHolidayName] = useState('');
-  const [newHolidayDate, setNewHolidayDate] = useState<Date | undefined>();
-  const [newHolidayType, setNewHolidayType] = useState<HolidayType>('full_day');
   
+  // Form State
+  const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
+  const [newHolidayName, setNewHolidayName] = useState('');
+  const [oneDayDate, setOneDayDate] = useState<Date | undefined>(new Date());
+  const [oneDayType, setOneDayType] = useState<HolidayType>('full_day');
+  const [longLeaveRange, setLongLeaveRange] = useState<DateRange | undefined>();
+  
+  // Calendar View State
   const [month, setMonth] = useState<Date | undefined>();
   const [today, setToday] = useState<Date | undefined>();
 
@@ -39,20 +47,37 @@ export default function HolidaysPage() {
   }, [holidays, today]);
 
   const handleAddHoliday = () => {
-    if (newHolidayName && newHolidayDate) {
-      const newHoliday: Holiday = { name: newHolidayName, date: newHolidayDate, type: newHolidayType };
-      const updatedHolidays = [...holidays, newHoliday].sort((a, b) => a.date.getTime() - b.date.getTime());
-      setHolidays(updatedHolidays);
-      setNewHolidayName('');
-      setNewHolidayDate(undefined);
-      setNewHolidayType('full_day');
+    if (!newHolidayName) return;
+
+    let newHolidays: Holiday[] = [];
+
+    if (leaveType === 'one_day' && oneDayDate) {
+      newHolidays.push({ name: newHolidayName, date: oneDayDate, type: oneDayType });
+    } else if (leaveType === 'long_leave' && longLeaveRange?.from && longLeaveRange?.to) {
+      const dates = eachDayOfInterval({ start: longLeaveRange.from, end: longLeaveRange.to });
+      newHolidays = dates.map(date => ({ name: newHolidayName, date, type: 'full_day' }));
+    } else {
+      return;
     }
+
+    // Prevent adding duplicate holidays for the same date
+    const existingDates = new Set(holidays.map(h => h.date.getTime()));
+    const uniqueNewHolidays = newHolidays.filter(h => !existingDates.has(h.date.getTime()));
+
+    const updatedHolidays = [...holidays, ...uniqueNewHolidays].sort((a, b) => a.date.getTime() - b.date.getTime());
+    setHolidays(updatedHolidays);
+    
+    // Reset form
+    setNewHolidayName('');
+    setOneDayDate(new Date());
+    setOneDayType('full_day');
+    setLongLeaveRange(undefined);
   };
 
   const handleDeleteHoliday = (dateToDelete: Date) => {
     setHolidays(holidays.filter(h => h.date.getTime() !== dateToDelete.getTime()));
   };
-
+  
   const getHolidayTypeText = (type: Holiday['type']) => {
     return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -78,14 +103,12 @@ export default function HolidaysPage() {
                   month={month}
                   onMonthChange={setMonth}
                   modifiers={{
-                    full_day: holidays.filter(h => h.type === 'full_day').map(h => h.date),
-                    lunch_only: holidays.filter(h => h.type === 'lunch_only').map(h => h.date),
-                    dinner_only: holidays.filter(h => h.type === 'dinner_only').map(h => h.date),
+                    holiday_full: holidays.filter(h => h.type === 'full_day').map(h => h.date),
+                    holiday_half: holidays.filter(h => h.type === 'lunch_only' || h.type === 'dinner_only').map(h => h.date),
                   }}
                   modifiersClassNames={{
-                    full_day: 'bg-primary text-primary-foreground',
-                    lunch_only: 'bg-chart-3 text-primary-foreground',
-                    dinner_only: 'bg-chart-4 text-primary-foreground',
+                    holiday_full: 'bg-destructive text-destructive-foreground',
+                    holiday_half: 'bg-chart-3 text-primary-foreground',
                   }}
                   className="p-0"
                   classNames={{
@@ -103,9 +126,8 @@ export default function HolidaysPage() {
              <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">
                 <p className="font-semibold text-foreground text-base mb-1">Legend</p>
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary" /> Full Day</div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-chart-3" /> Lunch Only</div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-chart-4" /> Dinner Only</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-destructive" /> Full Day Holiday</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-chart-3" /> Half Day Holiday</div>
                 </div>
             </CardFooter>
           </Card>
@@ -115,66 +137,85 @@ export default function HolidaysPage() {
           <Card>
             <CardHeader>
               <CardTitle>Add New Holiday</CardTitle>
-              <CardDescription>Add a new holiday to the calendar.</CardDescription>
+              <CardDescription>Schedule holidays for the mess.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="holiday-name">Holiday Name</Label>
-                <Input
-                  id="holiday-name"
-                  placeholder="e.g., Diwali"
-                  value={newHolidayName}
-                  onChange={(e) => setNewHolidayName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={'outline'}
-                      className={cn(
-                        'w-full justify-start text-left font-normal',
-                        !newHolidayDate && 'text-muted-foreground'
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newHolidayDate ? format(newHolidayDate, 'PPP') : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={newHolidayDate}
-                      onSelect={setNewHolidayDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-3">
-                <Label>Holiday Type</Label>
-                <RadioGroup
-                  value={newHolidayType}
-                  onValueChange={(value: HolidayType) => setNewHolidayType(value)}
-                  className="flex gap-2 sm:gap-4 flex-wrap"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="full_day" id="full_day" />
-                    <Label htmlFor="full_day" className="cursor-pointer">Full Day</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="lunch_only" id="lunch_only" />
-                    <Label htmlFor="lunch_only" className="cursor-pointer">Lunch Only</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="dinner_only" id="dinner_only" />
-                    <Label htmlFor="dinner_only" className="cursor-pointer">Dinner Only</Label>
-                  </div>
-                </RadioGroup>
-              </div>
+               <Tabs value={leaveType} onValueChange={(value) => setLeaveType(value as LeaveType)} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="one_day">One Day</TabsTrigger>
+                  <TabsTrigger value="long_leave">Long Leave</TabsTrigger>
+                </TabsList>
+                <TabsContent value="one_day" className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="holiday-name-one">Holiday Name</Label>
+                      <Input id="holiday-name-one" placeholder="e.g., Diwali" value={newHolidayName} onChange={(e) => setNewHolidayName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Date</Label>
+                        <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !oneDayDate && 'text-muted-foreground')}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {oneDayDate ? format(oneDayDate, 'PPP') : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={oneDayDate} onSelect={setOneDayDate} initialFocus /></PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="space-y-3">
+                        <Label>Holiday Type</Label>
+                        <RadioGroup value={oneDayType} onValueChange={(value: HolidayType) => setOneDayType(value)} className="flex gap-2 sm:gap-4 flex-wrap">
+                          <div className="flex items-center space-x-2"><RadioGroupItem value="full_day" id="full_day" /><Label htmlFor="full_day" className="cursor-pointer">Full Day</Label></div>
+                          <div className="flex items-center space-x-2"><RadioGroupItem value="lunch_only" id="lunch_only" /><Label htmlFor="lunch_only" className="cursor-pointer">Lunch Off</Label></div>
+                          <div className="flex items-center space-x-2"><RadioGroupItem value="dinner_only" id="dinner_only" /><Label htmlFor="dinner_only" className="cursor-pointer">Dinner Off</Label></div>
+                        </RadioGroup>
+                    </div>
+                </TabsContent>
+                <TabsContent value="long_leave" className="space-y-4 pt-2">
+                   <div className="space-y-2">
+                      <Label htmlFor="holiday-name-long">Holiday Name / Reason</Label>
+                      <Input id="holiday-name-long" placeholder="e.g., Semester Break" value={newHolidayName} onChange={(e) => setNewHolidayName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Date Range (all considered full day holidays)</Label>
+                         <Popover>
+                            <PopoverTrigger asChild>
+                            <Button
+                                id="date"
+                                variant={"outline"}
+                                className={cn("w-full justify-start text-left font-normal", !longLeaveRange && "text-muted-foreground")}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {longLeaveRange?.from ? (
+                                    longLeaveRange.to ? (
+                                    <>
+                                        {format(longLeaveRange.from, "LLL dd, y")} -{" "}
+                                        {format(longLeaveRange.to, "LLL dd, y")}
+                                    </>
+                                    ) : (
+                                    format(longLeaveRange.from, "LLL dd, y")
+                                    )
+                                ) : (
+                                    <span>Pick a date range</span>
+                                )}
+                            </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={longLeaveRange?.from}
+                                selected={longLeaveRange}
+                                onSelect={setLongLeaveRange}
+                                numberOfMonths={2}
+                            />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </TabsContent>
+              </Tabs>
               <Button onClick={handleAddHoliday} className="w-full">
-                <Plus className="mr-2 h-4 w-4" /> Add Holiday
+                <Plus className="mr-2 h-4 w-4" /> Add Holiday(s)
               </Button>
             </CardContent>
           </Card>
@@ -198,16 +239,16 @@ export default function HolidaysPage() {
                         className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50"
                       >
                          <div className="flex items-center gap-3">
-                            {holiday.type === 'full_day' && <Utensils className="h-5 w-5 text-primary flex-shrink-0" />}
+                            {holiday.type === 'full_day' && <Utensils className="h-5 w-5 text-destructive flex-shrink-0" />}
                             {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
-                            {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-4 flex-shrink-0" />}
+                            {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-3 flex-shrink-0" />}
                             <div>
                                 <p className="font-semibold text-sm">{holiday.name}</p>
                                 <p className="text-xs text-muted-foreground">{format(holiday.date, 'MMMM do, yyyy')}</p>
                             </div>
                          </div>
                         <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="capitalize border-dashed hidden sm:inline-flex">{getHolidayTypeText(holiday.type)}</Badge>
+                            <Badge variant="outline" className={cn("capitalize border-dashed hidden sm:inline-flex", holiday.type === 'full_day' && 'border-destructive text-destructive', holiday.type !== 'full_day' && 'border-chart-3 text-chart-3')}>{getHolidayTypeText(holiday.type)}</Badge>
                             <Button
                             variant="ghost"
                             size="icon"

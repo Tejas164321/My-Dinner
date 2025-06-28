@@ -16,7 +16,7 @@ import { AttendanceChart } from '@/components/admin/analytics-charts';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
 import { holidays } from '@/lib/data';
-import { isFuture, format } from 'date-fns';
+import { isSameMonth } from 'date-fns';
 
 export default function AdminDashboard() {
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
@@ -33,9 +33,9 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const upcomingHolidays = useMemo(() => {
-    if (!today) return [];
-    return holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'));
+  const holidaysThisMonth = useMemo(() => {
+    if (!today) return 0;
+    return holidays.filter(h => isSameMonth(h.date, today)).length;
   }, [today]);
 
   return (
@@ -164,13 +164,13 @@ export default function AdminDashboard() {
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle>Holiday Management</CardTitle>
-                        <CardDescription>Upcoming declared holidays.</CardDescription>
+                        <CardDescription>Holidays declared for this month.</CardDescription>
                     </div>
                     <CalendarDays className="h-6 w-6 text-primary" />
                 </CardHeader>
                 <CardContent>
-                    <p className="text-4xl font-bold">{today ? upcomingHolidays.length : 0}</p>
-                    <p className="text-xs text-muted-foreground">Total upcoming holidays scheduled.</p>
+                    <p className="text-4xl font-bold">{holidaysThisMonth}</p>
+                    <p className="text-xs text-muted-foreground">Total holidays this month.</p>
                 </CardContent>
                 <CardFooter>
                     <Button asChild className="w-full">
