@@ -57,19 +57,21 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         const attendancePercent = parseFloat(currentData.attendance) / 100;
 
         const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
-        const workingDays = allDays.filter(d => d.getDay() !== 0); // Exclude Sundays for demo
+        // Simple demo logic: exlcude sundays for calculations
+        const workingDays = allDays.filter(d => d.getDay() !== 0); 
         
         const totalWorkingDays = workingDays.length;
         const totalPresentDays = Math.round(totalWorkingDays * attendancePercent);
         const aDaysCount = totalWorkingDays - totalPresentDays;
         
-        const fDaysCount = Math.round(totalPresentDays * 0.9); // Assume 90% of present days are full days
+        // Demo logic: Assume 90% of present days are full days, rest are half days
+        const fDaysCount = Math.round(totalPresentDays * 0.9);
         const hDaysCount = totalPresentDays - fDaysCount;
         const tMealsCount = (fDaysCount * 2) + hDaysCount;
 
-        // Use a simple seeded random to make visualizations consistent for a student
+        // Use a simple seeded random to make visualizations consistent for a given student and date
         const seededRandom = (seed: number) => {
-            let x = Math.sin(seed) * 10000;
+            let x = Math.sin(seed + student.id.charCodeAt(0)) * 10000;
             return x - Math.floor(x);
         };
         const shuffledWorkingDays = [...workingDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
@@ -78,23 +80,24 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         const hdd = shuffledWorkingDays.slice(fDaysCount, fDaysCount + hDaysCount);
         const add = shuffledWorkingDays.slice(fDaysCount + hDaysCount);
         
+        // Split half days into lunch only and dinner only for visuals
         const lod = hdd.filter((_, i) => i % 2 === 0);
         const dod = hdd.filter((_, i) => i % 2 !== 0);
 
         return {
-            fullDaysCount: fDaysCount,
-            halfDaysCount: hDaysCount,
-            absentDaysCount: aDaysCount,
+            fullDaysCount: fdd.length,
+            halfDaysCount: hdd.length,
+            absentDaysCount: add.length,
             totalMealsCount: tMealsCount,
             fullDayDays: fdd,
             lunchOnlyDays: lod,
             dinnerOnlyDays: dod,
             absentDays: add,
         };
-    }, [month, currentData.attendance]);
+    }, [month, student.id, currentData.attendance]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full bg-background sm:rounded-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full">
             {/* Left Column */}
             <div className="lg:col-span-2 flex flex-col gap-6">
                 <Card>
@@ -110,60 +113,59 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                     </CardContent>
                 </Card>
                 
-                <div className="flex-grow flex flex-col gap-6">
-                    <Card className="flex-grow">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-lg">Attendance Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-col h-full justify-between p-4 pt-2">
-                            <div>
-                                <div className="text-center">
-                                    <p className="text-5xl font-bold text-primary">{currentData.attendance}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">Monthly Attendance</p>
+                <Card className="flex-grow flex flex-col">
+                    <CardHeader className="p-4 pb-2">
+                        <CardTitle className="text-lg">Attendance Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex flex-col p-4 pt-2">
+                        <div>
+                            <div className="text-center">
+                                <p className="text-5xl font-bold text-primary">{currentData.attendance}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Monthly Attendance</p>
+                            </div>
+                            <Separator className="my-3" />
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Full Days</p>
+                                    <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
                                 </div>
-                                <Separator className="my-3" />
-                                <div className="grid grid-cols-3 gap-2 text-center">
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Full Days</p>
-                                        <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Half Days</p>
-                                        <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Absent</p>
-                                        <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
-                                    </div>
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Half Days</p>
+                                    <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Absent</p>
+                                    <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
                                 </div>
                             </div>
-                            <div className="flex justify-between items-center p-3 bg-secondary rounded-lg mt-3">
-                                <span className="font-semibold text-foreground">Total Meals Taken</span>
-                                <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-lg">Billing</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm p-4 pt-2">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Total:</span>
-                                <span>₹{currentData.bill.total.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Paid:</span>
-                                <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
-                            </div>
-                            <Separator/>
-                            <div className="flex justify-between font-semibold">
-                                <span className="text-foreground">Remaining:</span>
-                                <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-secondary rounded-lg mt-auto">
+                            <span className="font-semibold text-foreground">Total Meals Taken</span>
+                            <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="p-4 pb-2">
+                        <CardTitle className="text-lg">Billing</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm p-4 pt-2">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total:</span>
+                            <span>₹{currentData.bill.total.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Paid:</span>
+                            <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
+                        </div>
+                        <Separator/>
+                        <div className="flex justify-between font-semibold">
+                            <span className="text-foreground">Remaining:</span>
+                            <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Right Column */}
