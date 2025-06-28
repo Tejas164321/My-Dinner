@@ -11,10 +11,8 @@ import { cn } from "@/lib/utils";
 type Student = (typeof joinedStudents)[number];
 
 export function StudentDetailCard({ student }: { student: Student }) {
-    // Using a fixed date for consistent display in the prototype
-    const today = new Date(2023, 9, 27); // Oct 27, 2023
+    const today = new Date(2023, 9, 27); 
 
-    // Mock data for calendar
     const bothMealsDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
     const oneMealDays = [new Date(2023, 9, 4), new Date(2023, 9, 18), new Date(2023, 9, 20)];
     const absentDays = [new Date(2023, 9, 5), new Date(2023, 9, 10), new Date(2023, 9, 11), new Date(2023, 9, 19)];
@@ -65,7 +63,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         <CardTitle>October 2023 Attendance</CardTitle>
                         <CardDescription>A visual log of meals attended this month.</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-6 md:grid-cols-3">
+                    <CardContent className="flex flex-col items-center gap-4 p-4">
                         <Calendar
                             mode="multiple"
                             disabled
@@ -75,28 +73,31 @@ export function StudentDetailCard({ student }: { student: Student }) {
                                 oneMeal: oneMealDays,
                                 absent: absentDays,
                             }}
+                            classNames={{
+                                head_cell: "text-foreground/80 w-10 font-medium",
+                                cell: "h-10 w-10 text-center text-base p-0",
+                                day: "h-10 w-10 p-0 font-normal",
+                                day_today: "bg-accent text-accent-foreground rounded-full",
+                            }}
                             modifiersClassNames={{
                                 bothMeals: "bg-chart-2 text-primary-foreground rounded-full",
                                 oneMeal: "bg-chart-3 text-primary-foreground rounded-full",
                                 absent: "bg-destructive text-destructive-foreground rounded-full",
                             }}
-                            className="rounded-md border p-3 md:col-span-2"
+                            className="rounded-md border border-border/50 p-2"
                         />
-                        <div className="flex flex-col gap-4 rounded-lg border bg-secondary/30 p-4 md:col-span-1">
-                            <h4 className="font-semibold text-center md:text-left">Legend</h4>
-                            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-3">
-                                    <span className="h-3 w-3 shrink-0 rounded-full bg-chart-2" />
-                                    <span>Both Meals</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="h-3 w-3 shrink-0 rounded-full bg-chart-3" />
-                                    <span>One Meal</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="h-3 w-3 shrink-0 rounded-full bg-destructive" />
-                                    <span>Absent</span>
-                                </div>
+                         <div className="flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
+                                <span>Both Meals</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
+                                <span>One Meal</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
+                                <span>Absent</span>
                             </div>
                         </div>
                     </CardContent>
