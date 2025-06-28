@@ -25,7 +25,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
         <Card className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-500">
             <div className="lg:col-span-1 flex flex-col items-center text-center gap-4 p-6 bg-secondary/30 rounded-l-xl">
                 <Avatar className="w-24 h-24 border-4 border-primary/20">
-                    <AvatarImage src={student.avatarUrl} alt={student.name} data-ai-hint="profile avatar" />
+                    
                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
