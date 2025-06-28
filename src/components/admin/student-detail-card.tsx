@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from "react";
@@ -5,8 +6,8 @@ import type { DayContentProps } from "react-day-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Student } from "@/lib/data";
+import type { Student, Holiday } from "@/lib/data";
+import { holidays } from "@/lib/data";
 import { User, Phone, Home, Calendar as CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
@@ -211,6 +212,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                                 lunchOnly: lunchOnlyDays,
                                 dinnerOnly: dinnerOnlyDays,
                                 absent: absentDays,
+                                holiday: holidays.map(h => h.date),
                             }}
                             components={{ DayContent: CustomDayContent }}
                             modifiersClassNames={{
@@ -218,6 +220,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                                 lunchOnly: "bg-chart-3 text-primary-foreground",
                                 dinnerOnly: "bg-chart-3 text-primary-foreground",
                                 absent: "bg-destructive text-destructive-foreground",
+                                holiday: "bg-primary/40 text-primary-foreground",
                             }}
                             classNames={{
                                 months: "w-full",
@@ -234,7 +237,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         />
                     </CardContent>
                     <CardContent className="p-4 pt-2 mt-auto">
-                        <div className="flex w-full items-center justify-center gap-6 text-xs text-muted-foreground">
+                        <div className="flex w-full items-center justify-center gap-4 text-xs text-muted-foreground">
                             <div className="flex items-center gap-2">
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
                                 <span>Full Day</span>
@@ -247,6 +250,10 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
                                 <span>Absent</span>
                             </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />
+                                <span>Holiday</span>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -254,3 +261,5 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         </Card>
     );
 }
+
+    
