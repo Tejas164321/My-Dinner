@@ -52,14 +52,14 @@ export function StudentsTable() {
                                                     </div>
                                                     <div className="text-center hidden sm:block">
                                                         <p className="text-xs text-muted-foreground">Joined</p>
-                                                        <p className="font-semibold">{student.joinDate}</p>
+                                                        <p className="font-semibold">{student.joinDate.split(' ')[0]}</p>
                                                     </div>
                                                 </div>
                                                 <MoreVertical className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 ml-4"/>
                                             </CardContent>
                                         </Card>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-4xl p-4 border-0 bg-transparent shadow-none max-h-[90vh] overflow-y-auto">
+                                    <DialogContent className="max-w-5xl border-0 bg-transparent shadow-none p-0">
                                         <DialogHeader className="sr-only">
                                             <DialogTitle>Student Details: {student.name}</DialogTitle>
                                             <DialogDescription>
