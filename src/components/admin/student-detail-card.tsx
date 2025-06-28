@@ -139,7 +139,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                                 </div>
                             </div>
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-secondary rounded-lg mt-auto">
+                        <div className="flex justify-between items-center pt-4 mt-auto">
                             <span className="font-semibold text-foreground">Total Meals Taken</span>
                             <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
                         </div>
