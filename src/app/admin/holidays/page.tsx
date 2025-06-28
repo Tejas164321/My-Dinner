@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, isFuture } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
 
@@ -23,9 +23,20 @@ export default function HolidaysPage() {
   const [newHolidayName, setNewHolidayName] = useState('');
   const [newHolidayDate, setNewHolidayDate] = useState<Date | undefined>();
   const [newHolidayType, setNewHolidayType] = useState<HolidayType>('full_day');
-  const [month, setMonth] = useState(new Date());
+  
+  const [month, setMonth] = useState<Date | undefined>();
+  const [today, setToday] = useState<Date | undefined>();
 
-  const upcomingHolidays = holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'));
+  useEffect(() => {
+    const now = new Date();
+    setMonth(now);
+    setToday(now);
+  }, []);
+
+  const upcomingHolidays = useMemo(() => {
+    if (!today) return [];
+    return holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'));
+  }, [holidays, today]);
 
   const handleAddHoliday = () => {
     if (newHolidayName && newHolidayDate) {
@@ -61,27 +72,33 @@ export default function HolidaysPage() {
               <CardDescription>An overview of all scheduled holidays for the year.</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow flex items-center justify-center">
-              <Calendar
-                mode="multiple"
-                month={month}
-                onMonthChange={setMonth}
-                modifiers={{
-                  full_day: holidays.filter(h => h.type === 'full_day').map(h => h.date),
-                  lunch_only: holidays.filter(h => h.type === 'lunch_only').map(h => h.date),
-                  dinner_only: holidays.filter(h => h.type === 'dinner_only').map(h => h.date),
-                }}
-                modifiersClassNames={{
-                  full_day: 'bg-primary text-primary-foreground',
-                  lunch_only: 'bg-chart-3 text-primary-foreground',
-                  dinner_only: 'bg-chart-4 text-primary-foreground',
-                }}
-                className="p-0"
-                classNames={{
-                    months: 'w-full',
-                    month: 'w-full space-y-4',
-                }}
-                showOutsideDays
-              />
+              {month ? (
+                <Calendar
+                  mode="multiple"
+                  month={month}
+                  onMonthChange={setMonth}
+                  modifiers={{
+                    full_day: holidays.filter(h => h.type === 'full_day').map(h => h.date),
+                    lunch_only: holidays.filter(h => h.type === 'lunch_only').map(h => h.date),
+                    dinner_only: holidays.filter(h => h.type === 'dinner_only').map(h => h.date),
+                  }}
+                  modifiersClassNames={{
+                    full_day: 'bg-primary text-primary-foreground',
+                    lunch_only: 'bg-chart-3 text-primary-foreground',
+                    dinner_only: 'bg-chart-4 text-primary-foreground',
+                  }}
+                  className="p-0"
+                  classNames={{
+                      months: 'w-full',
+                      month: 'w-full space-y-4',
+                  }}
+                  showOutsideDays
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                  <p>Loading calendar...</p>
+                </div>
+              )}
             </CardContent>
              <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">
                 <p className="font-semibold text-foreground text-base mb-1">Legend</p>
@@ -170,7 +187,11 @@ export default function HolidaysPage() {
             <CardContent className="flex-grow p-2 pt-0">
               <ScrollArea className="h-48">
                 <div className="p-4 pt-0 space-y-2">
-                  {upcomingHolidays.length > 0 ? (
+                  {!today ? (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                      <p>Loading...</p>
+                    </div>
+                  ) : upcomingHolidays.length > 0 ? (
                     upcomingHolidays.map((holiday) => (
                       <div
                         key={holiday.date.toISOString()}

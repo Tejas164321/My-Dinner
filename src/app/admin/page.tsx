@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -20,16 +20,23 @@ import { isFuture, format } from 'date-fns';
 
 export default function AdminDashboard() {
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
+  const [today, setToday] = useState<Date>();
 
   useEffect(() => {
-    const currentHour = new Date().getHours();
+    const now = new Date();
+    setToday(now);
+
+    const currentHour = now.getHours();
     // Assuming lunch is over after 3 PM (15:00)
     if (currentHour >= 15) {
       setMealInfo({ title: "Today's Dinner Count", count: 105 });
     }
   }, []);
 
-  const upcomingHolidays = holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'));
+  const upcomingHolidays = useMemo(() => {
+    if (!today) return [];
+    return holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'));
+  }, [today]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -162,7 +169,7 @@ export default function AdminDashboard() {
                     <CalendarDays className="h-6 w-6 text-primary" />
                 </CardHeader>
                 <CardContent>
-                    <p className="text-4xl font-bold">{upcomingHolidays.length}</p>
+                    <p className="text-4xl font-bold">{today ? upcomingHolidays.length : 0}</p>
                     <p className="text-xs text-muted-foreground">Total upcoming holidays scheduled.</p>
                 </CardContent>
                 <CardFooter>
