@@ -1,3 +1,5 @@
+import { format, subDays, addDays } from 'date-fns';
+
 export const studentNavItems = [
     { href: '/student', label: 'Dashboard', icon: 'BarChart' },
     { href: '/student/leave', label: 'Apply for Leave', icon: 'CalendarDays' },
@@ -141,24 +143,27 @@ export const studentsData: Student[] = [
     },
 ];
 
-export const menu = {
-  monday: { lunch: 'Aloo Gobi, Roti, Dal', dinner: 'Paneer Butter Masala, Rice' },
-  tuesday: { lunch: 'Rajma Chawal, Salad', dinner: 'Chole Bhature' },
-  wednesday: { lunch: 'Veg Biryani, Raita', dinner: 'Kadhi Pakora, Rice' },
-  thursday: { lunch: 'Dal Makhani, Naan', dinner: 'Mix Veg, Roti' },
-  friday: { lunch: 'Idli Sambar, Chutney', dinner: 'Masala Dosa' },
-  saturday: { lunch: 'Special Thali', dinner: 'Pasta, Garlic Bread' },
-  sunday: { lunch: 'Puri Sabji, Halwa', dinner: 'Pizza Night' },
-}
-
 export const commonMenuItems = ['Dal', 'Rice', 'Chapatti', 'Salad', 'Raita', 'Pulav'];
 
-export const menuHistory = [
-    { lunch: 'Rajma Chawal, Salad', dinner: 'Chole Bhature' },
-    { lunch: 'Aloo Gobi, Roti, Dal', dinner: 'Paneer Butter Masala, Rice' },
-    { lunch: 'Puri Sabji, Halwa', dinner: 'Pizza Night' },
-    { lunch: 'Special Thali', dinner: 'Pasta, Garlic Bread' },
-    { lunch: 'Idli Sambar, Chutney', dinner: 'Masala Dosa' },
-    { lunch: 'Dal Makhani, Naan', dinner: 'Mix Veg, Roti' },
-    { lunch: 'Veg Biryani, Raita', dinner: 'Kadhi Pakora, Rice' },
+export interface DailyMenu {
+  lunch: string[];
+  dinner: string[];
+}
+
+const today = new Date();
+const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
+
+const pastMenus: [string, DailyMenu][] = [
+    [formatDateKey(subDays(today, 7)), { lunch: ['Dal Makhani', 'Naan'], dinner: ['Mix Veg', 'Roti'] }],
+    [formatDateKey(subDays(today, 6)), { lunch: ['Idli Sambar', 'Chutney'], dinner: ['Masala Dosa'] }],
+    [formatDateKey(subDays(today, 5)), { lunch: ['Special Thali'], dinner: ['Pasta', 'Garlic Bread'] }],
+    [formatDateKey(subDays(today, 4)), { lunch: ['Puri Sabji', 'Halwa'], dinner: ['Pizza Night'] }],
+    [formatDateKey(subDays(today, 3)), { lunch: ['Veg Biryani', 'Raita'], dinner: ['Kadhi Pakora', 'Rice'] }],
+    [formatDateKey(subDays(today, 2)), { lunch: ['Aloo Gobi', 'Roti', 'Dal'], dinner: ['Paneer Butter Masala', 'Rice'] }],
+    [formatDateKey(subDays(today, 1)), { lunch: ['Rajma Chawal', 'Salad'], dinner: ['Chole Bhature'] }],
+    [formatDateKey(today), { lunch: ['Rajma Chawal', 'Salad'], dinner: ['Chole Bhature'] }],
+    [formatDateKey(addDays(today, 1)), { lunch: ['Aloo Gobi', 'Roti', 'Dal'], dinner: ['Paneer Butter Masala', 'Rice'] }]
 ];
+
+// Key: 'YYYY-MM-DD'
+export const dailyMenus: Map<string, DailyMenu> = new Map(pastMenus);

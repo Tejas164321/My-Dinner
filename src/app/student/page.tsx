@@ -14,24 +14,33 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import Image from 'next/image';
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, MessageSquare, ShieldAlert } from 'lucide-react';
-import { menu } from "@/lib/data";
+import { dailyMenus } from "@/lib/data";
+import { format, addDays, startOfDay } from 'date-fns';
 
-const days = Object.keys(menu) as (keyof typeof menu)[];
+const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export default function StudentDashboard() {
-  const [date, setDate] = useState<Date | null>(null);
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    setDate(new Date());
+    setCurrentDate(startOfDay(new Date()));
   }, []);
-  
+
+  const todayKey = currentDate ? formatDateKey(currentDate) : '';
+  const todaysMenu = dailyMenus.get(todayKey) || { lunch: ['Not set'], dinner: ['Not set'] };
+
+  const weekDays = useMemo(() => {
+    if (!currentDate) return [];
+    return Array.from({ length: 7 }).map((_, i) => addDays(currentDate, i));
+  }, [currentDate]);
+
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Welcome back, Alex!</h1>
         <p className="text-muted-foreground">
-          {date
-            ? `Here's your dashboard for ${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.`
+          {currentDate
+            ? `Here's your dashboard for ${currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.`
             : 'Loading dashboard...'}
         </p>
       </div>
@@ -57,7 +66,7 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                       <h3 className="font-semibold text-lg">Lunch</h3>
-                      <p className="text-muted-foreground">Rajma Chawal, Salad</p>
+                      <p className="text-muted-foreground">{todaysMenu.lunch.join(', ')}</p>
                   </div>
                 </div>
                 <Image src="https://placehold.co/600x400.png" alt="Lunch meal" width={600} height={400} className="rounded-lg object-cover" data-ai-hint="indian food" />
@@ -69,7 +78,7 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                       <h3 className="font-semibold text-lg">Dinner</h3>
-                      <p className="text-muted-foreground">Chole Bhature</p>
+                      <p className="text-muted-foreground">{todaysMenu.dinner.join(', ')}</p>
                   </div>
                 </div>
                  <Image src="https://placehold.co/600x400.png" alt="Dinner meal" width={600} height={400} className="rounded-lg object-cover" data-ai-hint="north indian food" />
@@ -80,31 +89,36 @@ export default function StudentDashboard() {
           {/* Weekly Menu */}
           <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100">
              <CardHeader>
-                <CardTitle>This Week's Menu</CardTitle>
+                <CardTitle>Upcoming Menu</CardTitle>
                 <CardDescription>Plan your meals for the week ahead.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue={days[0]} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7">
-                  {days.map((day) => (
-                    <TabsTrigger key={day} value={day} className="capitalize">{day.slice(0,3)}</TabsTrigger>
-                  ))}
-                </TabsList>
-                {days.map((day) => (
-                  <TabsContent key={day} value={day} className="mt-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <h4 className="font-semibold mb-2">Lunch</h4>
-                            <p className="text-muted-foreground">{menu[day].lunch}</p>
+              {weekDays.length > 0 && (
+                <Tabs defaultValue={formatDateKey(weekDays[0])} className="w-full">
+                  <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7">
+                    {weekDays.map((day) => (
+                      <TabsTrigger key={formatDateKey(day)} value={formatDateKey(day)} className="capitalize">{format(day, 'E')}</TabsTrigger>
+                    ))}
+                  </TabsList>
+                  {weekDays.map((day) => {
+                    const menuForDay = dailyMenus.get(formatDateKey(day)) || { lunch: ['Not Set'], dinner: ['Not Set'] };
+                    return (
+                      <TabsContent key={formatDateKey(day)} value={formatDateKey(day)} className="mt-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <h4 className="font-semibold mb-2">Lunch</h4>
+                                <p className="text-muted-foreground">{menuForDay.lunch.join(', ')}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold mb-2">Dinner</h4>
+                                <p className="text-muted-foreground">{menuForDay.dinner.join(', ')}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 className="font-semibold mb-2">Dinner</h4>
-                            <p className="text-muted-foreground">{menu[day].dinner}</p>
-                        </div>
-                    </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
+                      </TabsContent>
+                    )
+                  })}
+                </Tabs>
+              )}
             </CardContent>
           </Card>
 
