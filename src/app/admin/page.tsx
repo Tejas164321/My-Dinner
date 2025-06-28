@@ -33,7 +33,7 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground">An overview of mess activities and student management.</p>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Students</CardTitle>
