@@ -35,39 +35,39 @@ export function StudentDetailCard({ student }: { student: Student }) {
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
     return (
-        <Card className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 animate-in fade-in-0 duration-500">
-            {/* Left Column (Info) */}
-            <div className="lg:col-span-1">
-                <Card>
-                    <CardContent className="p-6">
+        <Card className="flex flex-col lg:flex-row gap-6 p-6 animate-in fade-in-0 duration-500">
+            {/* Left Column: Profile & Info */}
+            <div className="w-full lg:w-1/3 flex-shrink-0">
+                <Card className="h-full">
+                    <CardContent className="p-6 flex flex-col h-full">
                         <div className="flex flex-col items-center text-center gap-4">
-                            <Avatar className="w-20 h-20 border-4 border-primary/20">
-                                <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                            <Avatar className="w-24 h-24 border-4 border-primary/20">
+                                <AvatarFallback className="text-3xl">{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                             </Avatar>
                             <div className="space-y-1">
                                 <h2 className="text-2xl font-bold">{student.name}</h2>
                                 <p className="text-muted-foreground">{student.studentId}</p>
                             </div>
-                            <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize">{currentData.status}</Badge>
+                            <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize text-sm">{currentData.status}</Badge>
                         </div>
                         
-                        <Separator className="my-4"/>
+                        <Separator className="my-6"/>
                         
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="font-semibold">Email:</span>
-                                <span className="text-muted-foreground truncate">{student.email}</span>
+                        <div className="space-y-4 text-sm flex-grow">
+                             <div className="flex justify-between items-center">
+                                <span className="font-semibold text-foreground/80">Email:</span>
+                                <span className="text-muted-foreground truncate max-w-[200px]">{student.email}</span>
                             </div>
-                             <div className="flex justify-between">
-                                <span className="font-semibold">Contact:</span>
+                             <div className="flex justify-between items-center">
+                                <span className="font-semibold text-foreground/80">Contact:</span>
                                 <span className="text-muted-foreground">{student.contact}</span>
                             </div>
-                             <div className="flex justify-between">
-                                <span className="font-semibold">Room No:</span>
+                             <div className="flex justify-between items-center">
+                                <span className="font-semibold text-foreground/80">Room No:</span>
                                 <span className="text-muted-foreground">{student.roomNo}</span>
                             </div>
-                             <div className="flex justify-between">
-                                <span className="font-semibold">Joined:</span>
+                             <div className="flex justify-between items-center">
+                                <span className="font-semibold text-foreground/80">Joined:</span>
                                 <span className="text-muted-foreground">{student.joinDate}</span>
                             </div>
                         </div>
@@ -75,8 +75,9 @@ export function StudentDetailCard({ student }: { student: Student }) {
                 </Card>
             </div>
 
-            {/* Right Column (Stats & Calendar) */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
+            {/* Right Column: Stats & Calendar */}
+            <div className="w-full lg:w-2/3 flex flex-col gap-6">
+                {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -85,7 +86,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{currentData.attendance}</div>
-                            <p className="text-xs text-muted-foreground">in {format(month, 'MMMM')}</p>
+                            <p className="text-xs text-muted-foreground">in {format(month, 'MMMM yyyy')}</p>
                         </CardContent>
                     </Card>
                      <Card>
@@ -93,77 +94,76 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             <CardTitle className="text-sm font-medium">Billing</CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent className="space-y-3 pt-2">
+                        <CardContent>
                            <div className="flex justify-between text-sm">
                                 <p className="text-muted-foreground">Total</p>
-                                <p className="font-medium">₹{currentData.bill.total}</p>
+                                <p className="font-medium">₹{currentData.bill.total.toLocaleString()}</p>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <p className="text-muted-foreground">Paid</p>
-                                <p className="font-medium text-chart-2">₹{currentData.bill.paid}</p>
+                                <p className="font-medium text-chart-2">₹{currentData.bill.paid.toLocaleString()}</p>
                             </div>
-                            <Separator/>
+                            <Separator className="my-2"/>
                             <div className="flex justify-between text-sm font-bold">
                                 <p>Remaining</p>
-                                <p className={cn(currentData.status === 'Due' && 'text-destructive')}>₹{currentData.bill.remaining}</p>
+                                <p className={cn(currentData.status === 'Due' && 'text-destructive')}>₹{currentData.bill.remaining.toLocaleString()}</p>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                <div className="flex-1 flex">
-                    <Card className="h-full flex flex-col flex-1">
-                        <CardHeader>
-                            <CardTitle>{format(month, 'MMMM yyyy')} Attendance</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-1 flex items-center justify-center p-4">
-                            <Calendar
-                                month={month}
-                                onMonthChange={setMonth}
-                                onSelect={undefined} 
-                                showOutsideDays={false}
-                                modifiers={showOctoberVisuals ? {
-                                    fullDay: fullDayDays,
-                                    halfDay: halfDayDays,
-                                    absent: absentDays,
-                                } : {}}
-                                classNames={{
-                                    months: "w-full",
-                                    month: "w-full space-y-4",
-                                    head_cell: "text-foreground/80 w-12 font-normal text-sm",
-                                    cell: "h-12 w-12 text-center text-base p-0 relative",
-                                    day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 rounded-full",
-                                    day_today: "bg-accent text-accent-foreground rounded-full",
-                                }}
-                                modifiersClassNames={{
-                                    fullDay: "bg-chart-2 text-primary-foreground rounded-full",
-                                    halfDay: "bg-chart-3 text-primary-foreground rounded-full",
-                                    absent: "bg-destructive text-destructive-foreground rounded-full",
-                                }}
-                                className="rounded-md border border-border/50 p-3"
-                            />
-                        </CardContent>
-                        <CardFooter>
-                            <div className={cn(
-                                "flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground transition-opacity",
-                                !showOctoberVisuals && "invisible h-[36px]"
-                            )}>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
-                                    <span>Full Day</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
-                                    <span>Half Day</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
-                                    <span>Absent</span>
-                                </div>
+                {/* Calendar Card */}
+                <Card className="flex-1 flex flex-col p-4">
+                    <CardHeader className="p-2">
+                        <CardTitle>Attendance Calendar</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex items-center justify-center p-0">
+                        <Calendar
+                            month={month}
+                            onMonthChange={setMonth}
+                            showOutsideDays={false}
+                            onSelect={undefined} // Disable selection
+                            modifiers={showOctoberVisuals ? {
+                                fullDay: fullDayDays,
+                                halfDay: halfDayDays,
+                                absent: absentDays,
+                            } : {}}
+                            classNames={{
+                                months: "w-full",
+                                month: "w-full space-y-4",
+                                head_cell: "text-foreground/80 w-12 font-normal text-sm",
+                                cell: "h-12 w-12 text-center text-base p-0 relative",
+                                day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 rounded-full",
+                                day_today: "bg-accent text-accent-foreground rounded-full",
+                            }}
+                            modifiersClassNames={{
+                                fullDay: "bg-chart-2 text-primary-foreground rounded-full",
+                                halfDay: "bg-chart-3 text-primary-foreground rounded-full",
+                                absent: "bg-destructive text-destructive-foreground rounded-full",
+                            }}
+                            className="p-3"
+                        />
+                    </CardContent>
+                    <CardFooter className="p-2 pt-4">
+                        <div className={cn(
+                            "flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground transition-opacity",
+                            !showOctoberVisuals && "invisible h-[36px]"
+                        )}>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
+                                <span>Full Day</span>
                             </div>
-                        </CardFooter>
-                    </Card>
-                </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
+                                <span>Half Day</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
+                                <span>Absent</span>
+                            </div>
+                        </div>
+                    </CardFooter>
+                </Card>
             </div>
         </Card>
     );
