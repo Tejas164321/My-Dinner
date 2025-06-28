@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Student } from "@/lib/data";
-import { User, Phone, Home, Calendar as CalendarIcon } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
+import { DialogClose } from "@/components/ui/dialog";
 
 function CustomDayContent({ date, activeModifiers }: DayContentProps) {
     let dots = null;
@@ -50,19 +51,23 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const remainingBill = currentData.bill.total - currentData.bill.paid;
     
     const { fullDaysCount, halfDaysCount, absentDaysCount, totalMealsCount, fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays } = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize to start of day
+
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
         const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
         
-        const attendancePercent = parseFloat(currentData.attendance) / 100;
-
         const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
-        // Simple demo logic: exlcude sundays for calculations
-        const workingDays = allDays.filter(d => d.getDay() !== 0); 
         
-        const totalWorkingDays = workingDays.length;
-        const totalPresentDays = Math.round(totalWorkingDays * attendancePercent);
-        const aDaysCount = totalWorkingDays - totalPresentDays;
+        // Filter out future days from being considered for attendance
+        const pastOrTodayDays = allDays.filter(d => d <= today);
+        
+        const totalConsideredDays = pastOrTodayDays.length;
+        const attendancePercent = parseFloat(currentData.attendance) / 100;
+        
+        const totalPresentDays = totalConsideredDays > 0 ? Math.round(totalConsideredDays * attendancePercent) : 0;
+        const aDaysCount = totalConsideredDays > 0 ? totalConsideredDays - totalPresentDays : 0;
         
         // Demo logic: Assume 90% of present days are full days, rest are half days
         const fDaysCount = Math.round(totalPresentDays * 0.9);
@@ -74,11 +79,11 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             let x = Math.sin(seed + student.id.charCodeAt(0)) * 10000;
             return x - Math.floor(x);
         };
-        const shuffledWorkingDays = [...workingDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
+        const shuffledPastDays = [...pastOrTodayDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
         
-        const fdd = shuffledWorkingDays.slice(0, fDaysCount);
-        const hdd = shuffledWorkingDays.slice(fDaysCount, fDaysCount + hDaysCount);
-        const add = shuffledWorkingDays.slice(fDaysCount + hDaysCount);
+        const fdd = shuffledPastDays.slice(0, fDaysCount);
+        const hdd = shuffledPastDays.slice(fDaysCount, fDaysCount + hDaysCount);
+        const add = shuffledPastDays.slice(fDaysCount + hDaysCount);
         
         // Split half days into lunch only and dinner only for visuals
         const lod = hdd.filter((_, i) => i % 2 === 0);
@@ -97,7 +102,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     }, [month, student.id, currentData.attendance]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full">
+        <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full relative">
             {/* Left Column */}
             <div className="lg:col-span-2 flex flex-col gap-6">
                 <Card>
@@ -192,6 +197,10 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                             <span className="text-muted-foreground">Joined: {student.joinDate}</span>
                         </div>
                     </CardContent>
+                    <DialogClose className="absolute right-4 top-4 rounded-full border border-border w-7 h-7 flex items-center justify-center opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                    </DialogClose>
                 </Card>
                 <Card className="flex-1 flex flex-col">
                     <CardHeader className="p-4 pb-0">
@@ -246,6 +255,6 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </Card>
     );
 }
