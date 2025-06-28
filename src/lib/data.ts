@@ -54,12 +54,12 @@ export const joinRequests = [
 ];
 
 export const joinedStudents = [
-    { id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15', attendance: '95%', bill: '₹0', status: 'Paid', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14', attendance: '88%', bill: '₹3,250', status: 'Due', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13', attendance: '98%', bill: '₹0', status: 'Paid', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12', attendance: '75%', bill: '₹3,250', status: 'Due', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: '8', name: 'Alex Doe', studentId: 'A56789', joinDate: '2023-09-11', attendance: '92%', bill: '₹0', status: 'Paid', avatarUrl: 'https://placehold.co/100x100.png' },
-    { id: '9', name: 'Sara Bell', studentId: 'C12378', joinDate: '2023-09-10', attendance: '99%', bill: '₹0', status: 'Paid', avatarUrl: 'https://placehold.co/100x100.png' },
+    { id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15 10:30 AM', attendance: '95%', bill: '₹0', status: 'Paid', email: 'peter.jones@example.com', contact: '+91 9876543210', roomNo: 'H-101' },
+    { id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14 11:00 AM', attendance: '88%', bill: '₹3,250', status: 'Due', email: 'mary.jane@example.com', contact: '+91 9876543211', roomNo: 'H-102' },
+    { id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13 02:15 PM', attendance: '98%', bill: '₹0', status: 'Paid', email: 'chris.lee@example.com', contact: '+91 9876543212', roomNo: 'H-201' },
+    { id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12 09:00 AM', attendance: '75%', bill: '₹3,250', status: 'Due', email: 'bryan.fury@example.com', contact: '+91 9876543213', roomNo: 'H-202' },
+    { id: '8', name: 'Alex Doe', studentId: 'A56789', joinDate: '2023-09-11 05:45 PM', attendance: '92%', bill: '₹0', status: 'Paid', email: 'alex.doe@example.com', contact: '+91 9876543214', roomNo: 'H-301' },
+    { id: '9', name: 'Sara Bell', studentId: 'C12378', joinDate: '2023-09-10 12:00 PM', attendance: '99%', bill: '₹0', status: 'Paid', email: 'sara.bell@example.com', contact: '+91 9876543215', roomNo: 'H-302' },
 ];
 
 export const menu = {

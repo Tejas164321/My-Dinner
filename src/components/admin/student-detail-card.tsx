@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { joinedStudents } from "@/lib/data";
-import { DollarSign, Percent, Phone, Trash2 } from "lucide-react";
+import { joinedStudents } from "@/lib/data";
+import { DollarSign, Percent, Phone, Trash2, Mail } from "lucide-react";
 
 type Student = (typeof joinedStudents)[number];
 
@@ -23,7 +23,6 @@ export function StudentDetailCard({ student }: { student: Student }) {
         <Card className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-500">
             <div className="lg:col-span-1 flex flex-col items-center text-center gap-4 p-6 bg-secondary/30 rounded-l-xl">
                 <Avatar className="w-24 h-24 border-4 border-primary/20">
-                    
                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
@@ -33,12 +32,14 @@ export function StudentDetailCard({ student }: { student: Student }) {
                 <Badge variant={student.status === 'Paid' ? 'default' : 'destructive'} className="capitalize">{student.status}</Badge>
                  <div className="flex gap-2 pt-4">
                     <Button variant="outline" size="icon" aria-label="Call"><Phone className="h-4 w-4"/></Button>
+                    <Button variant="outline" size="icon" aria-label="Email"><Mail className="h-4 w-4"/></Button>
                     <Button variant="outline" size="icon" aria-label="Remove" className="text-destructive hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
                 </div>
                 <div className="text-left w-full space-y-2 text-sm pt-4 border-t mt-4">
-                    <p><strong>Join Date:</strong> {student.joinDate}</p>
-                    <p><strong>Contact:</strong> +91 12345 67890</p>
-                    <p><strong>Room No:</strong> H-201</p>
+                    <p><strong>Email:</strong> {student.email}</p>
+                    <p><strong>Contact:</strong> {student.contact}</p>
+                    <p><strong>Room No:</strong> {student.roomNo}</p>
+                    <p><strong>Joined:</strong> {student.joinDate}</p>
                 </div>
             </div>
             <div className="lg:col-span-2 grid gap-6 p-6">
