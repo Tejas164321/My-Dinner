@@ -16,7 +16,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { holidays as initialHolidays, Holiday } from '@/lib/data';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
 type LeaveType = 'one_day' | 'long_leave';
@@ -39,6 +38,7 @@ export default function HolidaysPage() {
     const now = new Date();
     setMonth(now);
     setToday(now);
+    setOneDayDate(now);
   }, []);
 
   const upcomingHolidays = useMemo(() => {
@@ -139,17 +139,22 @@ export default function HolidaysPage() {
               <CardTitle>Add New Holiday</CardTitle>
               <CardDescription>Schedule holidays for the mess.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-               <Tabs value={leaveType} onValueChange={(value) => setLeaveType(value as LeaveType)} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="one_day">One Day</TabsTrigger>
-                  <TabsTrigger value="long_leave">Long Leave</TabsTrigger>
-                </TabsList>
-                <TabsContent value="one_day" className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="holiday-name-one">Holiday Name</Label>
-                      <Input id="holiday-name-one" placeholder="e.g., Diwali" value={newHolidayName} onChange={(e) => setNewHolidayName(e.target.value)} />
-                    </div>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Leave Type</Label>
+                  <RadioGroup value={leaveType} onValueChange={(value) => setLeaveType(value as LeaveType)} className="flex gap-4">
+                      <div className="flex items-center space-x-2"><RadioGroupItem value="one_day" id="r_one_day" /><Label htmlFor="r_one_day" className="cursor-pointer">One Day</Label></div>
+                      <div className="flex items-center space-x-2"><RadioGroupItem value="long_leave" id="r_long_leave" /><Label htmlFor="r_long_leave" className="cursor-pointer">Long Leave</Label></div>
+                  </RadioGroup>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="holiday-name">Holiday Name / Reason</Label>
+                  <Input id="holiday-name" placeholder="e.g., Diwali / Semester Break" value={newHolidayName} onChange={(e) => setNewHolidayName(e.target.value)} />
+                </div>
+
+                {leaveType === 'one_day' && (
+                  <div className="space-y-4 animate-in fade-in-0 duration-300">
                     <div className="space-y-2">
                         <Label>Date</Label>
                         <Popover>
@@ -170,51 +175,49 @@ export default function HolidaysPage() {
                           <div className="flex items-center space-x-2"><RadioGroupItem value="dinner_only" id="dinner_only" /><Label htmlFor="dinner_only" className="cursor-pointer">Dinner Off</Label></div>
                         </RadioGroup>
                     </div>
-                </TabsContent>
-                <TabsContent value="long_leave" className="space-y-4 pt-2">
-                   <div className="space-y-2">
-                      <Label htmlFor="holiday-name-long">Holiday Name / Reason</Label>
-                      <Input id="holiday-name-long" placeholder="e.g., Semester Break" value={newHolidayName} onChange={(e) => setNewHolidayName(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Date Range (all considered full day holidays)</Label>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                            <Button
-                                id="date"
-                                variant={"outline"}
-                                className={cn("w-full justify-start text-left font-normal", !longLeaveRange && "text-muted-foreground")}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {longLeaveRange?.from ? (
-                                    longLeaveRange.to ? (
-                                    <>
-                                        {format(longLeaveRange.from, "LLL dd, y")} -{" "}
-                                        {format(longLeaveRange.to, "LLL dd, y")}
-                                    </>
-                                    ) : (
-                                    format(longLeaveRange.from, "LLL dd, y")
-                                    )
+                  </div>
+                )}
+                
+                {leaveType === 'long_leave' && (
+                  <div className="space-y-2 animate-in fade-in-0 duration-300">
+                    <Label>Date Range (all considered full day holidays)</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                        <Button
+                            id="date"
+                            variant={"outline"}
+                            className={cn("w-full justify-start text-left font-normal", !longLeaveRange && "text-muted-foreground")}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {longLeaveRange?.from ? (
+                                longLeaveRange.to ? (
+                                <>
+                                    {format(longLeaveRange.from, "LLL dd, y")} -{" "}
+                                    {format(longLeaveRange.to, "LLL dd, y")}
+                                </>
                                 ) : (
-                                    <span>Pick a date range</span>
-                                )}
-                            </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={longLeaveRange?.from}
-                                selected={longLeaveRange}
-                                onSelect={setLongLeaveRange}
-                                numberOfMonths={2}
-                            />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </TabsContent>
-              </Tabs>
-              <Button onClick={handleAddHoliday} className="w-full">
+                                format(longLeaveRange.from, "LLL dd, y")
+                                )
+                            ) : (
+                                <span>Pick a date range</span>
+                            )}
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={longLeaveRange?.from}
+                            selected={longLeaveRange}
+                            onSelect={setLongLeaveRange}
+                            numberOfMonths={2}
+                        />
+                        </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
+
+              <Button onClick={handleAddHoliday} className="w-full !mt-8">
                 <Plus className="mr-2 h-4 w-4" /> Add Holiday(s)
               </Button>
             </CardContent>
