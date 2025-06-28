@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { joinedStudents } from "@/lib/data";
-import { DollarSign, Percent, Phone, Trash2, Mail } from "lucide-react";
+import { DollarSign, Percent } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Student = (typeof joinedStudents)[number];
 
@@ -29,12 +30,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                     <h2 className="text-2xl font-bold">{student.name}</h2>
                     <p className="text-muted-foreground">{student.studentId}</p>
                 </div>
-                <Badge variant={student.status === 'Paid' ? 'default' : 'destructive'} className="capitalize">{student.status}</Badge>
-                 <div className="flex gap-2 pt-4">
-                    <Button variant="outline" size="icon" aria-label="Call"><Phone className="h-4 w-4"/></Button>
-                    <Button variant="outline" size="icon" aria-label="Email"><Mail className="h-4 w-4"/></Button>
-                    <Button variant="outline" size="icon" aria-label="Remove" className="text-destructive hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4"/></Button>
-                </div>
+                <Badge variant={student.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize">{student.status}</Badge>
                 <div className="text-left w-full space-y-2 text-sm pt-4 border-t mt-4">
                     <p><strong>Email:</strong> {student.email}</p>
                     <p><strong>Contact:</strong> {student.contact}</p>
@@ -54,13 +50,13 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             <p className="text-xs text-muted-foreground">in current month</p>
                         </CardContent>
                     </Card>
-                     <Card>
+                     <Card className={cn(student.status === 'Due' && 'border-destructive/50')}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Amount Due</CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{student.bill}</div>
+                            <div className={cn("text-2xl font-bold", student.status === 'Due' && "text-destructive")}>{student.bill}</div>
                              <p className="text-xs text-muted-foreground">for this month</p>
                         </CardContent>
                     </Card>
@@ -70,7 +66,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         <CardTitle>October 2023 Attendance</CardTitle>
                         <CardDescription>A visual log of meals attended this month.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex justify-center">
+                    <CardContent className="flex flex-col items-center gap-4">
                         <Calendar
                             mode="multiple"
                             selected={attendedDays}
@@ -80,12 +76,26 @@ export function StudentDetailCard({ student }: { student: Student }) {
                                 onLeave: onLeaveDays,
                             }}
                             modifiersClassNames={{
-                                selected: "bg-primary text-primary-foreground",
-                                absent: "bg-destructive/80 text-destructive-foreground",
-                                onLeave: "bg-yellow-500/80 text-yellow-900",
+                                selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
+                                absent: "bg-destructive text-destructive-foreground",
+                                onLeave: "bg-chart-3 text-white",
                             }}
-                            className="p-0"
+                            className="p-0 rounded-md border"
                         />
+                        <div className="flex w-full justify-center gap-x-6 gap-y-2 flex-wrap pt-4 border-t text-muted-foreground">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                                <span>Attended</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="h-2.5 w-2.5 rounded-full bg-destructive" />
+                                <span>Absent</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="h-2.5 w-2.5 rounded-full bg-chart-3" />
+                                <span>On Leave</span>
+                            </div>
+                        </div>
                     </CardContent>
                  </Card>
             </div>
