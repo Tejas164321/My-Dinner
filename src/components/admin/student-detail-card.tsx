@@ -115,27 +115,29 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <CardHeader className="p-4 pb-2">
                             <CardTitle className="text-lg">Attendance Summary</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-col h-full space-y-3 p-4 pt-2">
-                            <div className="flex-1 flex flex-col justify-center items-center text-center">
-                                <p className="text-5xl font-bold text-primary">{currentData.attendance}</p>
-                                <p className="text-xs text-muted-foreground mt-1">Monthly Attendance</p>
+                        <CardContent className="flex flex-col h-full justify-between p-4 pt-2">
+                            <div>
+                                <div className="text-center">
+                                    <p className="text-5xl font-bold text-primary">{currentData.attendance}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Monthly Attendance</p>
+                                </div>
+                                <Separator className="my-3" />
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Full Days</p>
+                                        <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Half Days</p>
+                                        <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Absent</p>
+                                        <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
+                                    </div>
+                                </div>
                             </div>
-                            <Separator/>
-                            <div className="grid grid-cols-3 gap-2 text-center">
-                                <div>
-                                    <p className="text-muted-foreground text-xs">Full Days</p>
-                                    <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground text-xs">Half Days</p>
-                                    <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground text-xs">Absent</p>
-                                    <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                            <div className="flex justify-between items-center p-3 bg-secondary rounded-lg mt-3">
                                 <span className="font-semibold text-foreground">Total Meals Taken</span>
                                 <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
                             </div>
