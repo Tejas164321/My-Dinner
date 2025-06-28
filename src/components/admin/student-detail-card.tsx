@@ -16,9 +16,9 @@ export function StudentDetailCard({ student }: { student: Student }) {
     const today = new Date(2023, 9, 27); // Oct 27, 2023
 
     // Mock data for calendar
-    const attendedDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 4), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 18), new Date(2023, 9, 20), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
-    const absentDays = [new Date(2023, 9, 5), new Date(2023, 9, 19)];
-    const onLeaveDays = [new Date(2023, 9, 10), new Date(2023, 9, 11)];
+    const bothMealsDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
+    const oneMealDays = [new Date(2023, 9, 4), new Date(2023, 9, 18), new Date(2023, 9, 20)];
+    const absentDays = [new Date(2023, 9, 5), new Date(2023, 9, 10), new Date(2023, 9, 11), new Date(2023, 9, 19)];
 
     return (
         <Card className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-500">
@@ -69,31 +69,32 @@ export function StudentDetailCard({ student }: { student: Student }) {
                     <CardContent className="flex flex-col items-center gap-4">
                         <Calendar
                             mode="multiple"
-                            selected={attendedDays}
+                            disabled
                             defaultMonth={today}
                             modifiers={{
+                                bothMeals: bothMealsDays,
+                                oneMeal: oneMealDays,
                                 absent: absentDays,
-                                onLeave: onLeaveDays,
                             }}
                             modifiersClassNames={{
-                                selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground",
-                                absent: "bg-destructive text-destructive-foreground",
-                                onLeave: "bg-chart-3 text-white",
+                                bothMeals: "bg-chart-2 text-white hover:bg-chart-2/90 focus:bg-chart-2 focus:text-white",
+                                oneMeal: "bg-chart-3 text-white hover:bg-chart-3/90 focus:bg-chart-3 focus:text-white",
+                                absent: "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:bg-destructive focus:text-destructive-foreground",
                             }}
                             className="p-0 rounded-md border"
                         />
                         <div className="flex w-full justify-center gap-x-6 gap-y-2 flex-wrap pt-4 border-t text-muted-foreground">
                             <div className="flex items-center gap-2 text-sm">
-                                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                                <span>Attended</span>
+                                <span className="h-2.5 w-2.5 rounded-full bg-chart-2" />
+                                <span>Both Meals</span>
+                            </div>
+                             <div className="flex items-center gap-2 text-sm">
+                                <span className="h-2.5 w-2.5 rounded-full bg-chart-3" />
+                                <span>One Meal</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                                 <span className="h-2.5 w-2.5 rounded-full bg-destructive" />
                                 <span>Absent</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <span className="h-2.5 w-2.5 rounded-full bg-chart-3" />
-                                <span>On Leave</span>
                             </div>
                         </div>
                     </CardContent>
