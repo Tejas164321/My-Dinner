@@ -171,11 +171,12 @@ export const dailyMenus: Map<string, DailyMenu> = new Map(pastMenus);
 export interface Holiday {
     date: Date;
     name: string;
+    type: 'full_day' | 'lunch_only' | 'dinner_only';
 }
 
 export const holidays: Holiday[] = [
-    { date: new Date(2023, 9, 2), name: 'Gandhi Jayanti' },
-    { date: new Date(2023, 9, 24), name: 'Dussehra' },
-    { date: new Date(2023, 10, 12), name: 'Diwali' },
-    { date: new Date(2023, 11, 25), name: 'Christmas' },
+    { date: new Date(2023, 9, 2), name: 'Gandhi Jayanti', type: 'full_day' },
+    { date: new Date(2023, 9, 24), name: 'Dussehra', type: 'full_day' },
+    { date: new Date(2023, 10, 12), name: 'Diwali', type: 'full_day' },
+    { date: new Date(2023, 11, 25), name: 'Christmas', type: 'full_day' },
 ];
