@@ -167,3 +167,15 @@ const pastMenus: [string, DailyMenu][] = [
 
 // Key: 'YYYY-MM-DD'
 export const dailyMenus: Map<string, DailyMenu> = new Map(pastMenus);
+
+export interface Holiday {
+    date: Date;
+    name: string;
+}
+
+export const holidays: Holiday[] = [
+    { date: new Date(2023, 9, 2), name: 'Gandhi Jayanti' },
+    { date: new Date(2023, 9, 24), name: 'Dussehra' },
+    { date: new Date(2023, 10, 12), name: 'Diwali' },
+    { date: new Date(2023, 11, 25), name: 'Christmas' },
+];
