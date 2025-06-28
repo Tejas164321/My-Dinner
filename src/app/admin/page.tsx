@@ -7,13 +7,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserCheck, TrendingUp, FileText, Settings, Bell, Utensils } from 'lucide-react';
+import { Users, UserCheck, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays } from 'lucide-react';
 import { AttendanceChart } from '@/components/admin/analytics-charts';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
+import { holidays } from '@/lib/data';
+import { isFuture, format } from 'date-fns';
 
 export default function AdminDashboard() {
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
@@ -25,6 +28,8 @@ export default function AdminDashboard() {
       setMealInfo({ title: "Today's Dinner Count", count: 105 });
     }
   }, []);
+
+  const upcomingHolidays = holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'));
 
   return (
     <div className="flex flex-col gap-8">
@@ -146,6 +151,27 @@ export default function AdminDashboard() {
                     <div className="text-2xl font-mono tracking-widest text-primary">XF4G8K</div>
                     <Button size="sm" variant="default">Regenerate</Button>
                 </CardContent>
+            </Card>
+
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-600">
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Holiday Management</CardTitle>
+                        <CardDescription>Upcoming declared holidays.</CardDescription>
+                    </div>
+                    <CalendarDays className="h-6 w-6 text-primary" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-4xl font-bold">{upcomingHolidays.length}</p>
+                    <p className="text-xs text-muted-foreground">Total upcoming holidays scheduled.</p>
+                </CardContent>
+                <CardFooter>
+                    <Button asChild className="w-full">
+                        <Link href="/admin/holidays">
+                            Manage Holidays
+                        </Link>
+                    </Button>
+                </CardFooter>
             </Card>
         </div>
       </div>
