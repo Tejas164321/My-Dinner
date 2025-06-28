@@ -116,7 +116,7 @@ export default function HolidaysPage() {
                       months: 'w-full',
                       month: 'w-full space-y-4',
                   }}
-                  showOutsideDays
+                  showOutsideDays={false}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
