@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import type { DayContentProps } from "react-day-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
@@ -13,10 +14,37 @@ import { Separator } from "@/components/ui/separator";
 
 type Student = (typeof joinedStudents)[number];
 
-// Demo data for different months
+// Demo data for different attendance types for October 2023
 const fullDayDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
-const halfDayDays = [new Date(2023, 9, 4), new Date(2023, 9, 18), new Date(2023, 9, 20)];
+const lunchOnlyDays = [new Date(2023, 9, 4), new Date(2023, 9, 20)];
+const dinnerOnlyDays = [new Date(2023, 9, 18)];
 const absentDays = [new Date(2023, 9, 5), new Date(2023, 9, 10), new Date(2023, 9, 11), new Date(2023, 9, 19)];
+
+
+function CustomDayContent({ date, activeModifiers }: DayContentProps) {
+    let dots = null;
+
+    if (activeModifiers.fullDay) {
+        dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white" /></>;
+    } else if (activeModifiers.lunchOnly) {
+        dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
+    } else if (activeModifiers.dinnerOnly) {
+        dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white" /></>;
+    } else if (activeModifiers.absent) {
+        dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
+    }
+
+    return (
+        <div className="relative h-full w-full flex items-center justify-center">
+            {date.getDate()}
+            {dots && (
+                <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
+                    {dots}
+                </div>
+            )}
+        </div>
+    );
+}
 
 export function StudentDetailCard({ student }: { student: Student }) {
     const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
@@ -38,7 +66,6 @@ export function StudentDetailCard({ student }: { student: Student }) {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-            {/* Left Column */}
             <div className="lg:col-span-1 flex flex-col gap-6">
                 <Card>
                     <CardContent className="p-6 flex flex-col items-center text-center gap-4">
@@ -49,7 +76,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             <h2 className="text-2xl font-bold">{student.name}</h2>
                             <p className="text-muted-foreground">{student.studentId}</p>
                         </div>
-                         <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
+                        <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
                     </CardContent>
                 </Card>
                 <Card>
@@ -82,7 +109,6 @@ export function StudentDetailCard({ student }: { student: Student }) {
                 </Card>
             </div>
 
-            {/* Right Column */}
             <div className="lg:col-span-2 flex flex-col gap-6">
                  <Card>
                     <CardHeader>
@@ -117,25 +143,28 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             onMonthChange={setMonth}
                             modifiers={showOctoberVisuals ? {
                                 fullDay: fullDayDays,
-                                halfDay: halfDayDays,
+                                lunchOnly: lunchOnlyDays,
+                                dinnerOnly: dinnerOnlyDays,
                                 absent: absentDays,
                             } : {}}
+                            components={{ DayContent: CustomDayContent }}
                             modifiersClassNames={{
                                 fullDay: "bg-chart-2 text-primary-foreground rounded-full",
-                                halfDay: "bg-chart-3 text-primary-foreground rounded-full",
+                                lunchOnly: "bg-chart-3 text-primary-foreground rounded-full",
+                                dinnerOnly: "bg-chart-3 text-primary-foreground rounded-full",
                                 absent: "bg-destructive text-destructive-foreground rounded-full",
                             }}
                             classNames={{
                                 months: "w-full",
                                 month: "w-full space-y-4",
-                                head_cell: "text-muted-foreground w-9 font-normal text-sm",
+                                head_cell: "text-muted-foreground w-full font-normal text-sm",
                                 cell: "h-9 w-9 text-center text-sm p-0 relative",
                                 day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center",
                                 day_today: "bg-accent text-accent-foreground rounded-full",
+                                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                             }}
                             className="p-3"
                             showOutsideDays={false}
-                            disableNavigation
                         />
                     </CardContent>
                     <CardContent className="p-4 pt-2 mt-auto">
