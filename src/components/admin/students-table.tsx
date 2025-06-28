@@ -75,7 +75,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                         <div className="flex items-center gap-2">
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="outline" size="icon" className="h-9 w-9 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10 border-yellow-400/50 hover:border-yellow-400/80">
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-yellow-400 hover:text-yellow-500 hover:bg-yellow-500/10">
                                         <UserX className="h-4 w-4" />
                                     </Button>
                                 </AlertDialogTrigger>
@@ -94,7 +94,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                             </AlertDialog>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="icon" className="h-9 w-9">
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </AlertDialogTrigger>
