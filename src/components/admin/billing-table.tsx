@@ -50,7 +50,7 @@ export function BillingTable({ filterMonth }: BillingTableProps) {
                         <CardDescription>Students with outstanding dues for {filterMonth.charAt(0).toUpperCase() + filterMonth.slice(1)}.</CardDescription>
                     </div>
                     {dueStudents.length > 0 && (
-                        <Button>
+                        <Button variant="outline">
                             <Bell className="h-4 w-4 mr-1.5" /> Remind All
                         </Button>
                     )}
