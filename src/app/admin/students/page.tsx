@@ -1,4 +1,11 @@
 import { StudentsTable } from '@/components/admin/students-table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AdminStudentsPage() {
   return (
@@ -7,6 +14,19 @@ export default function AdminStudentsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
           <p className="text-muted-foreground">Approve new student requests and manage existing students.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Select defaultValue="this-month">
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="this-month">This Month</SelectItem>
+              <SelectItem value="last-month">Last Month</SelectItem>
+              <SelectItem value="2-months-ago">2 Months Ago</SelectItem>
+              <SelectItem value="3-months-ago">3 Months Ago</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <StudentsTable />

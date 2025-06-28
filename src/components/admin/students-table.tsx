@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -21,12 +21,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export function StudentsTable() {
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Student Roster</CardTitle>
-                <CardDescription>Manage student profiles and view their details.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Tabs defaultValue="joined">
+            <CardContent className="pt-6">
+                <Tabs defaultValue="joined" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="joined">All Students</TabsTrigger>
                         <TabsTrigger value="requests">Join Requests <Badge variant="secondary" className="ml-2">{joinRequests.length}</Badge></TabsTrigger>
