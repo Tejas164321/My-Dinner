@@ -59,13 +59,13 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
             {/* Left Column */}
             <div className="flex flex-col gap-6">
                 <Card>
-                    <CardContent className="p-6 flex items-center gap-4">
-                        <Avatar className="w-20 h-20 border-4 border-primary/20">
-                            <AvatarFallback className="text-3xl">{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <CardContent className="p-6 flex items-start gap-4">
+                        <Avatar className="w-16 h-16 border-4 border-primary/20">
+                            <AvatarFallback className="text-2xl">{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-1">
                             <h2 className="text-2xl font-bold">{student.name}</h2>
@@ -74,37 +74,35 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
                     </CardContent>
                 </Card>
-                <div className="grid grid-cols-2 gap-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Attendance</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold">{currentData.attendance}</div>
-                            <p className="text-sm text-muted-foreground">This Month</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Billing</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Total:</span>
-                                <span>₹{currentData.bill.total.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Paid:</span>
-                                <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
-                            </div>
-                             <Separator/>
-                            <div className="flex justify-between font-semibold">
-                                <span className="text-foreground">Remaining:</span>
-                                <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Attendance</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold">{currentData.attendance}</div>
+                        <p className="text-sm text-muted-foreground">This Month</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Billing</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Total:</span>
+                            <span>₹{currentData.bill.total.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Paid:</span>
+                            <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
+                        </div>
+                         <Separator/>
+                        <div className="flex justify-between font-semibold">
+                            <span className="text-foreground">Remaining:</span>
+                            <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Right Column */}
