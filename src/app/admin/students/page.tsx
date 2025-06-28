@@ -1,6 +1,4 @@
 import { StudentsTable } from '@/components/admin/students-table';
-import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
 
 export default function AdminStudentsPage() {
   return (
@@ -10,10 +8,6 @@ export default function AdminStudentsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
           <p className="text-muted-foreground">Approve new student requests and manage existing students.</p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Student
-        </Button>
       </div>
       <StudentsTable />
     </div>
