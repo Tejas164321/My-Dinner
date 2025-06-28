@@ -97,7 +97,7 @@ export function MenuSchedule() {
     };
     
     const renderMenuTags = (items: string[], meal: 'lunch' | 'dinner') => (
-        <div className="flex flex-wrap gap-2 rounded-lg border bg-background/50 p-3 min-h-[80px]">
+        <div className="flex flex-wrap gap-2 rounded-lg border bg-background/50 p-3 min-h-[120px]">
             {items.map((item, index) => (
                 <Badge key={`${meal}-${index}`} variant="secondary" className="text-base py-1 px-3 flex items-center gap-2">
                     {item}
@@ -114,48 +114,49 @@ export function MenuSchedule() {
     
     return (
         <div className="flex flex-col gap-8">
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                            <Utensils className="h-6 w-6 text-primary"/>
-                            <div>
-                                <CardTitle>Set Meal Menu</CardTitle>
-                                <CardDescription>Select a date and set the menu for lunch and dinner.</CardDescription>
-                            </div>
-                        </div>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn("w-[280px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                            </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                            <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={(date) => date && setSelectedDate(startOfDay(date))}
-                                initialFocus
-                            />
-                            </PopoverContent>
-                        </Popover>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <Utensils className="h-6 w-6 text-primary"/>
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">Set Meal Menu</h2>
+                        <p className="text-muted-foreground">Select a date to view or edit its menu.</p>
                     </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {/* Lunch Editor */}
-                    <div className="space-y-4">
+                </div>
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        variant={"outline"}
+                        className={cn("w-[280px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => date && setSelectedDate(startOfDay(date))}
+                        initialFocus
+                    />
+                    </PopoverContent>
+                </Popover>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                {/* Lunch Card */}
+                <Card className="flex flex-col h-full">
+                    <CardHeader>
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold">Lunch Menu</h3>
+                            <CardTitle>Lunch Menu</CardTitle>
                             {isEditing ? (
-                                isEditing === 'lunch' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save All</Button></div>
+                                isEditing === 'lunch' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button></div>
                             ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit Lunch</Button>
+                                <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
                             )}
                         </div>
+                    </CardHeader>
+                    <CardContent className="flex-grow space-y-4">
                         {renderMenuTags(isEditing === 'lunch' ? tempLunchItems : lunchItems, 'lunch')}
                         {isEditing === 'lunch' && (
                             <div className="space-y-3">
@@ -178,18 +179,22 @@ export function MenuSchedule() {
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </CardContent>
+                </Card>
 
-                    {/* Dinner Editor */}
-                        <div className="space-y-4">
+                {/* Dinner Card */}
+                <Card className="flex flex-col h-full">
+                    <CardHeader>
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold">Dinner Menu</h3>
+                            <CardTitle>Dinner Menu</CardTitle>
                             {isEditing ? (
-                                isEditing === 'dinner' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save All</Button></div>
+                                isEditing === 'dinner' && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button><Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button></div>
                             ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit Dinner</Button>
+                                <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
                             )}
                         </div>
+                    </CardHeader>
+                    <CardContent className="flex-grow space-y-4">
                         {renderMenuTags(isEditing === 'dinner' ? tempDinnerItems : dinnerItems, 'dinner')}
                         {isEditing === 'dinner' && (
                             <div className="space-y-3">
@@ -212,9 +217,9 @@ export function MenuSchedule() {
                                 </div>
                             </div>
                         )}
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </div>
 
             <Card>
                 <CardHeader>
