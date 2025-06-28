@@ -2,7 +2,6 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { joinedStudents } from "@/lib/data";
@@ -21,8 +20,8 @@ export function StudentDetailCard({ student }: { student: Student }) {
     const absentDays = [new Date(2023, 9, 5), new Date(2023, 9, 10), new Date(2023, 9, 11), new Date(2023, 9, 19)];
 
     return (
-        <Card className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-500">
-            <div className="lg:col-span-1 flex flex-col items-center text-center gap-4 p-6 bg-secondary/30 rounded-l-xl">
+        <Card className="grid grid-cols-1 lg:grid-cols-3 gap-0 lg:gap-6 animate-in fade-in-0 duration-500 overflow-hidden">
+            <div className="lg:col-span-1 flex flex-col items-center text-center gap-4 p-6 bg-secondary/30">
                 <Avatar className="w-24 h-24 border-4 border-primary/20">
                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                 </Avatar>
@@ -66,7 +65,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         <CardTitle>October 2023 Attendance</CardTitle>
                         <CardDescription>A visual log of meals attended this month.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col items-center gap-4">
+                    <CardContent className="grid gap-6 md:grid-cols-3">
                         <Calendar
                             mode="multiple"
                             disabled
@@ -77,24 +76,27 @@ export function StudentDetailCard({ student }: { student: Student }) {
                                 absent: absentDays,
                             }}
                             modifiersClassNames={{
-                                bothMeals: "bg-chart-2 text-white hover:bg-chart-2/90 focus:bg-chart-2 focus:text-white",
-                                oneMeal: "bg-chart-3 text-white hover:bg-chart-3/90 focus:bg-chart-3 focus:text-white",
-                                absent: "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus:bg-destructive focus:text-destructive-foreground",
+                                bothMeals: "bg-chart-2 text-primary-foreground rounded-full",
+                                oneMeal: "bg-chart-3 text-primary-foreground rounded-full",
+                                absent: "bg-destructive text-destructive-foreground rounded-full",
                             }}
-                            className="p-0 rounded-md border"
+                            className="rounded-md border p-3 md:col-span-2"
                         />
-                        <div className="flex w-full justify-center gap-x-6 gap-y-2 flex-wrap pt-4 border-t text-muted-foreground">
-                            <div className="flex items-center gap-2 text-sm">
-                                <span className="h-2.5 w-2.5 rounded-full bg-chart-2" />
-                                <span>Both Meals</span>
-                            </div>
-                             <div className="flex items-center gap-2 text-sm">
-                                <span className="h-2.5 w-2.5 rounded-full bg-chart-3" />
-                                <span>One Meal</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <span className="h-2.5 w-2.5 rounded-full bg-destructive" />
-                                <span>Absent</span>
+                        <div className="flex flex-col gap-4 rounded-lg border bg-secondary/30 p-4 md:col-span-1">
+                            <h4 className="font-semibold text-center md:text-left">Legend</h4>
+                            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-3">
+                                    <span className="h-3 w-3 shrink-0 rounded-full bg-chart-2" />
+                                    <span>Both Meals</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="h-3 w-3 shrink-0 rounded-full bg-chart-3" />
+                                    <span>One Meal</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="h-3 w-3 shrink-0 rounded-full bg-destructive" />
+                                    <span>Absent</span>
+                                </div>
                             </div>
                         </div>
                     </CardContent>
