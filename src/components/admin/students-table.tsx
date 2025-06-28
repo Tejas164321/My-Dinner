@@ -59,7 +59,7 @@ export function StudentsTable() {
                                             </CardContent>
                                         </Card>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-4xl p-0 border-0 bg-transparent shadow-none">
+                                    <DialogContent className="max-w-4xl p-4 border-0 bg-transparent shadow-none max-h-[90vh] overflow-y-auto">
                                         <DialogHeader className="sr-only">
                                             <DialogTitle>Student Details: {student.name}</DialogTitle>
                                             <DialogDescription>
