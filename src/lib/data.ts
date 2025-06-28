@@ -53,13 +53,68 @@ export const joinRequests = [
     { id: '3', name: 'Sam Wilson', studentId: 'B54321', date: '2023-10-26' },
 ];
 
-export const joinedStudents = [
-    { id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15 10:30 AM', attendance: '95%', bill: '₹0', status: 'Paid', email: 'peter.jones@example.com', contact: '+91 9876543210', roomNo: 'H-101' },
-    { id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14 11:00 AM', attendance: '88%', bill: '₹3,250', status: 'Due', email: 'mary.jane@example.com', contact: '+91 9876543211', roomNo: 'H-102' },
-    { id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13 02:15 PM', attendance: '98%', bill: '₹0', status: 'Paid', email: 'chris.lee@example.com', contact: '+91 9876543212', roomNo: 'H-201' },
-    { id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12 09:00 AM', attendance: '75%', bill: '₹3,250', status: 'Due', email: 'bryan.fury@example.com', contact: '+91 9876543213', roomNo: 'H-202' },
-    { id: '8', name: 'Alex Doe', studentId: 'A56789', joinDate: '2023-09-11 05:45 PM', attendance: '92%', bill: '₹0', status: 'Paid', email: 'alex.doe@example.com', contact: '+91 9876543214', roomNo: 'H-301' },
-    { id: '9', name: 'Sara Bell', studentId: 'C12378', joinDate: '2023-09-10 12:00 PM', attendance: '99%', bill: '₹0', status: 'Paid', email: 'sara.bell@example.com', contact: '+91 9876543215', roomNo: 'H-302' },
+export const monthMap: { [key: string]: Date } = {
+  'july': new Date(2023, 6, 1),
+  'august': new Date(2023, 7, 1),
+  'september': new Date(2023, 8, 1),
+  'october': new Date(2023, 9, 1),
+};
+
+export const studentsData = [
+    { 
+        id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15', email: 'peter.jones@example.com', contact: '+91 9876543210', roomNo: 'H-101',
+        monthlyDetails: {
+            'october': { attendance: '92%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
+            'september': { attendance: '95%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
+            'august': { attendance: '91%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
+            'july': { attendance: '90%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+        }
+    },
+    { 
+        id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14', email: 'mary.jane@example.com', contact: '+91 9876543211', roomNo: 'H-102',
+        monthlyDetails: {
+            'october': { attendance: '88%', bill: { total: 3250, paid: 0 }, status: 'Due' },
+            'september': { attendance: '90%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
+            'august': { attendance: '85%', bill: { total: 3150, paid: 0 }, status: 'Due' },
+            'july': { attendance: '89%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+        }
+    },
+    { 
+        id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13', email: 'chris.lee@example.com', contact: '+91 9876543212', roomNo: 'H-201',
+        monthlyDetails: {
+            'october': { attendance: '98%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
+            'september': { attendance: '96%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
+            'august': { attendance: '99%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
+            'july': { attendance: '97%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+        }
+    },
+    { 
+        id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12', email: 'bryan.fury@example.com', contact: '+91 9876543213', roomNo: 'H-202',
+        monthlyDetails: {
+            'october': { attendance: '75%', bill: { total: 3250, paid: 0 }, status: 'Due' },
+            'september': { attendance: '80%', bill: { total: 3250, paid: 0 }, status: 'Due' },
+            'august': { attendance: '78%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
+            'july': { attendance: '82%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+        }
+    },
+    { 
+        id: '8', name: 'Alex Doe', studentId: 'A56789', joinDate: '2023-09-11', email: 'alex.doe@example.com', contact: '+91 9876543214', roomNo: 'H-301',
+        monthlyDetails: {
+            'october': { attendance: '92%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
+            'september': { attendance: '94%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
+            'august': { attendance: '93%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
+            'july': { attendance: '95%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+        }
+    },
+    { 
+        id: '9', name: 'Sara Bell', studentId: 'C12378', joinDate: '2023-09-10', email: 'sara.bell@example.com', contact: '+91 9876543215', roomNo: 'H-302',
+        monthlyDetails: {
+            'october': { attendance: '99%', bill: { total: 3250, paid: 0 }, status: 'Due' },
+            'september': { attendance: '100%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
+            'august': { attendance: '98%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
+            'july': { attendance: '99%', bill: { total: 3200, paid: 0 }, status: 'Due' },
+        }
+    },
 ];
 
 export const menu = {

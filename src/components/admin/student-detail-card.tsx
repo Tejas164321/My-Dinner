@@ -5,14 +5,14 @@ import type { DayContentProps } from "react-day-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { joinedStudents } from "@/lib/data";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { studentsData } from "@/lib/data";
 import { User, Phone, Home, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
 
-type Student = (typeof joinedStudents)[number];
+type Student = (typeof studentsData)[number];
 
 // Demo data for different attendance types for October 2023
 const fullDayDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
@@ -46,26 +46,23 @@ function CustomDayContent({ date, activeModifiers }: DayContentProps) {
     );
 }
 
-export function StudentDetailCard({ student }: { student: Student }) {
-    const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
+interface StudentDetailCardProps {
+    student: Student;
+    initialMonth: Date;
+}
 
-    const historicalData: { [key: string]: { attendance: string; bill: { total: number; paid: number; }; status: 'Paid' | 'Due' } } = {
-        '2023-07': { attendance: '90%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
-        '2023-08': { attendance: '88%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
-        '2023-09': { attendance: '95%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-        '2023-10': student.status === 'Due'
-            ? { attendance: student.attendance, bill: { total: 3250, paid: 0 }, status: 'Due' }
-            : { attendance: student.attendance, bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-    };
+export function StudentDetailCard({ student, initialMonth }: StudentDetailCardProps) {
+    const [month, setMonth] = useState<Date>(initialMonth);
 
-    const monthKey = format(month, 'yyyy-MM');
-    const currentData = historicalData[monthKey] || { attendance: 'N/A', bill: { total: 0, paid: 0 }, status: 'Paid' };
+    const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
+    const currentData = student.monthlyDetails[monthName] || { attendance: 'N/A', bill: { total: 0, paid: 0 }, status: 'Paid' };
     const remainingBill = currentData.bill.total - currentData.bill.paid;
     
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+            {/* Left Column */}
             <div className="lg:col-span-1 flex flex-col gap-6">
                 <Card>
                     <CardContent className="p-6 flex flex-col items-center text-center gap-4">
@@ -109,6 +106,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                 </Card>
             </div>
 
+            {/* Right Column */}
             <div className="lg:col-span-2 flex flex-col gap-6">
                  <Card>
                     <CardHeader>

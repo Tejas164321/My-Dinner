@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { StudentsTable } from '@/components/admin/students-table';
 import {
   Select,
@@ -8,6 +11,9 @@ import {
 } from "@/components/ui/select";
 
 export default function AdminStudentsPage() {
+  const [month, setMonth] = useState('october');
+  const [status, setStatus] = useState('all');
+
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 duration-500">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -16,7 +22,7 @@ export default function AdminStudentsPage() {
           <p className="text-muted-foreground">Approve new student requests and manage existing students.</p>
         </div>
         <div className="flex items-center gap-4">
-          <Select defaultValue="october">
+          <Select value={month} onValueChange={setMonth}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
@@ -27,9 +33,19 @@ export default function AdminStudentsPage() {
               <SelectItem value="july">July</SelectItem>
             </SelectContent>
           </Select>
+           <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Paid">Paid</SelectItem>
+              <SelectItem value="Due">Due</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-      <StudentsTable />
+      <StudentsTable filterMonth={month} filterStatus={status} />
     </div>
   );
 }

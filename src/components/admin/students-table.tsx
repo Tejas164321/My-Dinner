@@ -1,10 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { joinedStudents, joinRequests } from "@/lib/data";
+import { studentsData, joinRequests, monthMap } from "@/lib/data";
 import { Check, X, MoreVertical } from "lucide-react";
 import {
   Dialog,
@@ -12,13 +13,31 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { StudentDetailCard } from "./student-detail-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from '@/lib/utils';
 
-export function StudentsTable() {
+interface StudentsTableProps {
+    filterMonth: string;
+    filterStatus: string;
+}
+
+export function StudentsTable({ filterMonth, filterStatus }: StudentsTableProps) {
+
+    const filteredStudents = useMemo(() => {
+        return studentsData.filter(student => {
+            if (filterStatus === 'all') {
+                return true;
+            }
+            const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
+            return monthDetails?.status === filterStatus;
+        });
+    }, [filterMonth, filterStatus]);
+
+    const initialDate = useMemo(() => monthMap[filterMonth], [filterMonth]);
+
     return (
         <Card>
             <CardContent className="pt-6">
@@ -29,7 +48,12 @@ export function StudentsTable() {
                     </TabsList>
                     <TabsContent value="joined" className="mt-4">
                         <div className="flex flex-col gap-4">
-                            {joinedStudents.map((student) => (
+                            {filteredStudents.map((student) => {
+                                const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
+                                const billAmount = monthDetails.bill.total - monthDetails.bill.paid;
+                                const billDisplay = billAmount > 0 ? `₹${billAmount.toLocaleString()}` : '₹0';
+                                
+                                return (
                                 <Dialog key={student.id}>
                                     <DialogTrigger asChild>
                                         <Card className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all duration-300 group animate-in fade-in-0">
@@ -44,32 +68,32 @@ export function StudentsTable() {
                                                     </div>
                                                     <div className="text-center hidden sm:block">
                                                         <p className="text-xs text-muted-foreground">Attendance</p>
-                                                        <p className="font-semibold">{student.attendance}</p>
+                                                        <p className="font-semibold">{monthDetails.attendance}</p>
                                                     </div>
                                                     <div className="text-center hidden sm:block">
                                                         <p className="text-xs text-muted-foreground">Bill</p>
-                                                        <Badge variant={student.status === 'Paid' ? 'secondary' : 'destructive'}>{student.bill}</Badge>
+                                                        <Badge variant={monthDetails.status === 'Paid' ? 'secondary' : 'destructive'} className={cn(monthDetails.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{billDisplay}</Badge>
                                                     </div>
                                                     <div className="text-center hidden sm:block">
                                                         <p className="text-xs text-muted-foreground">Joined</p>
-                                                        <p className="font-semibold">{student.joinDate.split(' ')[0]}</p>
+                                                        <p className="font-semibold">{student.joinDate}</p>
                                                     </div>
                                                 </div>
                                                 <MoreVertical className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 ml-4"/>
                                             </CardContent>
                                         </Card>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-5xl border-0 bg-transparent shadow-none p-0">
+                                    <DialogContent className="max-w-6xl w-full p-4 sm:p-6 md:p-8 border-0 bg-transparent shadow-none">
                                         <DialogHeader className="sr-only">
                                             <DialogTitle>Student Details: {student.name}</DialogTitle>
                                             <DialogDescription>
                                                 Detailed information for {student.name}, including personal info, attendance, and billing.
                                             </DialogDescription>
                                         </DialogHeader>
-                                        <StudentDetailCard student={student} />
+                                        <StudentDetailCard student={student} initialMonth={initialDate} />
                                     </DialogContent>
                                 </Dialog>
-                            ))}
+                            )})}
                         </div>
                     </TabsContent>
                     <TabsContent value="requests" className="mt-4">
