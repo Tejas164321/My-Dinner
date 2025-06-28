@@ -67,6 +67,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         <Calendar
                             mode="multiple"
                             disabled
+                            showOutsideDays={false}
                             defaultMonth={today}
                             modifiers={{
                                 bothMeals: bothMealsDays,
