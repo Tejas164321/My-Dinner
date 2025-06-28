@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { joinedStudents } from "@/lib/data";
 import { DollarSign, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -78,7 +78,6 @@ export function StudentDetailCard({ student }: { student: Student }) {
                  <Card>
                     <CardHeader>
                         <CardTitle>{format(month, 'MMMM yyyy')} Attendance</CardTitle>
-                        <CardDescription>A visual log of meals attended. Visuals are for demonstration.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-4 p-4">
                         <Calendar
@@ -104,22 +103,23 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             }}
                             className="rounded-md border border-border/50 p-2"
                         />
-                        {showOctoberVisuals && (
-                            <div className="flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
-                                    <span>Both Meals</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
-                                    <span>One Meal</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
-                                    <span>Absent</span>
-                                </div>
+                        <div className={cn(
+                            "flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground transition-opacity",
+                            !showOctoberVisuals && "invisible"
+                        )}>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
+                                <span>Both Meals</span>
                             </div>
-                        )}
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
+                                <span>One Meal</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2.5 w-2.s-2.5 shrink-0 rounded-full bg-destructive" />
+                                <span>Absent</span>
+                            </div>
+                        </div>
                     </CardContent>
                  </Card>
             </div>
