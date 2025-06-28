@@ -36,12 +36,12 @@ export default function AdminDashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            <Users className="h-5 w-5 text-primary" />
+            <CardTitle className="text-sm font-medium">{mealInfo.title}</CardTitle>
+            <Utensils className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">125</div>
-            <p className="text-xs text-muted-foreground">+5 since last month</p>
+            <div className="text-2xl font-bold">{mealInfo.count}</div>
+            <p className="text-xs text-muted-foreground">Estimated students for the meal</p>
           </CardContent>
         </Card>
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100">
@@ -56,12 +56,12 @@ export default function AdminDashboard() {
         </Card>
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{mealInfo.title}</CardTitle>
-            <Utensils className="h-5 w-5 text-primary" />
+            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <Users className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mealInfo.count}</div>
-            <p className="text-xs text-muted-foreground">Estimated students for the meal</p>
+            <div className="text-2xl font-bold">125</div>
+            <p className="text-xs text-muted-foreground">+5 since last month</p>
           </CardContent>
         </Card>
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
