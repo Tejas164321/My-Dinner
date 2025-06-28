@@ -13,6 +13,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { StudentDetailCard } from "./student-detail-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
