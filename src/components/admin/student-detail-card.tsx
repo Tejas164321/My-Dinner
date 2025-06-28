@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Student } from "@/lib/data";
-import { User, Phone, Home, Calendar as CalendarIcon } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
+import { DialogClose } from "@/components/ui/dialog";
 
 // Demo data for different attendance types for October 2023
 const fullDayDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
@@ -57,34 +58,62 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const remainingBill = currentData.bill.total - currentData.bill.paid;
     
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
+    
+    // New calculations for October
+    const fullDaysCount = fullDayDays.length;
+    const halfDaysCount = lunchOnlyDays.length + dinnerOnlyDays.length;
+    const absentDaysCount = absentDays.length;
+    const totalMealsCount = (fullDaysCount * 2) + halfDaysCount;
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 w-full bg-background sm:rounded-lg">
-            {/* Left Column: Compact Info */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full bg-background sm:rounded-lg">
+            {/* Left Column */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
                 <Card>
-                    <CardContent className="p-6 flex items-center gap-4">
-                        <Avatar className="w-16 h-16 border-4 border-primary/20">
-                            <AvatarFallback className="text-2xl">{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <Avatar className="w-14 h-14 border-4 border-primary/20">
+                            <AvatarFallback className="text-xl">{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-0.5">
                             <h2 className="text-xl font-bold">{student.name}</h2>
                             <p className="text-sm text-muted-foreground">{student.studentId}</p>
                         </div>
                         <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
                     </CardContent>
                 </Card>
-
-                <Card>
+                <Card className="flex-grow">
                     <CardHeader>
-                        <CardTitle className="text-lg">Attendance</CardTitle>
+                        <CardTitle className="text-lg">Attendance Summary</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">{currentData.attendance}</div>
-                        <p className="text-xs text-muted-foreground">This Month</p>
+                    <CardContent className="flex flex-col justify-center h-full space-y-4 text-sm">
+                        {showOctoberVisuals ? (
+                            <>
+                                <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                                    <span className="font-semibold text-foreground">Total Meals Taken</span>
+                                    <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Full Days</p>
+                                        <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Half Days</p>
+                                        <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground text-xs">Absent</p>
+                                        <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>Detailed attendance summary is only available for October 2023.</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
-
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-lg">Billing</CardTitle>
@@ -107,8 +136,12 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                 </Card>
             </div>
 
-            {/* Right Column: Visuals & Details */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
+            {/* Right Column */}
+            <div className="lg:col-span-3 flex flex-col gap-6 relative">
+                 <DialogClose className="absolute right-0 top-0 z-10 rounded-full border border-border w-7 h-7 flex items-center justify-center opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                 </DialogClose>
                  <Card>
                     <CardHeader>
                         <CardTitle className="text-lg">Personal Details</CardTitle>
