@@ -150,3 +150,15 @@ export const menu = {
   saturday: { lunch: 'Special Thali', dinner: 'Pasta, Garlic Bread' },
   sunday: { lunch: 'Puri Sabji, Halwa', dinner: 'Pizza Night' },
 }
+
+export const commonMenuItems = ['Dal', 'Rice', 'Chapatti', 'Salad', 'Raita', 'Pulav'];
+
+export const menuHistory = [
+    { lunch: 'Rajma Chawal, Salad', dinner: 'Chole Bhature' },
+    { lunch: 'Aloo Gobi, Roti, Dal', dinner: 'Paneer Butter Masala, Rice' },
+    { lunch: 'Puri Sabji, Halwa', dinner: 'Pizza Night' },
+    { lunch: 'Special Thali', dinner: 'Pasta, Garlic Bread' },
+    { lunch: 'Idli Sambar, Chutney', dinner: 'Masala Dosa' },
+    { lunch: 'Dal Makhani, Naan', dinner: 'Mix Veg, Roti' },
+    { lunch: 'Veg Biryani, Raita', dinner: 'Kadhi Pakora, Rice' },
+];
