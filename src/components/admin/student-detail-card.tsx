@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { joinedStudents } from "@/lib/data";
 import { DollarSign, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,19 +35,21 @@ export function StudentDetailCard({ student }: { student: Student }) {
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
     return (
-        <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 animate-in fade-in-0 duration-500">
-            {/* Right Column (Info & Stats) */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
-                <div className="flex flex-col items-center text-center gap-4 p-6 bg-secondary/30 rounded-lg">
-                    <Avatar className="w-20 h-20 border-4 border-primary/20">
-                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-1">
-                        <h2 className="text-2xl font-bold">{student.name}</h2>
-                        <p className="text-muted-foreground">{student.studentId}</p>
-                    </div>
-                    <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize">{currentData.status}</Badge>
-                </div>
+        <Card className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 animate-in fade-in-0 duration-500">
+            {/* Left Column (Info & Stats) */}
+            <div className="lg:col-span-1 flex flex-col gap-6">
+                <Card>
+                    <CardContent className="flex flex-col items-center text-center gap-4 p-6">
+                        <Avatar className="w-20 h-20 border-4 border-primary/20">
+                            <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="space-y-1">
+                            <h2 className="text-2xl font-bold">{student.name}</h2>
+                            <p className="text-muted-foreground">{student.studentId}</p>
+                        </div>
+                        <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize">{currentData.status}</Badge>
+                    </CardContent>
+                </Card>
                 
                 <div className="grid grid-cols-1 gap-4">
                      <Card>
@@ -98,13 +100,13 @@ export function StudentDetailCard({ student }: { student: Student }) {
                 </Card>
             </div>
 
-            {/* Left Column (Calendar) */}
-            <div className="lg:col-span-3">
-                <Card className="h-full">
+            {/* Right Column (Calendar) */}
+            <div className="lg:col-span-2">
+                <Card className="h-full flex flex-col">
                     <CardHeader>
                         <CardTitle>{format(month, 'MMMM yyyy')} Attendance</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center gap-4 p-4">
+                    <CardContent className="flex-1 flex items-center justify-center p-4">
                         <Calendar
                             month={month}
                             onMonthChange={setMonth}
@@ -131,9 +133,11 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             }}
                             className="rounded-md border border-border/50 p-3"
                         />
+                    </CardContent>
+                     <CardFooter>
                         <div className={cn(
                             "flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground transition-opacity",
-                            !showOctoberVisuals && "invisible h-[34px]"
+                             !showOctoberVisuals && "invisible"
                         )}>
                             <div className="flex items-center gap-2">
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
@@ -148,7 +152,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                                 <span>Absent</span>
                             </div>
                         </div>
-                    </CardContent>
+                    </CardFooter>
                 </Card>
             </div>
         </Card>
