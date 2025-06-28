@@ -112,8 +112,12 @@ export default function AdminDashboard() {
         
         <div className="lg:col-span-1 flex flex-col gap-6">
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
-                <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Notifications</CardTitle>
+                        <CardDescription>Recent system activities.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm">View all</Button>
                 </CardHeader>
                 <CardContent>
                    <ul className="space-y-4 text-sm text-muted-foreground">
