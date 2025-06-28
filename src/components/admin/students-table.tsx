@@ -12,7 +12,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { StudentDetailCard } from "./student-detail-card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export function StudentsTable() {
     return (
@@ -35,7 +36,6 @@ export function StudentsTable() {
                                         <Card className="cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all duration-300 group animate-in fade-in-0">
                                             <CardContent className="p-3 flex items-center gap-4">
                                                 <Avatar className="w-12 h-12 border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors">
-                                                    
                                                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-2 items-center">
