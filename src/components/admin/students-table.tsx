@@ -25,40 +25,9 @@ export function StudentsTable() {
             <CardContent>
                 <Tabs defaultValue="joined">
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="requests">Join Requests <Badge variant="secondary" className="ml-2">{joinRequests.length}</Badge></TabsTrigger>
                         <TabsTrigger value="joined">All Students</TabsTrigger>
+                        <TabsTrigger value="requests">Join Requests <Badge variant="secondary" className="ml-2">{joinRequests.length}</Badge></TabsTrigger>
                     </TabsList>
-                    <TabsContent value="requests" className="mt-4">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Student ID</TableHead>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {joinRequests.map((req) => (
-                                        <TableRow key={req.id}>
-                                            <TableCell className="font-medium">{req.name}</TableCell>
-                                            <TableCell>{req.studentId}</TableCell>
-                                            <TableCell>{req.date}</TableCell>
-                                            <TableCell className="text-right space-x-2">
-                                                <Button variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
-                                                    <Check className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </TabsContent>
                     <TabsContent value="joined" className="mt-4">
                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {joinedStudents.map((student) => (
@@ -99,6 +68,37 @@ export function StudentsTable() {
                                 </Dialog>
                             ))}
                        </div>
+                    </TabsContent>
+                    <TabsContent value="requests" className="mt-4">
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Student ID</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {joinRequests.map((req) => (
+                                        <TableRow key={req.id}>
+                                            <TableCell className="font-medium">{req.name}</TableCell>
+                                            <TableCell>{req.studentId}</TableCell>
+                                            <TableCell>{req.date}</TableCell>
+                                            <TableCell className="text-right space-x-2">
+                                                <Button variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
+                                                    <Check className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </CardContent>
