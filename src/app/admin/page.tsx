@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserCheck, TrendingUp, AlertCircle, FileText, Settings, Bell, Utensils } from 'lucide-react';
+import { Users, UserCheck, TrendingUp, FileText, Settings, Bell, Utensils } from 'lucide-react';
 import { AttendanceChart } from '@/components/admin/analytics-charts';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground">An overview of mess activities and student management.</p>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Students</CardTitle>
@@ -72,16 +72,6 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">₹2,85,450</div>
             <p className="text-xs text-muted-foreground">+12% from last month</p>
-          </CardContent>
-        </Card>
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Issues Reported</CardTitle>
-            <AlertCircle className="h-5 w-5 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">2 pending, 1 resolved</p>
           </CardContent>
         </Card>
       </div>
