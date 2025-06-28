@@ -6,13 +6,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { studentsData } from "@/lib/data";
+import type { Student } from "@/lib/data";
 import { User, Phone, Home, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
-
-type Student = (typeof studentsData)[number];
 
 // Demo data for different attendance types for October 2023
 const fullDayDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
@@ -61,7 +59,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 w-full">
             {/* Left Column */}
             <div className="flex flex-col gap-6">
                 <Card>
@@ -115,7 +113,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                     <CardHeader>
                         <CardTitle>Personal Details</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                    <CardContent className="grid grid-cols-1 gap-4 text-sm">
                         <div className="flex items-center gap-3">
                             <User className="w-4 h-4 text-muted-foreground"/>
                             <span className="text-muted-foreground truncate">{student.email}</span>
@@ -159,7 +157,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                                 months: "w-full",
                                 month: "w-full space-y-4",
                                 head_cell: "text-muted-foreground w-full font-normal text-sm",
-                                cell: "h-9 w-9 text-center text-sm p-0 relative rounded-full",
+                                cell: "h-9 w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center",
                                 day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center",
                                 day_today: "bg-accent text-accent-foreground rounded-full",
                                 day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
