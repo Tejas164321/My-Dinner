@@ -59,33 +59,35 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-            {/* Left Column */}
-            <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 w-full bg-background sm:rounded-lg">
+            {/* Left Column: Compact Info */}
+            <div className="lg:col-span-1 flex flex-col gap-6">
                 <Card>
-                    <CardContent className="p-6 flex items-start gap-4">
+                    <CardContent className="p-6 flex items-center gap-4">
                         <Avatar className="w-16 h-16 border-4 border-primary/20">
                             <AvatarFallback className="text-2xl">{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-1">
-                            <h2 className="text-2xl font-bold">{student.name}</h2>
-                            <p className="text-muted-foreground">{student.studentId}</p>
+                            <h2 className="text-xl font-bold">{student.name}</h2>
+                            <p className="text-sm text-muted-foreground">{student.studentId}</p>
                         </div>
                         <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
                     </CardContent>
                 </Card>
+
                 <Card>
                     <CardHeader>
-                        <CardTitle>Attendance</CardTitle>
+                        <CardTitle className="text-lg">Attendance</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-4xl font-bold">{currentData.attendance}</div>
-                        <p className="text-sm text-muted-foreground">This Month</p>
+                        <div className="text-3xl font-bold">{currentData.attendance}</div>
+                        <p className="text-xs text-muted-foreground">This Month</p>
                     </CardContent>
                 </Card>
+
                 <Card>
                     <CardHeader>
-                        <CardTitle>Billing</CardTitle>
+                        <CardTitle className="text-lg">Billing</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
                         <div className="flex justify-between">
@@ -105,28 +107,28 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                 </Card>
             </div>
 
-            {/* Right Column */}
-            <div className="flex flex-col gap-6">
+            {/* Right Column: Visuals & Details */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Personal Details</CardTitle>
+                        <CardTitle className="text-lg">Personal Details</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 gap-4 text-sm">
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
                         <div className="flex items-center gap-3">
-                            <User className="w-4 h-4 text-muted-foreground"/>
+                            <User className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
                             <span className="text-muted-foreground truncate">{student.email}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <Phone className="w-4 h-4 text-muted-foreground"/>
-                            <span className="text-muted-foreground">{student.contact}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Home className="w-4 h-4 text-muted-foreground"/>
+                         <div className="flex items-center gap-3">
+                            <Home className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
                             <span className="text-muted-foreground">{student.roomNo}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                            <CalendarIcon className="w-4 h-4 text-muted-foreground"/>
-                            <span className="text-muted-foreground">{student.joinDate}</span>
+                            <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
+                            <span className="text-muted-foreground">{student.contact}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <CalendarIcon className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
+                            <span className="text-muted-foreground">Joined: {student.joinDate}</span>
                         </div>
                     </CardContent>
                 </Card>
