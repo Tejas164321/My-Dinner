@@ -91,8 +91,8 @@ export default function HolidaysPage() {
         <p className="text-muted-foreground">Manage mess holidays and non-billing days.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
+        <div className="lg:col-span-3">
           <Card className="h-full flex flex-col">
             <CardHeader>
               <CardTitle>Holiday Calendar</CardTitle>
@@ -135,7 +135,7 @@ export default function HolidaysPage() {
           </Card>
         </div>
 
-        <div className="flex flex-col gap-8">
+        <div className="lg:col-span-2 flex flex-col gap-8">
           <Card>
             <CardHeader>
               <CardTitle>Add New Holiday</CardTitle>
