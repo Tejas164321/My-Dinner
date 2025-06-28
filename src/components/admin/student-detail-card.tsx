@@ -12,14 +12,15 @@ import { format } from 'date-fns';
 
 type Student = (typeof joinedStudents)[number];
 
-const bothMealsDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
-const oneMealDays = [new Date(2023, 9, 4), new Date(2023, 9, 18), new Date(2023, 9, 20)];
+const fullDayDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
+const halfDayDays = [new Date(2023, 9, 4), new Date(2023, 9, 18), new Date(2023, 9, 20)];
 const absentDays = [new Date(2023, 9, 5), new Date(2023, 9, 10), new Date(2023, 9, 11), new Date(2023, 9, 19)];
 
 export function StudentDetailCard({ student }: { student: Student }) {
     const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
 
     const historicalData: { [key: string]: { attendance: string; bill: string; status: 'Paid' | 'Due' } } = {
+        '2023-07': { attendance: '90%', bill: '₹3,200', status: 'Paid' },
         '2023-08': { attendance: '88%', bill: '₹3,150', status: 'Paid' },
         '2023-09': { attendance: '95%', bill: '₹0', status: 'Paid' },
         '2023-10': { attendance: student.attendance, bill: student.bill, status: student.status as 'Paid' | 'Due' },
@@ -93,12 +94,12 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         <Calendar
                             month={month}
                             onMonthChange={setMonth}
-                            mode="multiple"
                             selected={[]}
+                            onSelect={() => {}} 
                             showOutsideDays={false}
                             modifiers={showOctoberVisuals ? {
-                                bothMeals: bothMealsDays,
-                                oneMeal: oneMealDays,
+                                fullDay: fullDayDays,
+                                halfDay: halfDayDays,
                                 absent: absentDays,
                             } : {}}
                             classNames={{
@@ -108,11 +109,10 @@ export function StudentDetailCard({ student }: { student: Student }) {
                                 cell: "h-12 w-12 text-center text-base p-0 relative",
                                 day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 rounded-full",
                                 day_today: "bg-accent text-accent-foreground rounded-full",
-                                day_selected: "bg-primary/20 text-primary-foreground rounded-full",
                             }}
                             modifiersClassNames={{
-                                bothMeals: "bg-chart-2 text-primary-foreground",
-                                oneMeal: "bg-chart-3 text-primary-foreground",
+                                fullDay: "bg-chart-2 text-primary-foreground",
+                                halfDay: "bg-chart-3 text-primary-foreground",
                                 absent: "bg-destructive text-destructive-foreground",
                             }}
                             className="rounded-md border border-border/50 p-3"
@@ -123,11 +123,11 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         )}>
                             <div className="flex items-center gap-2">
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
-                                <span>Both Meals</span>
+                                <span>Full Day</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
-                                <span>One Meal</span>
+                                <span>Half Day</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
