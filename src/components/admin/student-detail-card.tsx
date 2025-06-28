@@ -94,6 +94,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             month={month}
                             onMonthChange={setMonth}
                             mode="multiple"
+                            selected={[]}
                             showOutsideDays={false}
                             modifiers={showOctoberVisuals ? {
                                 bothMeals: bothMealsDays,
@@ -102,11 +103,12 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             } : {}}
                             classNames={{
                                 months: "w-full",
-                                month: "w-full",
-                                head_cell: "text-foreground/80 w-full font-medium text-sm",
-                                cell: "h-12 w-full text-center text-base p-0 relative",
-                                day: "h-12 w-full p-0 font-normal rounded-full",
-                                day_today: "bg-accent text-accent-foreground",
+                                month: "w-full space-y-4",
+                                head_cell: "text-foreground/80 w-12 font-normal text-sm",
+                                cell: "h-12 w-12 text-center text-base p-0 relative",
+                                day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 rounded-full",
+                                day_today: "bg-accent text-accent-foreground rounded-full",
+                                day_selected: "bg-primary/20 text-primary-foreground rounded-full",
                             }}
                             modifiersClassNames={{
                                 bothMeals: "bg-chart-2 text-primary-foreground",
