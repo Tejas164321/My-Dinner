@@ -109,60 +109,68 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
                     </CardContent>
                 </Card>
-                <Card className="flex-grow">
-                    <CardHeader>
-                        <CardTitle className="text-lg">Attendance Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col justify-center h-full space-y-4 text-sm">
-                        <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                            <span className="font-semibold text-foreground">Total Meals Taken</span>
-                            <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                            <div>
-                                <p className="text-muted-foreground text-xs">Full Days</p>
-                                <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
+                
+                <div className="flex-grow flex flex-col gap-6">
+                    <Card className="flex-grow">
+                        <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-lg">Attendance Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col h-full space-y-3 p-4 pt-2">
+                            <div className="flex-1 flex flex-col justify-center items-center text-center">
+                                <p className="text-5xl font-bold text-primary">{currentData.attendance}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Monthly Attendance</p>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs">Half Days</p>
-                                <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
+                            <Separator/>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Full Days</p>
+                                    <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Half Days</p>
+                                    <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Absent</p>
+                                    <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground text-xs">Absent</p>
-                                <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
+                            <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                                <span className="font-semibold text-foreground">Total Meals Taken</span>
+                                <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Billing</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Total:</span>
-                            <span>₹{currentData.bill.total.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Paid:</span>
-                            <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
-                        </div>
-                         <Separator/>
-                        <div className="flex justify-between font-semibold">
-                            <span className="text-foreground">Remaining:</span>
-                            <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-lg">Billing</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm p-4 pt-2">
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Total:</span>
+                                <span>₹{currentData.bill.total.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Paid:</span>
+                                <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
+                            </div>
+                            <Separator/>
+                            <div className="flex justify-between font-semibold">
+                                <span className="text-foreground">Remaining:</span>
+                                <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
             {/* Right Column */}
             <div className="lg:col-span-3 flex flex-col gap-6 relative">
                  <Card>
-                    <CardHeader>
+                    <CardHeader className="p-4 pb-2">
                         <CardTitle className="text-lg">Personal Details</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 p-4 pt-2 text-sm">
                         <div className="flex items-center gap-3">
                             <User className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
                             <span className="text-muted-foreground truncate">{student.email}</span>
@@ -182,7 +190,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                     </CardContent>
                 </Card>
                 <Card className="flex-1 flex flex-col">
-                    <CardHeader>
+                    <CardHeader className="p-4 pb-0">
                         <CardTitle>Attendance for {format(month, 'MMMM yyyy')}</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-grow flex items-center justify-center p-0">
