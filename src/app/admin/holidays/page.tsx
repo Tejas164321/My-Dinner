@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -165,7 +166,7 @@ export default function HolidaysPage() {
                             {oneDayDate ? format(oneDayDate, 'PPP') : <span>Pick a date</span>}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={oneDayDate} onSelect={setOneDayDate} initialFocus /></PopoverContent>
+                        <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={oneDayDate} onSelect={setOneDayDate} initialFocus showOutsideDays={false} /></PopoverContent>
                         </Popover>
                     </div>
                     <div className="space-y-3">
@@ -202,6 +203,7 @@ export default function HolidaysPage() {
                             }}
                             disabled={{ after: longLeaveTo }}
                             initialFocus 
+                            showOutsideDays={false}
                           />
                         </PopoverContent>
                       </Popover>
@@ -219,6 +221,7 @@ export default function HolidaysPage() {
                             onSelect={setLongLeaveTo} 
                             disabled={{ before: longLeaveFrom }}
                             initialFocus 
+                            showOutsideDays={false}
                           />
                         </PopoverContent>
                       </Popover>
