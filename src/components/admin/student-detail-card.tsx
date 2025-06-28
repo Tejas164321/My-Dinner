@@ -38,7 +38,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-7xl mx-auto">
             {/* Left Column: Profile, Attendance, Billing */}
             <div className="lg:col-span-1 flex flex-col gap-6">
                 <Card>
@@ -50,31 +50,31 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             <h2 className="text-2xl font-bold">{student.name}</h2>
                             <p className="text-muted-foreground">{student.studentId}</p>
                         </div>
-                        <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize text-sm">{currentData.status}</Badge>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Attendance</CardTitle>
-                        <Percent className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{currentData.attendance}</div>
+                        <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-sm font-medium">Billing Details</CardTitle>
+                        <CardTitle>Attendance</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold text-center">{currentData.attendance}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Billing</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Total:</span>
                             <span>₹{currentData.bill.total.toLocaleString()}</span>
                         </div>
-                            <div className="flex justify-between">
+                        <div className="flex justify-between">
                             <span className="text-muted-foreground">Paid:</span>
                             <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
                         </div>
+                        <Separator />
                         <div className="flex justify-between font-semibold">
                             <span className="text-foreground">Remaining:</span>
                             <span className={cn(currentData.bill.remaining > 0 ? 'text-destructive' : 'text-foreground')}>₹{currentData.bill.remaining.toLocaleString()}</span>
@@ -92,7 +92,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                     <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-3">
                             <User className="w-4 h-4 text-muted-foreground"/>
-                            <span className="text-muted-foreground truncate ">{student.email}</span>
+                            <span className="text-muted-foreground truncate">{student.email}</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <Phone className="w-4 h-4 text-muted-foreground"/>
@@ -113,7 +113,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         <CardTitle>Attendance for {format(month, 'MMMM yyyy')}</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-grow flex items-center justify-center p-0">
-                            <Calendar
+                        <Calendar
                             month={month}
                             onMonthChange={setMonth}
                             modifiers={showOctoberVisuals ? {
@@ -136,13 +136,12 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             }}
                             className="p-3"
                             showOutsideDays={false}
-                            disabled
                         />
                     </CardContent>
-                    <CardFooter className="p-4 pt-2">
+                    <CardFooter className="p-4 pt-2 border-t mt-auto">
                         <div className={cn(
-                            "flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground transition-opacity",
-                            !showOctoberVisuals && "invisible"
+                            "flex w-full items-center justify-center gap-6 text-xs text-muted-foreground transition-opacity",
+                            !showOctoberVisuals && "opacity-0"
                         )}>
                             <div className="flex items-center gap-2">
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
