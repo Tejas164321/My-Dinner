@@ -61,58 +61,61 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 w-full">
             {/* Left Column */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
+            <div className="flex flex-col gap-6">
                 <Card>
-                    <CardContent className="p-6 flex flex-col items-center text-center gap-4">
-                        <Avatar className="w-24 h-24 border-4 border-primary/20">
+                    <CardContent className="p-6 flex items-center gap-4">
+                        <Avatar className="w-20 h-20 border-4 border-primary/20">
                             <AvatarFallback className="text-3xl">{student.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
-                        <div className="space-y-1">
+                        <div className="flex-1 space-y-1">
                             <h2 className="text-2xl font-bold">{student.name}</h2>
                             <p className="text-muted-foreground">{student.studentId}</p>
                         </div>
-                        <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
+                        <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Attendance</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold text-center">{currentData.attendance}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Billing</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Total Amount:</span>
-                            <span>₹{currentData.bill.total.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Paid Amount:</span>
-                            <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between font-semibold">
-                            <span className="text-foreground">Remaining:</span>
-                            <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="grid grid-cols-2 gap-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Attendance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold">{currentData.attendance}</div>
+                            <p className="text-sm text-muted-foreground">This Month</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Billing</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Total:</span>
+                                <span>₹{currentData.bill.total.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Paid:</span>
+                                <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
+                            </div>
+                             <Separator/>
+                            <div className="flex justify-between font-semibold">
+                                <span className="text-foreground">Remaining:</span>
+                                <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
             {/* Right Column */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
+            <div className="flex flex-col gap-6">
                  <Card>
                     <CardHeader>
                         <CardTitle>Personal Details</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <CardContent className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-3">
                             <User className="w-4 h-4 text-muted-foreground"/>
                             <span className="text-muted-foreground truncate">{student.email}</span>
@@ -147,22 +150,23 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                             } : {}}
                             components={{ DayContent: CustomDayContent }}
                             modifiersClassNames={{
-                                fullDay: "bg-chart-2 text-primary-foreground rounded-full",
-                                lunchOnly: "bg-chart-3 text-primary-foreground rounded-full",
-                                dinnerOnly: "bg-chart-3 text-primary-foreground rounded-full",
-                                absent: "bg-destructive text-destructive-foreground rounded-full",
+                                fullDay: "bg-chart-2 text-primary-foreground",
+                                lunchOnly: "bg-chart-3 text-primary-foreground",
+                                dinnerOnly: "bg-chart-3 text-primary-foreground",
+                                absent: "bg-destructive text-destructive-foreground",
                             }}
                             classNames={{
                                 months: "w-full",
                                 month: "w-full space-y-4",
                                 head_cell: "text-muted-foreground w-full font-normal text-sm",
-                                cell: "h-9 w-9 text-center text-sm p-0 relative",
+                                cell: "h-9 w-9 text-center text-sm p-0 relative rounded-full",
                                 day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center",
                                 day_today: "bg-accent text-accent-foreground rounded-full",
                                 day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                             }}
                             className="p-3"
                             showOutsideDays={false}
+                            disabled
                         />
                     </CardContent>
                     <CardContent className="p-4 pt-2 mt-auto">

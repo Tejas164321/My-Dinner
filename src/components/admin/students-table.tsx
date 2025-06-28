@@ -84,7 +84,7 @@ export function StudentsTable({ filterMonth, filterStatus }: StudentsTableProps)
                                             </CardContent>
                                         </Card>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-6xl w-full p-4 sm:p-6 md:p-8 border-0 bg-transparent shadow-none">
+                                    <DialogContent className="max-w-6xl w-full p-4 sm:p-6 md:p-8 rounded-xl border border-border bg-card shadow-lg backdrop-blur-lg">
                                         <DialogHeader className="sr-only">
                                             <DialogTitle>Student Details: {student.name}</DialogTitle>
                                             <DialogDescription>
