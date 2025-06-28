@@ -1,24 +1,16 @@
 'use client';
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { DayContentProps } from "react-day-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Student } from "@/lib/data";
-import { User, Phone, Home, Calendar as CalendarIcon, X } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
-import { DialogClose } from "@/components/ui/dialog";
-
-// Demo data for different attendance types for October 2023
-const fullDayDays = [new Date(2023, 9, 2), new Date(2023, 9, 3), new Date(2023, 9, 8), new Date(2023, 9, 9), new Date(2023, 9, 12), new Date(2023, 9, 13), new Date(2023, 9, 15), new Date(2023, 9, 16), new Date(2023, 9, 17), new Date(2023, 9, 22), new Date(2023, 9, 23), new Date(2023, 9, 24), new Date(2023, 9, 25)];
-const lunchOnlyDays = [new Date(2023, 9, 4), new Date(2023, 9, 20)];
-const dinnerOnlyDays = [new Date(2023, 9, 18)];
-const absentDays = [new Date(2023, 9, 5), new Date(2023, 9, 10), new Date(2023, 9, 11), new Date(2023, 9, 19)];
-
 
 function CustomDayContent({ date, activeModifiers }: DayContentProps) {
     let dots = null;
@@ -54,16 +46,52 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const [month, setMonth] = useState<Date>(initialMonth);
 
     const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
-    const currentData = student.monthlyDetails[monthName] || { attendance: 'N/A', bill: { total: 0, paid: 0 }, status: 'Paid' };
+    const currentData = student.monthlyDetails[monthName] || { attendance: '0%', bill: { total: 0, paid: 0 }, status: 'Paid' };
     const remainingBill = currentData.bill.total - currentData.bill.paid;
     
-    const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
-    
-    // New calculations for October
-    const fullDaysCount = fullDayDays.length;
-    const halfDaysCount = lunchOnlyDays.length + dinnerOnlyDays.length;
-    const absentDaysCount = absentDays.length;
-    const totalMealsCount = (fullDaysCount * 2) + halfDaysCount;
+    const { fullDaysCount, halfDaysCount, absentDaysCount, totalMealsCount, fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays } = useMemo(() => {
+        const year = month.getFullYear();
+        const monthIndex = month.getMonth();
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+        
+        const attendancePercent = parseFloat(currentData.attendance) / 100;
+
+        const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
+        const workingDays = allDays.filter(d => d.getDay() !== 0); // Exclude Sundays for demo
+        
+        const totalWorkingDays = workingDays.length;
+        const totalPresentDays = Math.round(totalWorkingDays * attendancePercent);
+        const aDaysCount = totalWorkingDays - totalPresentDays;
+        
+        const fDaysCount = Math.round(totalPresentDays * 0.9); // Assume 90% of present days are full days
+        const hDaysCount = totalPresentDays - fDaysCount;
+        const tMealsCount = (fDaysCount * 2) + hDaysCount;
+
+        // Use a simple seeded random to make visualizations consistent for a student
+        const seededRandom = (seed: number) => {
+            let x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        };
+        const shuffledWorkingDays = [...workingDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
+        
+        const fdd = shuffledWorkingDays.slice(0, fDaysCount);
+        const hdd = shuffledWorkingDays.slice(fDaysCount, fDaysCount + hDaysCount);
+        const add = shuffledWorkingDays.slice(fDaysCount + hDaysCount);
+        
+        const lod = hdd.filter((_, i) => i % 2 === 0);
+        const dod = hdd.filter((_, i) => i % 2 !== 0);
+
+        return {
+            fullDaysCount: fDaysCount,
+            halfDaysCount: hDaysCount,
+            absentDaysCount: aDaysCount,
+            totalMealsCount: tMealsCount,
+            fullDayDays: fdd,
+            lunchOnlyDays: lod,
+            dinnerOnlyDays: dod,
+            absentDays: add,
+        };
+    }, [month, currentData.attendance]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full bg-background sm:rounded-lg">
@@ -86,32 +114,24 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <CardTitle className="text-lg">Attendance Summary</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col justify-center h-full space-y-4 text-sm">
-                        {showOctoberVisuals ? (
-                            <>
-                                <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                                    <span className="font-semibold text-foreground">Total Meals Taken</span>
-                                    <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 text-center">
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Full Days</p>
-                                        <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Half Days</p>
-                                        <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground text-xs">Absent</p>
-                                        <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>Detailed attendance summary is only available for October 2023.</p>
+                        <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                            <span className="font-semibold text-foreground">Total Meals Taken</span>
+                            <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <p className="text-muted-foreground text-xs">Full Days</p>
+                                <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
                             </div>
-                        )}
+                            <div>
+                                <p className="text-muted-foreground text-xs">Half Days</p>
+                                <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground text-xs">Absent</p>
+                                <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -138,10 +158,6 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
 
             {/* Right Column */}
             <div className="lg:col-span-3 flex flex-col gap-6 relative">
-                 <DialogClose className="absolute right-0 top-0 z-10 rounded-full border border-border w-7 h-7 flex items-center justify-center opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Close</span>
-                 </DialogClose>
                  <Card>
                     <CardHeader>
                         <CardTitle className="text-lg">Personal Details</CardTitle>
@@ -173,12 +189,12 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <Calendar
                             month={month}
                             onMonthChange={setMonth}
-                            modifiers={showOctoberVisuals ? {
+                            modifiers={{
                                 fullDay: fullDayDays,
                                 lunchOnly: lunchOnlyDays,
                                 dinnerOnly: dinnerOnlyDays,
                                 absent: absentDays,
-                            } : {}}
+                            }}
                             components={{ DayContent: CustomDayContent }}
                             modifiersClassNames={{
                                 fullDay: "bg-chart-2 text-primary-foreground",
@@ -201,10 +217,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         />
                     </CardContent>
                     <CardContent className="p-4 pt-2 mt-auto">
-                        <div className={cn(
-                            "flex w-full items-center justify-center gap-6 text-xs text-muted-foreground transition-opacity",
-                             !showOctoberVisuals && "opacity-0"
-                        )}>
+                        <div className="flex w-full items-center justify-center gap-6 text-xs text-muted-foreground">
                             <div className="flex items-center gap-2">
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
                                 <span>Full Day</span>
