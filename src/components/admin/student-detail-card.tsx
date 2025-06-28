@@ -36,8 +36,8 @@ export function StudentDetailCard({ student }: { student: Student }) {
 
     return (
         <Card className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 animate-in fade-in-0 duration-500">
-            {/* Left Column (Info & Stats) */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
+            {/* Left Column (Info) */}
+            <div className="lg:col-span-1">
                 <Card>
                     <CardContent className="p-6">
                         <div className="flex flex-col items-center text-center gap-4">
@@ -73,8 +73,11 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         </div>
                     </CardContent>
                 </Card>
-                
-                <div className="grid grid-cols-1 gap-4">
+            </div>
+
+            {/* Right Column (Stats & Calendar) */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Attendance</CardTitle>
@@ -107,62 +110,60 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         </CardContent>
                     </Card>
                 </div>
-            </div>
 
-            {/* Right Column (Calendar) */}
-            <div className="lg:col-span-2 flex">
-                <Card className="h-full flex flex-col flex-1">
-                    <CardHeader>
-                        <CardTitle>{format(month, 'MMMM yyyy')} Attendance</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-1 flex items-center justify-center p-4">
-                        <Calendar
-                            month={month}
-                            onMonthChange={setMonth}
-                            selected={undefined}
-                            onSelect={undefined} 
-                            showOutsideDays={false}
-                            modifiers={showOctoberVisuals ? {
-                                fullDay: fullDayDays,
-                                halfDay: halfDayDays,
-                                absent: absentDays,
-                            } : {}}
-                            classNames={{
-                                months: "w-full",
-                                month: "w-full space-y-4",
-                                head_cell: "text-foreground/80 w-12 font-normal text-sm",
-                                cell: "h-12 w-12 text-center text-base p-0 relative",
-                                day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 rounded-full",
-                                day_today: "bg-accent text-accent-foreground rounded-full",
-                            }}
-                            modifiersClassNames={{
-                                fullDay: "bg-chart-2 text-primary-foreground rounded-full",
-                                halfDay: "bg-chart-3 text-primary-foreground rounded-full",
-                                absent: "bg-destructive text-destructive-foreground rounded-full",
-                            }}
-                            className="rounded-md border border-border/50 p-3"
-                        />
-                    </CardContent>
-                     <CardFooter>
-                        <div className={cn(
-                            "flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground transition-opacity",
-                             !showOctoberVisuals && "invisible"
-                        )}>
-                            <div className="flex items-center gap-2">
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
-                                <span>Full Day</span>
+                <div className="flex-1 flex">
+                    <Card className="h-full flex flex-col flex-1">
+                        <CardHeader>
+                            <CardTitle>{format(month, 'MMMM yyyy')} Attendance</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-1 flex items-center justify-center p-4">
+                            <Calendar
+                                month={month}
+                                onMonthChange={setMonth}
+                                onSelect={undefined} 
+                                showOutsideDays={false}
+                                modifiers={showOctoberVisuals ? {
+                                    fullDay: fullDayDays,
+                                    halfDay: halfDayDays,
+                                    absent: absentDays,
+                                } : {}}
+                                classNames={{
+                                    months: "w-full",
+                                    month: "w-full space-y-4",
+                                    head_cell: "text-foreground/80 w-12 font-normal text-sm",
+                                    cell: "h-12 w-12 text-center text-base p-0 relative",
+                                    day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 rounded-full",
+                                    day_today: "bg-accent text-accent-foreground rounded-full",
+                                }}
+                                modifiersClassNames={{
+                                    fullDay: "bg-chart-2 text-primary-foreground rounded-full",
+                                    halfDay: "bg-chart-3 text-primary-foreground rounded-full",
+                                    absent: "bg-destructive text-destructive-foreground rounded-full",
+                                }}
+                                className="rounded-md border border-border/50 p-3"
+                            />
+                        </CardContent>
+                        <CardFooter>
+                            <div className={cn(
+                                "flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground transition-opacity",
+                                !showOctoberVisuals && "invisible h-[36px]"
+                            )}>
+                                <div className="flex items-center gap-2">
+                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
+                                    <span>Full Day</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
+                                    <span>Half Day</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
+                                    <span>Absent</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
-                                <span>Half Day</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
-                                <span>Absent</span>
-                            </div>
-                        </div>
-                    </CardFooter>
-                </Card>
+                        </CardFooter>
+                    </Card>
+                </div>
             </div>
         </Card>
     );
