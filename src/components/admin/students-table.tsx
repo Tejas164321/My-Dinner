@@ -9,6 +9,9 @@ import { Check, X, MoreVertical } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { StudentDetailCard } from "./student-detail-card";
@@ -61,6 +64,12 @@ export function StudentsTable() {
                                         </Card>
                                     </DialogTrigger>
                                     <DialogContent className="max-w-4xl p-0 border-0 bg-transparent shadow-none">
+                                        <DialogHeader className="sr-only">
+                                            <DialogTitle>Student Details: {student.name}</DialogTitle>
+                                            <DialogDescription>
+                                                Detailed information for {student.name}, including personal info, attendance, and billing.
+                                            </DialogDescription>
+                                        </DialogHeader>
                                         <StudentDetailCard student={student} />
                                     </DialogContent>
                                 </Dialog>
