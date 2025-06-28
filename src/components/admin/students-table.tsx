@@ -75,7 +75,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                         <div className="flex items-center gap-2">
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-yellow-400 hover:text-yellow-500 hover:bg-yellow-500/10">
+                                    <Button variant="ghost" size="icon" className="h-9 w-9">
                                         <UserX className="h-4 w-4" />
                                     </Button>
                                 </AlertDialogTrigger>
@@ -156,7 +156,7 @@ export function StudentsTable({ filterMonth, filterStatus }: StudentsTableProps)
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="joined">All Students</TabsTrigger>
                         <TabsTrigger value="requests">Join Requests <Badge variant="secondary" className="ml-2">{joinRequests.length}</Badge></TabsTrigger>
-                        <TabsTrigger value="suspended">Suspended <Badge variant="destructive" className="ml-2">{suspendedStudents.length}</Badge></TabsTrigger>
+                        <TabsTrigger value="suspended">Suspended <Badge variant="secondary" className="ml-2">{suspendedStudents.length}</Badge></TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="joined" className="mt-4">
