@@ -44,8 +44,17 @@ export function BillingTable({ filterMonth }: BillingTableProps) {
     return (
         <Card className="h-full flex flex-col">
             <CardHeader>
-                <CardTitle>Pending Payments</CardTitle>
-                <CardDescription>Students with outstanding dues for {filterMonth.charAt(0).toUpperCase() + filterMonth.slice(1)}.</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>Pending Payments</CardTitle>
+                        <CardDescription>Students with outstanding dues for {filterMonth.charAt(0).toUpperCase() + filterMonth.slice(1)}.</CardDescription>
+                    </div>
+                    {dueStudents.length > 0 && (
+                        <Button>
+                            <Bell className="h-4 w-4 mr-1.5" /> Remind All
+                        </Button>
+                    )}
+                </div>
             </CardHeader>
             <CardContent className="flex-grow p-2 pt-0 relative">
                 <ScrollArea className="h-[350px] absolute inset-0 p-4 pt-0">
