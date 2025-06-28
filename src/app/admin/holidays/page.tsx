@@ -26,7 +26,7 @@ export default function HolidaysPage() {
   // Form State
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
   const [newHolidayName, setNewHolidayName] = useState('');
-  const [oneDayDate, setOneDayDate] = useState<Date | undefined>(new Date());
+  const [oneDayDate, setOneDayDate] = useState<Date | undefined>();
   const [oneDayType, setOneDayType] = useState<HolidayType>('full_day');
   const [longLeaveRange, setLongLeaveRange] = useState<DateRange | undefined>();
   
