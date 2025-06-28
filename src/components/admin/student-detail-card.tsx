@@ -9,6 +9,7 @@ import { joinedStudents } from "@/lib/data";
 import { DollarSign, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
+import { Separator } from "@/components/ui/separator";
 
 type Student = (typeof joinedStudents)[number];
 
@@ -19,15 +20,17 @@ const absentDays = [new Date(2023, 9, 5), new Date(2023, 9, 10), new Date(2023, 
 export function StudentDetailCard({ student }: { student: Student }) {
     const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
 
-    const historicalData: { [key: string]: { attendance: string; bill: string; status: 'Paid' | 'Due' } } = {
-        '2023-07': { attendance: '90%', bill: '₹3,200', status: 'Paid' },
-        '2023-08': { attendance: '88%', bill: '₹3,150', status: 'Paid' },
-        '2023-09': { attendance: '95%', bill: '₹0', status: 'Paid' },
-        '2023-10': { attendance: student.attendance, bill: student.bill, status: student.status as 'Paid' | 'Due' },
+    const historicalData: { [key: string]: { attendance: string; bill: { total: number; paid: number; remaining: number; }; status: 'Paid' | 'Due' } } = {
+        '2023-07': { attendance: '90%', bill: { total: 3200, paid: 3200, remaining: 0 }, status: 'Paid' },
+        '2023-08': { attendance: '88%', bill: { total: 3150, paid: 3150, remaining: 0 }, status: 'Paid' },
+        '2023-09': { attendance: '95%', bill: { total: 3250, paid: 3250, remaining: 0 }, status: 'Paid' },
+        '2023-10': student.status === 'Due'
+        ? { attendance: student.attendance, bill: { total: 3250, paid: 0, remaining: 3250 }, status: 'Due' }
+        : { attendance: student.attendance, bill: { total: 3250, paid: 3250, remaining: 0 }, status: 'Paid' },
     };
 
     const monthKey = format(month, 'yyyy-MM');
-    const currentData = historicalData[monthKey] || { attendance: 'N/A', bill: '₹0', status: 'Paid' };
+    const currentData = historicalData[monthKey] || { attendance: 'N/A', bill: { total: 0, paid: 0, remaining: 0 }, status: 'Paid' };
     
     const showOctoberVisuals = format(month, 'yyyy-MM') === '2023-10';
 
@@ -46,7 +49,7 @@ export function StudentDetailCard({ student }: { student: Student }) {
                     <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className="capitalize">{currentData.status}</Badge>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                      <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Attendance</CardTitle>
@@ -57,14 +60,25 @@ export function StudentDetailCard({ student }: { student: Student }) {
                             <p className="text-xs text-muted-foreground">in {format(month, 'MMMM')}</p>
                         </CardContent>
                     </Card>
-                     <Card className={cn(currentData.status === 'Due' && 'border-destructive/50')}>
+                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Amount Due</CardTitle>
+                            <CardTitle className="text-sm font-medium">Billing</CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent>
-                            <div className={cn("text-2xl font-bold", currentData.status === 'Due' && "text-destructive")}>{currentData.bill}</div>
-                             <p className="text-xs text-muted-foreground">for {format(month, 'MMMM')}</p>
+                        <CardContent className="space-y-3 pt-2">
+                           <div className="flex justify-between text-sm">
+                                <p className="text-muted-foreground">Total</p>
+                                <p className="font-medium">₹{currentData.bill.total}</p>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <p className="text-muted-foreground">Paid</p>
+                                <p className="font-medium text-chart-2">₹{currentData.bill.paid}</p>
+                            </div>
+                            <Separator/>
+                            <div className="flex justify-between text-sm font-bold">
+                                <p>Remaining</p>
+                                <p className={cn(currentData.status === 'Due' && 'text-destructive')}>₹{currentData.bill.remaining}</p>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -94,8 +108,8 @@ export function StudentDetailCard({ student }: { student: Student }) {
                         <Calendar
                             month={month}
                             onMonthChange={setMonth}
-                            selected={[]}
-                            onSelect={() => {}} 
+                            selected={undefined}
+                            onSelect={undefined} 
                             showOutsideDays={false}
                             modifiers={showOctoberVisuals ? {
                                 fullDay: fullDayDays,
@@ -111,15 +125,15 @@ export function StudentDetailCard({ student }: { student: Student }) {
                                 day_today: "bg-accent text-accent-foreground rounded-full",
                             }}
                             modifiersClassNames={{
-                                fullDay: "bg-chart-2 text-primary-foreground",
-                                halfDay: "bg-chart-3 text-primary-foreground",
-                                absent: "bg-destructive text-destructive-foreground",
+                                fullDay: "bg-chart-2 text-primary-foreground rounded-full",
+                                halfDay: "bg-chart-3 text-primary-foreground rounded-full",
+                                absent: "bg-destructive text-destructive-foreground rounded-full",
                             }}
                             className="rounded-md border border-border/50 p-3"
                         />
                         <div className={cn(
                             "flex w-full items-center justify-center gap-6 rounded-md border bg-secondary/30 p-2 text-xs text-muted-foreground transition-opacity",
-                            !showOctoberVisuals && "invisible h-9"
+                            !showOctoberVisuals && "invisible h-[34px]"
                         )}>
                             <div className="flex items-center gap-2">
                                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
