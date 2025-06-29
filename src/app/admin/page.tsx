@@ -149,17 +149,6 @@ export default function AdminDashboard() {
                 </CardContent>
             </Card>
 
-             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-500">
-                <CardHeader>
-                    <CardTitle>Mess Join Code</CardTitle>
-                    <CardDescription>Share this code with new students to allow them to join the mess system.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex items-center justify-between rounded-lg bg-secondary p-4">
-                    <div className="text-2xl font-mono tracking-widest text-primary">XF4G8K</div>
-                    <Button size="sm" variant="default">Regenerate</Button>
-                </CardContent>
-            </Card>
-
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-600">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
