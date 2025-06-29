@@ -109,8 +109,8 @@ export default function SettingsPage() {
                                 <h3 className="font-medium">Notification Settings</h3>
                                 <div className="flex items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="notif-master" className="text-base">Enable Email Notifications</Label>
-                                        <p className="text-sm text-muted-foreground">Master control to enable or disable all email notifications.</p>
+                                        <Label htmlFor="notif-master" className="text-base">Enable In-App Notifications</Label>
+                                        <p className="text-sm text-muted-foreground">Master control for dashboard notifications and alerts.</p>
                                     </div>
                                     <Switch id="notif-master" checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
                                 </div>
