@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -93,12 +92,12 @@ export default function HolidaysPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         <div className="lg:col-span-2">
-          <Card className="h-full flex flex-col">
+          <Card className="flex flex-col">
             <CardHeader>
               <CardTitle>Holiday Calendar</CardTitle>
               <CardDescription>An overview of all scheduled holidays for the year.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow flex items-center justify-center">
+            <CardContent className="flex items-center justify-center">
               {month ? (
                 <Calendar
                   mode="multiple"
