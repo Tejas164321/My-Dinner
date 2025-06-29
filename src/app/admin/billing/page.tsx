@@ -68,7 +68,7 @@ export default function AdminBillingPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
+        <Card className="transition-transform duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue ({month.charAt(0).toUpperCase() + month.slice(1)})</CardTitle>
             <DollarSign className="h-5 w-5 text-primary" />
@@ -78,7 +78,7 @@ export default function AdminBillingPage() {
             <p className="text-xs text-muted-foreground">Total payments received this month</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="transition-transform duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Dues ({month.charAt(0).toUpperCase() + month.slice(1)})</CardTitle>
             <Receipt className="h-5 w-5 text-destructive" />
@@ -88,7 +88,7 @@ export default function AdminBillingPage() {
             <p className="text-xs text-muted-foreground">Total outstanding amount from students</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="transition-transform duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Defaulters ({month.charAt(0).toUpperCase() + month.slice(1)})</CardTitle>
             <Users className="h-5 w-5 text-destructive" />

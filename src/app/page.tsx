@@ -19,10 +19,10 @@ export default function Home() {
           The seamless, modern, and smart way to manage your canteen and mess facility.
         </p>
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-          <Button asChild size="lg" className="text-lg px-8 py-6">
+          <Button asChild size="lg" className="text-lg px-8 py-6 transition-transform hover:scale-105">
             <Link href="/admin">Admin Login</Link>
           </Button>
-          <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6">
+          <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6 transition-transform hover:scale-105">
             <Link href="/student">Student Login</Link>
           </Button>
         </div>
