@@ -21,6 +21,7 @@ export const adminNavItems = [
 export const adminUser = {
   name: 'Admin Staff',
   role: 'Mess Manager',
+  email: 'admin@messo.com',
   avatarUrl: 'https://placehold.co/100x100.png',
 };
 

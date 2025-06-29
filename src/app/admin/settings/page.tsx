@@ -8,12 +8,18 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { DollarSign, Palette, Bell, Info, Moon, Sun, RefreshCw, Copy } from 'lucide-react';
+import { DollarSign, Palette, Bell, Info, Moon, Sun, RefreshCw, Copy, User } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from "@/hooks/use-toast";
+import { adminUser } from '@/lib/data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function SettingsPage() {
     const { toast } = useToast();
+
+    // Profile Settings State
+    const [profileName, setProfileName] = useState(adminUser.name);
+    const [profileEmail, setProfileEmail] = useState(adminUser.email);
 
     // General Settings State
     const [messName, setMessName] = useState('Messo Central Kitchen');
@@ -54,13 +60,72 @@ export default function SettingsPage() {
                 <p className="text-muted-foreground">Manage your mess settings and preferences.</p>
             </div>
 
-            <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+            <Tabs defaultValue="profile" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> Profile</TabsTrigger>
                     <TabsTrigger value="general"><Info className="mr-2 h-4 w-4" /> General</TabsTrigger>
                     <TabsTrigger value="billing"><DollarSign className="mr-2 h-4 w-4" /> Billing</TabsTrigger>
                     <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" /> Appearance</TabsTrigger>
                 </TabsList>
                 
+                <TabsContent value="profile" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>My Profile</CardTitle>
+                            <CardDescription>Update your personal information and manage your account.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-8">
+                            <div className="flex items-center gap-6">
+                                <Avatar className="w-24 h-24 border-4 border-primary/20">
+                                    <AvatarImage src={adminUser.avatarUrl} alt={adminUser.name} />
+                                    <AvatarFallback>{adminUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                </Avatar>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-semibold">{profileName}</h3>
+                                    <p className="text-muted-foreground">{adminUser.role}</p>
+                                    <Button variant="outline">Upload New Photo</Button>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4 pt-6 border-t">
+                                <h3 className="font-semibold text-foreground/90">Personal Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="profile-name">Full Name</Label>
+                                        <Input id="profile-name" value={profileName} onChange={(e) => setProfileName(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="profile-email">Email Address</Label>
+                                        <Input id="profile-email" type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 pt-6 border-t">
+                                <h3 className="font-semibold text-foreground/90">Change Password</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="current-password">Current Password</Label>
+                                        <Input id="current-password" type="password" placeholder="••••••••" />
+                                    </div>
+                                    <div></div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="new-password">New Password</Label>
+                                        <Input id="new-password" type="password" placeholder="••••••••" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                        <Input id="confirm-password" type="password" placeholder="••••••••" />
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button>Update Profile</Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+
                 <TabsContent value="general" className="mt-6">
                     <Card>
                         <CardHeader>
