@@ -66,16 +66,18 @@ export default function AdminDashboard() {
             <p className="text-xs text-muted-foreground">Up from 88% yesterday</p>
           </CardContent>
         </Card>
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            <Users className="h-5 w-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">125</div>
-            <p className="text-xs text-muted-foreground">+5 since last month</p>
-          </CardContent>
-        </Card>
+        <Link href="/admin/students">
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200 h-full hover:border-primary/50 transition-colors">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                <Users className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">125</div>
+                <p className="text-xs text-muted-foreground">+5 since last month</p>
+              </CardContent>
+            </Card>
+        </Link>
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month's Revenue</CardTitle>
@@ -96,13 +98,6 @@ export default function AdminDashboard() {
                     <TabsTrigger value="menu">Menu</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 </TabsList>
-                <div className="flex items-center gap-2">
-                    <Button asChild variant="outline">
-                        <Link href="/admin/students">
-                            <Users className="mr-2 h-4 w-4"/> Manage Students
-                        </Link>
-                    </Button>
-                </div>
             </div>
             <TabsContent value="menu" className="mt-4 animate-in fade-in-0 duration-500">
               <MenuSchedule />
