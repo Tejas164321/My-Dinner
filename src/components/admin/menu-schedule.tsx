@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -7,9 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
 import { Pencil, Save, History, Plus, X, Calendar as CalendarIcon, Utensils } from "lucide-react";
-import { dailyMenus, DailyMenu } from "@/lib/data";
+import { dailyMenus, commonMenuItems } from "@/lib/data";
 import { format, subDays, startOfDay } from 'date-fns';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -53,11 +52,8 @@ export function MenuSchedule() {
     }, [selectedDate, menus]);
 
     const handleEdit = (meal: 'lunch' | 'dinner') => {
-        if (meal === 'lunch') {
-            setTempLunchItems([...lunchItems]);
-        } else {
-            setTempDinnerItems([...dinnerItems]);
-        }
+        setTempLunchItems([...lunchItems]);
+        setTempDinnerItems([...dinnerItems]);
         setIsEditing(meal);
     };
 
@@ -91,6 +87,14 @@ export function MenuSchedule() {
             setTempLunchItems(prev => prev.filter((_, i) => i !== index));
         } else {
             setTempDinnerItems(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+    
+    const handleAddCommonItem = (meal: 'lunch' | 'dinner', item: string) => {
+        if (meal === 'lunch') {
+            setTempLunchItems(prev => [...prev, item]);
+        } else {
+            setTempDinnerItems(prev => [...prev, item]);
         }
     };
 
@@ -162,7 +166,7 @@ export function MenuSchedule() {
                     <CardContent className="flex-grow space-y-4">
                         {renderMenuTags(isEditing === 'lunch' ? tempLunchItems : lunchItems, 'lunch')}
                         {isEditing === 'lunch' && (
-                             <div className="space-y-4">
+                             <div className="space-y-4 pt-2">
                                 <div className="space-y-3">
                                     <div className="flex gap-2">
                                         <Input 
@@ -172,6 +176,21 @@ export function MenuSchedule() {
                                             onKeyDown={e => e.key === 'Enter' && handleAddItem('lunch')}
                                         />
                                         <Button onClick={() => handleAddItem('lunch')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs text-muted-foreground">Common Items</Label>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {commonMenuItems.map(item => (
+                                                <Badge 
+                                                    key={item} 
+                                                    variant="outline" 
+                                                    onClick={() => handleAddCommonItem('lunch', item)}
+                                                    className="cursor-pointer hover:bg-secondary py-1"
+                                                >
+                                                    <Plus className="h-3 w-3 mr-1" /> {item}
+                                                </Badge>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -194,7 +213,7 @@ export function MenuSchedule() {
                     <CardContent className="flex-grow space-y-4">
                         {renderMenuTags(isEditing === 'dinner' ? tempDinnerItems : dinnerItems, 'dinner')}
                          {isEditing === 'dinner' && (
-                             <div className="space-y-4">
+                             <div className="space-y-4 pt-2">
                                 <div className="space-y-3">
                                     <div className="flex gap-2">
                                         <Input 
@@ -204,6 +223,21 @@ export function MenuSchedule() {
                                             onKeyDown={e => e.key === 'Enter' && handleAddItem('dinner')}
                                         />
                                         <Button onClick={() => handleAddItem('dinner')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs text-muted-foreground">Common Items</Label>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {commonMenuItems.map(item => (
+                                                <Badge 
+                                                    key={item} 
+                                                    variant="outline" 
+                                                    onClick={() => handleAddCommonItem('dinner', item)}
+                                                    className="cursor-pointer hover:bg-secondary py-1"
+                                                >
+                                                    <Plus className="h-3 w-3 mr-1" /> {item}
+                                                </Badge>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
