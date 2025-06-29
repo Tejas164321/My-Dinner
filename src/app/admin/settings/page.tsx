@@ -8,15 +8,19 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { DollarSign, Palette, Bell, Info, Moon, Sun } from 'lucide-react';
+import { DollarSign, Palette, Bell, Info, Moon, Sun, RefreshCw, Copy } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
+    const { toast } = useToast();
+
     // General Settings State
     const [messName, setMessName] = useState('Messo Central Kitchen');
     const [contactEmail, setContactEmail] = useState('contact@messo.com');
     const [contactPhone, setContactPhone] = useState('+91 12345 67890');
     const [address, setAddress] = useState('123 College Road, University Campus, New Delhi - 110001');
+    const [secretCode, setSecretCode] = useState('A8XFGT');
     const [joinRequestApproval, setJoinRequestApproval] = useState<'manual' | 'auto'>('manual');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
@@ -25,6 +29,23 @@ export default function SettingsPage() {
 
     // Appearance Settings State
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+    const handleRegenerateCode = () => {
+        const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        setSecretCode(newCode);
+        toast({
+            title: "Code Regenerated",
+            description: `The new mess secret code is ${newCode}.`,
+        })
+    };
+
+    const handleCopyCode = () => {
+        navigator.clipboard.writeText(secretCode);
+        toast({
+            title: "Copied to clipboard!",
+            description: "The secret code has been copied.",
+        });
+    };
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 duration-500">
@@ -69,6 +90,28 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                             
+                             <div className="space-y-4 pt-6 border-t">
+                                <div className="space-y-1">
+                                    <h3 className="font-medium">Mess Secret Code</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Students will need this secret code to submit a join request.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4 rounded-lg border p-4 bg-secondary/50">
+                                    <div className="flex-1">
+                                        <span className="font-mono text-lg tracking-widest bg-background px-4 py-2 rounded-md">{secretCode}</span>
+                                    </div>
+                                    <Button variant="outline" onClick={handleRegenerateCode}>
+                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                        Regenerate
+                                    </Button>
+                                    <Button onClick={handleCopyCode}>
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Copy
+                                    </Button>
+                                </div>
+                            </div>
+
                             <div className="space-y-4 pt-6 border-t">
                                 <div className="space-y-1">
                                     <h3 className="font-medium">Student Join Requests</h3>
