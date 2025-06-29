@@ -17,6 +17,7 @@ export default function SettingsPage() {
     const [contactEmail, setContactEmail] = useState('contact@messo.com');
     const [contactPhone, setContactPhone] = useState('+91 12345 67890');
     const [address, setAddress] = useState('123 College Road, University Campus, New Delhi - 110001');
+    const [joinRequestApproval, setJoinRequestApproval] = useState<'manual' | 'auto'>('manual');
 
     // Billing Settings State
     const [perMealCharge, setPerMealCharge] = useState('65.00');
@@ -47,27 +48,67 @@ export default function SettingsPage() {
                 <TabsContent value="general" className="mt-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>General Information</CardTitle>
-                            <CardDescription>Update basic details about your mess facility.</CardDescription>
+                            <CardTitle>General Settings</CardTitle>
+                            <CardDescription>Update basic details and core operational settings for your mess.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="mess-name">Mess Name</Label>
-                                    <Input id="mess-name" value={messName} onChange={(e) => setMessName(e.target.value)} />
+                            <div className="space-y-4">
+                                <h3 className="font-medium">Mess Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="mess-name">Mess Name</Label>
+                                        <Input id="mess-name" value={messName} onChange={(e) => setMessName(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="contact-email">Contact Email</Label>
+                                        <Input id="contact-email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="contact-phone">Contact Phone</Label>
+                                        <Input id="contact-phone" type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="contact-email">Contact Email</Label>
-                                    <Input id="contact-email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="contact-phone">Contact Phone</Label>
-                                    <Input id="contact-phone" type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+                                    <Label htmlFor="address">Address</Label>
+                                    <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} className="min-h-[80px]" />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="address">Address</Label>
-                                <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} className="min-h-[80px]" />
+                            
+                            <div className="space-y-4 pt-6 border-t">
+                                <div className="space-y-1">
+                                    <h3 className="font-medium">Student Join Requests</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Choose how to handle requests from new students.
+                                    </p>
+                                </div>
+                                <RadioGroup
+                                    value={joinRequestApproval}
+                                    onValueChange={(value: 'manual' | 'auto') => setJoinRequestApproval(value)}
+                                    className="space-y-2"
+                                >
+                                    <div className="flex items-center gap-3 rounded-lg border p-4 has-[[data-state=checked]]:border-primary">
+                                        <RadioGroupItem value="manual" id="manual" />
+                                        <div className="grid gap-1.5 leading-none">
+                                            <Label htmlFor="manual" className="cursor-pointer font-normal">
+                                                Manual Approval
+                                                <p className="text-sm text-muted-foreground">
+                                                    Admin must manually approve each new student join request. (Recommended)
+                                                </p>
+                                            </Label>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 rounded-lg border p-4 has-[[data-state=checked]]:border-primary">
+                                        <RadioGroupItem value="auto" id="auto" />
+                                        <div className="grid gap-1.5 leading-none">
+                                            <Label htmlFor="auto" className="cursor-pointer font-normal">
+                                                Automatic Approval
+                                                <p className="text-sm text-muted-foreground">
+                                                    Automatically approve all new join requests. Use with caution.
+                                                </p>
+                                            </Label>
+                                        </div>
+                                    </div>
+                                </RadioGroup>
                             </div>
                         </CardContent>
                         <CardFooter>
