@@ -18,14 +18,10 @@ export default function SettingsPage() {
     const [contactPhone, setContactPhone] = useState('+91 12345 67890');
     const [address, setAddress] = useState('123 College Road, University Campus, New Delhi - 110001');
     const [joinRequestApproval, setJoinRequestApproval] = useState<'manual' | 'auto'>('manual');
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
     // Billing Settings State
     const [perMealCharge, setPerMealCharge] = useState('65.00');
-
-    // Notification Settings State
-    const [joinRequestNotif, setJoinRequestNotif] = useState(true);
-    const [paymentReceivedNotif, setPaymentReceivedNotif] = useState(true);
-    const [feedbackNotif, setFeedbackNotif] = useState(false);
 
     // Appearance Settings State
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -38,10 +34,9 @@ export default function SettingsPage() {
             </div>
 
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="general"><Info className="mr-2 h-4 w-4" /> General</TabsTrigger>
                     <TabsTrigger value="billing"><DollarSign className="mr-2 h-4 w-4" /> Billing</TabsTrigger>
-                    <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" /> Notifications</TabsTrigger>
                     <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" /> Appearance</TabsTrigger>
                 </TabsList>
                 
@@ -110,6 +105,16 @@ export default function SettingsPage() {
                                     </div>
                                 </RadioGroup>
                             </div>
+                             <div className="space-y-4 pt-6 border-t">
+                                <h3 className="font-medium">Notification Settings</h3>
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="notif-master" className="text-base">Enable Email Notifications</Label>
+                                        <p className="text-sm text-muted-foreground">Master control to enable or disable all email notifications.</p>
+                                    </div>
+                                    <Switch id="notif-master" checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
+                                </div>
+                            </div>
                         </CardContent>
                         <CardFooter>
                             <Button>Save Changes</Button>
@@ -134,41 +139,6 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button>Save Changes</Button>
-                        </CardFooter>
-                    </Card>
-                </TabsContent>
-
-                 <TabsContent value="notifications" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Notification Preferences</CardTitle>
-                            <CardDescription>Choose which email notifications you want to receive.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="notif-join" className="text-base">New Join Request</Label>
-                                    <p className="text-sm text-muted-foreground">Receive an email when a new student applies to join the mess.</p>
-                                </div>
-                                <Switch id="notif-join" checked={joinRequestNotif} onCheckedChange={setJoinRequestNotif} />
-                            </div>
-                             <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="notif-payment" className="text-base">Payment Received</Label>
-                                    <p className="text-sm text-muted-foreground">Get notified when a student successfully pays their monthly bill.</p>
-                                </div>
-                                <Switch id="notif-payment" checked={paymentReceivedNotif} onCheckedChange={setPaymentReceivedNotif} />
-                            </div>
-                             <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="notif-feedback" className="text-base">Feedback Submitted</Label>
-                                    <p className="text-sm text-muted-foreground">Receive an alert when a student submits feedback about the mess.</p>
-                                </div>
-                                <Switch id="notif-feedback" checked={feedbackNotif} onCheckedChange={setFeedbackNotif} />
-                            </div>
-                        </CardContent>
-                         <CardFooter>
                             <Button>Save Changes</Button>
                         </CardFooter>
                     </Card>
