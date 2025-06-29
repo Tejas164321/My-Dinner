@@ -10,9 +10,7 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, UserCheck, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays } from 'lucide-react';
-import { AttendanceChart } from '@/components/admin/analytics-charts';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
 import { holidays } from '@/lib/data';
@@ -92,28 +90,7 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-           <Tabs defaultValue="menu">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <TabsList>
-                    <TabsTrigger value="menu">Menu</TabsTrigger>
-                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                </TabsList>
-            </div>
-            <TabsContent value="menu" className="mt-4 animate-in fade-in-0 duration-500">
-              <MenuSchedule />
-            </TabsContent>
-             <TabsContent value="analytics" className="mt-4 animate-in fade-in-0 duration-500">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Attendance Trends</CardTitle>
-                        <CardDescription>Monthly attendance summary for all students.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-[350px] p-2">
-                        <AttendanceChart />
-                    </CardContent>
-                </Card>
-            </TabsContent>
-          </Tabs>
+           <MenuSchedule />
         </div>
         
         <div className="lg:col-span-1 flex flex-col gap-6">
