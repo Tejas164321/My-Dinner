@@ -57,9 +57,15 @@ function SettingsPageContent() {
     const [lunchDeadline, setLunchDeadline] = useState('10:00');
     const [dinnerDeadline, setDinnerDeadline] = useState('18:00');
 
-    const [uniqueSuffix] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
+    const [uniqueSuffix, setUniqueSuffix] = useState('');
+
+    useEffect(() => {
+        // This will only run on the client, after initial hydration
+        setUniqueSuffix(Math.floor(1000 + Math.random() * 9000).toString());
+    }, []);
 
     const messUniqueId = useMemo(() => {
+        if (!uniqueSuffix) return '';
         const slugBase = messName
             .toLowerCase()
             .trim()
@@ -481,5 +487,3 @@ export default function SettingsPage() {
         <SettingsPageContent />
     );
 }
-
-    

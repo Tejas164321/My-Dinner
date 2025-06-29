@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { DayContentProps } from "react-day-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -46,14 +46,31 @@ interface StudentDetailCardProps {
 
 export function StudentDetailCard({ student, initialMonth }: StudentDetailCardProps) {
     const [month, setMonth] = useState<Date>(initialMonth);
+    const [today, setToday] = useState<Date | undefined>();
+
+    useEffect(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        setToday(now);
+    }, []);
 
     const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
     const currentData = student.monthlyDetails[monthName] || { attendance: '0%', bill: { total: 0, paid: 0 }, status: 'Paid' };
     const remainingBill = currentData.bill.total - currentData.bill.paid;
     
     const { fullDaysCount, halfDaysCount, absentDaysCount, totalMealsCount, fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays } = useMemo(() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize to start of day
+        if (!today) {
+            return {
+                fullDaysCount: 0,
+                halfDaysCount: 0,
+                absentDaysCount: 0,
+                totalMealsCount: 0,
+                fullDayDays: [],
+                lunchOnlyDays: [],
+                dinnerOnlyDays: [],
+                absentDays: [],
+            };
+        }
 
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
@@ -100,7 +117,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             dinnerOnlyDays: dod,
             absentDays: add,
         };
-    }, [month, student.id, currentData.attendance]);
+    }, [month, student.id, currentData.attendance, today]);
 
     return (
         <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full relative">
@@ -261,5 +278,3 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         </Card>
     );
 }
-
-    

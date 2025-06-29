@@ -18,7 +18,7 @@ const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export function MenuSchedule() {
     const [menus, setMenus] = useState(dailyMenus);
-    const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [isEditing, setIsEditing] = useState<false | 'lunch' | 'dinner'>(false);
 
     const [lunchItems, setLunchItems] = useState<string[]>([]);
@@ -31,6 +31,11 @@ export function MenuSchedule() {
     const [newDinnerItem, setNewDinnerItem] = useState('');
 
     useEffect(() => {
+        setSelectedDate(startOfDay(new Date()));
+    }, []);
+
+    useEffect(() => {
+        if (!selectedDate) return;
         const dateKey = formatDateKey(selectedDate);
         const menuForDay = menus.get(dateKey) || { lunch: [], dinner: [] };
         setLunchItems(menuForDay.lunch);
@@ -41,6 +46,7 @@ export function MenuSchedule() {
     }, [selectedDate, menus]);
     
     const menuHistory = useMemo(() => {
+        if (!selectedDate) return [];
         return Array.from({ length: 7 }).map((_, i) => {
             const date = subDays(selectedDate, i + 1);
             const dateKey = formatDateKey(date);
@@ -61,6 +67,7 @@ export function MenuSchedule() {
     };
 
     const handleSave = () => {
+        if (!selectedDate) return;
         const dateKey = formatDateKey(selectedDate);
         const newMenus = new Map(menus);
 

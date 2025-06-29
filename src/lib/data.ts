@@ -155,7 +155,8 @@ export interface DailyMenu {
   dinner: string[];
 }
 
-const today = new Date();
+// Use a fixed date to ensure consistent mock data and prevent hydration errors.
+const today = new Date(2023, 9, 27);
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 const pastMenus: [string, DailyMenu][] = [
