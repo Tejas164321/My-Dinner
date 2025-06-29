@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ComponentType, ReactNode } from 'react';
@@ -250,17 +251,17 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button 
-                                variant="outline"
-                                size="icon" 
-                                onClick={handleToggle} 
-                                className="absolute -right-4 top-1/2 -translate-y-1/2 rounded-full h-8 w-8 z-10 bg-card hover:bg-card"
+                            <button
+                                onClick={handleToggle}
+                                className={cn(
+                                    "absolute -right-[7px] top-1/2 -translate-y-1/2 z-20 flex h-12 w-3 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
+                                )}
                             >
                                 <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
                                 <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"}</span>
-                            </Button>
+                            </button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={8}>
+                        <TooltipContent side="right" sideOffset={5}>
                             {isCollapsed ? "Expand" : "Collapse"}
                         </TooltipContent>
                     </Tooltip>
@@ -274,3 +275,5 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
     </div>
   );
 }
+
+    
