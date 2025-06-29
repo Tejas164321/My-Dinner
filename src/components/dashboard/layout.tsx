@@ -53,7 +53,6 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   CalendarDays,
   Bell,
   UserCheck,
-  Settings,
   LifeBuoy
 };
 
@@ -138,8 +137,8 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 <div className="flex-1 overflow-y-auto">
                     <NavContent navItems={navItems} isCollapsed={false} onLinkClick={handleMobileNavClose} />
                 </div>
-                <div className="mt-auto border-t p-2">
-                    <Button asChild variant={'ghost'} className="w-full justify-start h-10 gap-3 px-3">
+                <div className="mt-auto border-t p-4">
+                    <Button asChild variant={'ghost'} className="w-full justify-start h-10 gap-3 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                         <Link href={'/'}>
                             <LogOut className="h-5 w-5 shrink-0" />
                             <span className="truncate">Log Out</span>
@@ -181,11 +180,11 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
     <div className="flex h-screen w-full flex-col bg-background">
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card/80 px-6 backdrop-blur-sm">
             <div className="flex items-center gap-3">
-               <Link href={userPage} className={cn("flex items-center gap-3 text-lg font-semibold transition-all duration-300", !isCollapsed && "pl-6")}>
+               <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
                   <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                     <ChefHat className="h-6 w-6" />
                   </div>
-                  <span className={cn("font-bold transition-all duration-300", isCollapsed && "opacity-0 w-0")}>Messo</span>
+                  <span>Messo</span>
               </Link>
             </div>
 
@@ -235,11 +234,14 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 <div className="flex-grow overflow-y-auto">
                   <NavContent navItems={navItems} isCollapsed={isCollapsed} />
                 </div>
-                <div className="mt-auto border-t p-2">
+                <div className="mt-auto border-t p-4">
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                            <Button asChild variant={'ghost'} className={cn("w-full transition-colors duration-300", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}>
+                            <Button asChild variant={'ghost'} className={cn(
+                                "w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors duration-300", 
+                                isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3'
+                            )}>
                                 <Link href={'/'}>
                                 <LogOut className="h-5 w-5 shrink-0" />
                                 <span className={cn("truncate", isCollapsed && "sr-only")}>Log Out</span>
@@ -256,7 +258,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                             <button
                                 onClick={handleToggle}
                                 className={cn(
-                                    "absolute top-1/2 -translate-y-1/2 -right-3 z-20 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
+                                    "absolute top-1/2 -translate-y-1/2 -right-3 z-10 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
                                 )}
                             >
                                 <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
