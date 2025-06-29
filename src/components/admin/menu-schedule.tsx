@@ -12,6 +12,7 @@ import { dailyMenus, commonMenuItems } from "@/lib/data";
 import { format, subDays, startOfDay } from 'date-fns';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
@@ -34,6 +35,8 @@ export function MenuSchedule() {
         const menuForDay = menus.get(dateKey) || { lunch: [], dinner: [] };
         setLunchItems(menuForDay.lunch);
         setDinnerItems(menuForDay.dinner);
+        setTempLunchItems(menuForDay.lunch);
+        setTempDinnerItems(menuForDay.dinner);
         setIsEditing(false); 
     }, [selectedDate, menus]);
     
@@ -60,10 +63,19 @@ export function MenuSchedule() {
     const handleSave = () => {
         const dateKey = formatDateKey(selectedDate);
         const newMenus = new Map(menus);
-        newMenus.set(dateKey, { 
-            lunch: tempLunchItems, 
-            dinner: tempDinnerItems
-        });
+
+        if (isEditing === 'lunch') {
+            newMenus.set(dateKey, { 
+                lunch: tempLunchItems, 
+                dinner: dinnerItems
+            });
+        } else if (isEditing === 'dinner') {
+            newMenus.set(dateKey, { 
+                lunch: lunchItems,
+                dinner: tempDinnerItems
+            });
+        }
+        
         setMenus(newMenus);
         setIsEditing(false);
     };
@@ -92,9 +104,13 @@ export function MenuSchedule() {
     
     const handleAddCommonItem = (meal: 'lunch' | 'dinner', item: string) => {
         if (meal === 'lunch') {
-            setTempLunchItems(prev => [...prev, item]);
+            if (!tempLunchItems.includes(item)) {
+                setTempLunchItems(prev => [...prev, item]);
+            }
         } else {
-            setTempDinnerItems(prev => [...prev, item]);
+             if (!tempDinnerItems.includes(item)) {
+                setTempDinnerItems(prev => [...prev, item]);
+            }
         }
     };
 
@@ -155,7 +171,7 @@ export function MenuSchedule() {
                                 isEditing === 'lunch' ? (
                                     <div className="flex gap-2">
                                         <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
-                                        <Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save All</Button>
+                                        <Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button>
                                     </div>
                                 ) : (
                                     <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
@@ -204,9 +220,14 @@ export function MenuSchedule() {
                         <div className="flex justify-between items-center">
                             <CardTitle>Dinner Menu</CardTitle>
                              {isEditing && isEditing !== 'dinner' ? null : (
-                                !isEditing ? (
+                                isEditing === 'dinner' ? (
+                                    <div className="flex gap-2">
+                                        <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
+                                        <Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button>
+                                    </div>
+                                ) : (
                                     <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
-                                ) : null
+                                )
                              )}
                         </div>
                     </CardHeader>
