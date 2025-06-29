@@ -8,18 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { Pencil, Save, History, Plus, X, Calendar as CalendarIcon, Utensils, Sparkles, Loader2 } from "lucide-react";
-import { commonMenuItems, dailyMenus, DailyMenu } from "@/lib/data";
+import { Pencil, Save, History, Plus, X, Calendar as CalendarIcon, Utensils } from "lucide-react";
+import { dailyMenus, DailyMenu } from "@/lib/data";
 import { format, subDays, startOfDay } from 'date-fns';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { getMenuSuggestions } from '@/ai/flows/menu-suggestion-flow';
-import { useToast } from "@/hooks/use-toast";
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export function MenuSchedule() {
-    const { toast } = useToast();
     const [menus, setMenus] = useState(dailyMenus);
     const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
     const [isEditing, setIsEditing] = useState<false | 'lunch' | 'dinner'>(false);
@@ -33,16 +30,12 @@ export function MenuSchedule() {
     const [newLunchItem, setNewLunchItem] = useState('');
     const [newDinnerItem, setNewDinnerItem] = useState('');
 
-    const [isSuggesting, setIsSuggesting] = useState<false | 'lunch' | 'dinner'>(false);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-
     useEffect(() => {
         const dateKey = formatDateKey(selectedDate);
         const menuForDay = menus.get(dateKey) || { lunch: [], dinner: [] };
         setLunchItems(menuForDay.lunch);
         setDinnerItems(menuForDay.dinner);
         setIsEditing(false); 
-        setSuggestions([]);
     }, [selectedDate, menus]);
     
     const menuHistory = useMemo(() => {
@@ -77,12 +70,10 @@ export function MenuSchedule() {
         });
         setMenus(newMenus);
         setIsEditing(false);
-        setSuggestions([]);
     };
 
     const handleCancel = () => {
         setIsEditing(false);
-        setSuggestions([]);
     };
 
     const handleAddItem = (meal: 'lunch' | 'dinner') => {
@@ -103,42 +94,6 @@ export function MenuSchedule() {
         }
     };
 
-    const handleQuickAdd = (meal: 'lunch' | 'dinner', item: string) => {
-        if (meal === 'lunch') {
-            setTempLunchItems(prev => [...prev, item]);
-        } else {
-            setTempDinnerItems(prev => [...prev, item]);
-        }
-        setSuggestions(prev => prev.filter(s => s !== item));
-    };
-
-    const handleGetSuggestions = async (meal: 'lunch' | 'dinner') => {
-        setIsSuggesting(meal);
-        setSuggestions([]);
-        try {
-            const existingItems = meal === 'lunch' ? tempLunchItems : tempDinnerItems;
-            const result = await getMenuSuggestions({ mealType: meal, existingItems });
-            if (result.suggestions && result.suggestions.length > 0) {
-                setSuggestions(result.suggestions);
-            } else {
-                 toast({
-                    variant: "destructive",
-                    title: "No Suggestions",
-                    description: "The AI couldn't generate suggestions at this time.",
-                });
-            }
-        } catch (error) {
-            console.error("Error getting AI suggestions:", error);
-            toast({
-                variant: "destructive",
-                title: "AI Error",
-                description: "Failed to get suggestions from the AI.",
-            });
-        } finally {
-            setIsSuggesting(false);
-        }
-    };
-    
     const renderMenuTags = (items: string[], meal: 'lunch' | 'dinner') => (
         <div className="flex flex-wrap gap-2 rounded-lg border bg-background/50 p-3 min-h-[120px]">
             {items.map((item, index) => (
@@ -219,22 +174,6 @@ export function MenuSchedule() {
                                         <Button onClick={() => handleAddItem('lunch')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
                                     </div>
                                 </div>
-                                <div className="space-y-3">
-                                    <Button variant="outline" className="w-full" onClick={() => handleGetSuggestions('lunch')} disabled={isSuggesting === 'lunch'}>
-                                        {isSuggesting === 'lunch' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2 text-yellow-400" />}
-                                        Suggest with AI
-                                    </Button>
-                                    {suggestions.length > 0 && isEditing === 'lunch' && (
-                                        <div className="p-3 bg-secondary/50 rounded-lg space-y-2 animate-in fade-in-0">
-                                             <p className="text-sm text-muted-foreground">AI Suggestions:</p>
-                                             <div className="flex flex-wrap gap-2">
-                                                {suggestions.map(item => (
-                                                    <Button key={item} variant="outline" size="sm" onClick={() => handleQuickAdd('lunch', item)}>{item}</Button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
                             </div>
                         )}
                     </CardContent>
@@ -266,22 +205,6 @@ export function MenuSchedule() {
                                         />
                                         <Button onClick={() => handleAddItem('dinner')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
                                     </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <Button variant="outline" className="w-full" onClick={() => handleGetSuggestions('dinner')} disabled={isSuggesting === 'dinner'}>
-                                        {isSuggesting === 'dinner' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2 text-yellow-400" />}
-                                        Suggest with AI
-                                    </Button>
-                                    {suggestions.length > 0 && isEditing === 'dinner' && (
-                                        <div className="p-3 bg-secondary/50 rounded-lg space-y-2 animate-in fade-in-0">
-                                             <p className="text-sm text-muted-foreground">AI Suggestions:</p>
-                                             <div className="flex flex-wrap gap-2">
-                                                {suggestions.map(item => (
-                                                    <Button key={item} variant="outline" size="sm" onClick={() => handleQuickAdd('dinner', item)}>{item}</Button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         )}
