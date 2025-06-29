@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -31,9 +32,21 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const holidaysThisMonth = useMemo(() => {
-    if (!today) return 0;
-    return holidays.filter(h => isSameMonth(h.date, today)).length;
+  const { holidaysThisMonth, mealBreaksThisMonth } = useMemo(() => {
+    if (!today) return { holidaysThisMonth: 0, mealBreaksThisMonth: 0 };
+    
+    const currentMonthHolidays = holidays.filter(h => isSameMonth(h.date, today));
+    
+    const totalHolidays = currentMonthHolidays.length;
+    
+    const totalMealBreaks = currentMonthHolidays.reduce((acc, holiday) => {
+        if (holiday.type === 'full_day') {
+            return acc + 2;
+        }
+        return acc + 1;
+    }, 0);
+
+    return { holidaysThisMonth: totalHolidays, mealBreaksThisMonth: totalMealBreaks };
   }, [today]);
 
   return (
@@ -126,13 +139,19 @@ export default function AdminDashboard() {
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle>Holiday Management</CardTitle>
-                        <CardDescription>Holidays declared for this month.</CardDescription>
+                        <CardDescription>Stats for this month.</CardDescription>
                     </div>
                     <CalendarDays className="h-6 w-6 text-primary" />
                 </CardHeader>
-                <CardContent>
-                    <p className="text-4xl font-bold">{holidaysThisMonth}</p>
-                    <p className="text-xs text-muted-foreground">Total holidays this month.</p>
+                <CardContent className="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                        <p className="text-4xl font-bold">{holidaysThisMonth}</p>
+                        <p className="text-xs text-muted-foreground">Total Holidays</p>
+                    </div>
+                     <div>
+                        <p className="text-4xl font-bold">{mealBreaksThisMonth}</p>
+                        <p className="text-xs text-muted-foreground">Meal Breaks</p>
+                    </div>
                 </CardContent>
                 <CardFooter>
                     <Button asChild className="w-full">
