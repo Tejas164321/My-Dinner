@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -35,12 +36,13 @@ export default function SettingsPage() {
     const [uniqueSuffix] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
 
     const messUniqueId = useMemo(() => {
-        const slug = messName
+        const slugBase = messName
             .toLowerCase()
             .trim()
             .replace(/&/g, 'and')
             .replace(/\s+/g, '-')
             .replace(/[^a-z0-9-]/g, '');
+        const slug = slugBase.substring(0, 10);
         return `${slug}-${uniqueSuffix}`;
     }, [messName, uniqueSuffix]);
 
@@ -97,62 +99,89 @@ export default function SettingsPage() {
                             <CardDescription>Update your personal information and manage your account.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                                <div className="flex items-center gap-6">
-                                    <Avatar className="w-24 h-24 border-4 border-primary/20">
-                                        <AvatarImage src={adminUser.avatarUrl} alt={adminUser.name} />
-                                        <AvatarFallback>{adminUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="space-y-2">
-                                        <h3 className="text-2xl font-semibold">{profileName}</h3>
-                                        <p className="text-muted-foreground">{adminUser.role}</p>
-                                        <Button variant="outline">Upload New Photo</Button>
-                                    </div>
-                                </div>
-                                <div className="space-y-4 rounded-lg border p-4 bg-secondary/50">
-                                    <div className="space-y-1">
-                                        <h3 className="font-medium">Mess Secret Code</h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Students use this 4-digit code to join.
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1">
-                                            <Input
-                                                id="secret-code"
-                                                value={secretCode}
-                                                onChange={(e) => {
-                                                    const value = e.target.value;
-                                                    if (/^\d*$/.test(value) && value.length <= 4) {
-                                                        setSecretCode(value);
-                                                    }
-                                                }}
-                                                maxLength={4}
-                                                className="font-mono text-lg tracking-widest text-center"
-                                            />
-                                        </div>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="outline" size="icon" onClick={handleRegenerateCode}><RefreshCw className="h-4 w-4" /></Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Regenerate Code</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button size="icon" onClick={handleCopyCode}><Copy className="h-4 w-4" /></Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Copy Code</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
+                            <div className="flex items-center gap-6">
+                                <Avatar className="w-24 h-24 border-4 border-primary/20">
+                                    <AvatarImage src={adminUser.avatarUrl} alt={adminUser.name} />
+                                    <AvatarFallback>{adminUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                </Avatar>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-semibold">{profileName}</h3>
+                                    <p className="text-muted-foreground">{adminUser.role}</p>
+                                    <Button variant="outline">Upload New Photo</Button>
                                 </div>
                             </div>
                             
+                             <div className="space-y-4 pt-6 border-t">
+                                <h3 className="font-semibold text-foreground/90">Mess Identifiers</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                                    <div className="space-y-4 rounded-lg border p-4 bg-secondary/50">
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium">Mess Secret Code</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Students use this 4-digit code to join.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1">
+                                                <Input
+                                                    id="secret-code"
+                                                    value={secretCode}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        if (/^\d*$/.test(value) && value.length <= 4) {
+                                                            setSecretCode(value);
+                                                        }
+                                                    }}
+                                                    maxLength={4}
+                                                    className="font-mono text-lg tracking-widest text-center"
+                                                />
+                                            </div>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="outline" size="icon" onClick={handleRegenerateCode}><RefreshCw className="h-4 w-4" /></Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Regenerate Code</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button size="icon" onClick={handleCopyCode}><Copy className="h-4 w-4" /></Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Copy Code</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 rounded-lg border p-4 bg-secondary/50">
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium">Mess Unique ID</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                A unique ID for students to find your mess.
+                                            </p>
+                                        </div>
+                                         <div className="relative">
+                                            <Input id="mess-id" value={messUniqueId} readOnly className="pr-10 font-mono bg-muted/50" />
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" onClick={handleCopyUniqueId} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
+                                                            <Copy className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Copy Unique ID</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="space-y-4 pt-6 border-t">
                                 <h3 className="font-semibold text-foreground/90">Personal Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -202,27 +231,9 @@ export default function SettingsPage() {
                              <div className="space-y-4">
                                 <h3 className="font-medium">Mess Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor="mess-name">Mess Name</Label>
                                         <Input id="mess-name" value={messName} onChange={(e) => setMessName(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="mess-id">Mess Unique ID</Label>
-                                        <div className="relative">
-                                            <Input id="mess-id" value={messUniqueId} readOnly className="pr-10 font-mono bg-muted/50" />
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" onClick={handleCopyUniqueId} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
-                                                            <Copy className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Copy Unique ID</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="contact-email">Contact Email</Label>
