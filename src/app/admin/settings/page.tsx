@@ -13,6 +13,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from "@/hooks/use-toast";
 import { adminUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+
 
 export default function SettingsPage() {
     const { toast } = useToast();
@@ -20,13 +22,13 @@ export default function SettingsPage() {
     // Profile Settings State
     const [profileName, setProfileName] = useState(adminUser.name);
     const [profileEmail, setProfileEmail] = useState(adminUser.email);
+    const [secretCode, setSecretCode] = useState('A8XFGT');
 
     // General Settings State
     const [messName, setMessName] = useState('Messo Central Kitchen');
     const [contactEmail, setContactEmail] = useState('contact@messo.com');
     const [contactPhone, setContactPhone] = useState('+91 12345 67890');
     const [address, setAddress] = useState('123 College Road, University Campus, New Delhi - 110001');
-    const [secretCode, setSecretCode] = useState('A8XFGT');
     const [joinRequestApproval, setJoinRequestApproval] = useState<'manual' | 'auto'>('manual');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
@@ -75,15 +77,48 @@ export default function SettingsPage() {
                             <CardDescription>Update your personal information and manage your account.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-8">
-                            <div className="flex items-center gap-6">
-                                <Avatar className="w-24 h-24 border-4 border-primary/20">
-                                    <AvatarImage src={adminUser.avatarUrl} alt={adminUser.name} />
-                                    <AvatarFallback>{adminUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                </Avatar>
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-semibold">{profileName}</h3>
-                                    <p className="text-muted-foreground">{adminUser.role}</p>
-                                    <Button variant="outline">Upload New Photo</Button>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                                <div className="flex items-center gap-6">
+                                    <Avatar className="w-24 h-24 border-4 border-primary/20">
+                                        <AvatarImage src={adminUser.avatarUrl} alt={adminUser.name} />
+                                        <AvatarFallback>{adminUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-semibold">{profileName}</h3>
+                                        <p className="text-muted-foreground">{adminUser.role}</p>
+                                        <Button variant="outline">Upload New Photo</Button>
+                                    </div>
+                                </div>
+                                <div className="space-y-4 rounded-lg border p-4 bg-secondary/50">
+                                    <div className="space-y-1">
+                                        <h3 className="font-medium">Mess Secret Code</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            Students use this code to join.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1">
+                                            <span className="font-mono text-lg tracking-widest bg-background px-3 py-1.5 rounded-md">{secretCode}</span>
+                                        </div>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="outline" size="icon" onClick={handleRegenerateCode}><RefreshCw className="h-4 w-4" /></Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Regenerate Code</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button size="icon" onClick={handleCopyCode}><Copy className="h-4 w-4" /></Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Copy Code</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -152,28 +187,6 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     <Label htmlFor="address">Address</Label>
                                     <Textarea id="address" value={address} onChange={(e) => setAddress(e.target.value)} className="min-h-[80px]" />
-                                </div>
-                            </div>
-                            
-                             <div className="space-y-4 pt-6 border-t">
-                                <div className="space-y-1">
-                                    <h3 className="font-medium">Mess Secret Code</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Students will need this secret code to submit a join request.
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-4 rounded-lg border p-4 bg-secondary/50">
-                                    <div className="flex-1">
-                                        <span className="font-mono text-lg tracking-widest bg-background px-4 py-2 rounded-md">{secretCode}</span>
-                                    </div>
-                                    <Button variant="outline" onClick={handleRegenerateCode}>
-                                        <RefreshCw className="mr-2 h-4 w-4" />
-                                        Regenerate
-                                    </Button>
-                                    <Button onClick={handleCopyCode}>
-                                        <Copy className="mr-2 h-4 w-4" />
-                                        Copy
-                                    </Button>
                                 </div>
                             </div>
 
