@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { format, isFuture, addDays, eachDayOfInterval } from 'date-fns';
+import { format, isFuture, eachDayOfInterval } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -29,6 +30,8 @@ export default function HolidaysPage() {
   const [oneDayType, setOneDayType] = useState<HolidayType>('full_day');
   const [longLeaveFrom, setLongLeaveFrom] = useState<Date | undefined>();
   const [longLeaveTo, setLongLeaveTo] = useState<Date | undefined>();
+  const [longLeaveFromType, setLongLeaveFromType] = useState<HolidayType>('full_day');
+  const [longLeaveToType, setLongLeaveToType] = useState<HolidayType>('full_day');
   
   // Calendar View State
   const [month, setMonth] = useState<Date | undefined>();
@@ -55,24 +58,37 @@ export default function HolidaysPage() {
       newHolidays.push({ name: newHolidayName, date: oneDayDate, type: oneDayType });
     } else if (leaveType === 'long_leave' && longLeaveFrom && longLeaveTo) {
       const dates = eachDayOfInterval({ start: longLeaveFrom, end: longLeaveTo });
-      newHolidays = dates.map(date => ({ name: newHolidayName, date, type: 'full_day' }));
+      
+      if (dates.length === 1) {
+        newHolidays.push({ name: newHolidayName, date: dates[0], type: longLeaveFromType });
+      } else {
+        newHolidays = dates.map((date, index) => {
+          if (index === 0) {
+            return { name: newHolidayName, date, type: longLeaveFromType };
+          }
+          if (index === dates.length - 1) {
+            return { name: newHolidayName, date, type: longLeaveToType };
+          }
+          return { name: newHolidayName, date, type: 'full_day' };
+        });
+      }
     } else {
       return;
     }
 
-    // Prevent adding duplicate holidays for the same date
     const existingDates = new Set(holidays.map(h => h.date.getTime()));
     const uniqueNewHolidays = newHolidays.filter(h => !existingDates.has(h.date.getTime()));
 
     const updatedHolidays = [...holidays, ...uniqueNewHolidays].sort((a, b) => a.date.getTime() - b.date.getTime());
     setHolidays(updatedHolidays);
     
-    // Reset form
     setNewHolidayName('');
-    setOneDayDate(new Date());
+    setOneDayDate(today);
     setOneDayType('full_day');
     setLongLeaveFrom(undefined);
     setLongLeaveTo(undefined);
+    setLongLeaveFromType('full_day');
+    setLongLeaveToType('full_day');
   };
 
   const handleDeleteHoliday = (dateToDelete: Date) => {
@@ -91,8 +107,8 @@ export default function HolidaysPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-        <div className="lg:col-span-2">
-          <Card className="flex flex-col">
+        <div className="lg:col-span-2 flex flex-col">
+          <Card>
             <CardHeader>
               <CardTitle>Holiday Calendar</CardTitle>
               <CardDescription>An overview of all scheduled holidays for the year.</CardDescription>
@@ -180,50 +196,70 @@ export default function HolidaysPage() {
                 )}
                 
                 {leaveType === 'long_leave' && (
-                  <div className="space-y-2 animate-in fade-in-0 duration-300">
-                    <Label>Date Range (all considered full day holidays)</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !longLeaveFrom && 'text-muted-foreground')}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {longLeaveFrom ? format(longLeaveFrom, 'PPP') : <span>From</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar 
-                            mode="single" 
-                            selected={longLeaveFrom} 
-                            onSelect={(date) => {
-                              setLongLeaveFrom(date);
-                              if (date && longLeaveTo && date > longLeaveTo) {
-                                setLongLeaveTo(undefined);
-                              }
-                            }}
-                            disabled={{ after: longLeaveTo }}
-                            initialFocus 
-                            showOutsideDays={false}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !longLeaveTo && 'text-muted-foreground')}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {longLeaveTo ? format(longLeaveTo, 'PPP') : <span>To</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar 
-                            mode="single" 
-                            selected={longLeaveTo} 
-                            onSelect={setLongLeaveTo} 
-                            disabled={{ before: longLeaveFrom }}
-                            initialFocus 
-                            showOutsideDays={false}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                  <div className="space-y-4 animate-in fade-in-0 duration-300">
+                    <div className="space-y-2">
+                      <Label>Date Range</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !longLeaveFrom && 'text-muted-foreground')}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {longLeaveFrom ? format(longLeaveFrom, 'PPP') : <span>From</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar 
+                              mode="single" 
+                              selected={longLeaveFrom} 
+                              onSelect={(date) => {
+                                setLongLeaveFrom(date);
+                                if (date && longLeaveTo && date > longLeaveTo) {
+                                  setLongLeaveTo(undefined);
+                                }
+                              }}
+                              disabled={{ after: longLeaveTo }}
+                              initialFocus 
+                              showOutsideDays={false}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !longLeaveTo && 'text-muted-foreground')}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {longLeaveTo ? format(longLeaveTo, 'PPP') : <span>To</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar 
+                              mode="single" 
+                              selected={longLeaveTo} 
+                              onSelect={setLongLeaveTo} 
+                              disabled={{ before: longLeaveFrom }}
+                              initialFocus 
+                              showOutsideDays={false}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                          <Label>From Type</Label>
+                          <RadioGroup value={longLeaveFromType} onValueChange={(value: HolidayType) => setLongLeaveFromType(value)} className="flex gap-2 sm:gap-4 flex-wrap">
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="full_day" id="from_full_day" /><Label htmlFor="from_full_day" className="cursor-pointer">Full Day</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="lunch_only" id="from_lunch_only" /><Label htmlFor="from_lunch_only" className="cursor-pointer">Lunch Off</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="dinner_only" id="from_dinner_only" /><Label htmlFor="from_dinner_only" className="cursor-pointer">Dinner Off</Label></div>
+                          </RadioGroup>
+                      </div>
+                       <div className="space-y-3">
+                          <Label>To Type</Label>
+                          <RadioGroup value={longLeaveToType} onValueChange={(value: HolidayType) => setLongLeaveToType(value)} className="flex gap-2 sm:gap-4 flex-wrap">
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="full_day" id="to_full_day" /><Label htmlFor="to_full_day" className="cursor-pointer">Full Day</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="lunch_only" id="to_lunch_only" /><Label htmlFor="to_lunch_only" className="cursor-pointer">Lunch Off</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="dinner_only" id="to_dinner_only" /><Label htmlFor="to_dinner_only" className="cursor-pointer">Dinner Off</Label></div>
+                          </RadioGroup>
+                      </div>
                     </div>
                   </div>
                 )}
