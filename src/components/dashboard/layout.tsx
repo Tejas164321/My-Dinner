@@ -178,7 +178,14 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
 
   return (
     <div className="flex h-screen w-full flex-col bg-background">
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-end border-b bg-card/80 px-4 backdrop-blur-sm">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card/80 px-6 backdrop-blur-sm">
+            <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
+                <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
+                  <ChefHat className="h-6 w-6" />
+                </div>
+                <span className="font-bold">Messo</span>
+            </Link>
+
             <div className="flex items-center gap-2">
                 {user.role === 'Mess Manager' && 
                 <TooltipProvider>
@@ -222,14 +229,6 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-300 ease-in-out relative",
                 isCollapsed ? "w-16" : "w-64"
             )}>
-                <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
-                  <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
-                      <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
-                        <ChefHat className="h-6 w-6" />
-                      </div>
-                      <span className={cn("truncate", isCollapsed && "hidden")}>Messo</span>
-                  </Link>
-                </div>
                 <div className="flex-grow overflow-y-auto">
                   <NavContent navItems={navItems} isCollapsed={isCollapsed} />
                 </div>
@@ -255,7 +254,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                                 variant="outline"
                                 size="icon" 
                                 onClick={handleToggle} 
-                                className="absolute -right-4 top-20 rounded-full h-8 w-8"
+                                className="absolute -right-4 top-1/2 -translate-y-1/2 rounded-full h-8 w-8 z-10 bg-card hover:bg-card"
                             >
                                 <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
                                 <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"}</span>
