@@ -29,6 +29,7 @@ export const adminUser = {
 export const studentUser = {
     name: 'Alex Doe',
     role: 'Student',
+    email: 'alex.doe@example.com',
     avatarUrl: 'https://placehold.co/100x100.png',
 };
 

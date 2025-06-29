@@ -75,7 +75,7 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
       <nav className="flex flex-col items-start gap-2 px-2 py-4">
         {navItems.map((item) => {
           const Icon = iconMap[item.icon];
-          const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+          const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/student' && pathname.startsWith(item.href));
           return (
             <Tooltip key={item.href}>
               <TooltipTrigger asChild>
@@ -153,10 +153,10 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                       <DropdownMenuContent align="start" className="w-56">
                         <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild><Link href={userPage}><User className="mr-2" />Profile</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2" />Settings</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2" />Profile</Link></DropdownMenuItem>
+                        {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2" />Settings</Link></DropdownMenuItem>}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem><LogOut className="mr-2" />Log Out</DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/"><LogOut className="mr-2" />Log Out</Link></DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -164,21 +164,25 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
             </Sheet>
             
             <div className="flex items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" asChild><Link href="/admin/announcements"><Bell /></Link></Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Announcements</p></TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" asChild><Link href="/admin/settings"><Settings /></Link></Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Settings</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2" />Profile</Link></DropdownMenuItem>
+                  {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2" />Settings</Link></DropdownMenuItem>}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link href="/"><LogOut className="mr-2" />Log Out</Link></DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </header>
           <main className="flex-1 p-4 sm:p-6 lg:p-8 relative">
               <div className="absolute inset-0 grid-bg -z-10 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
@@ -204,44 +208,37 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
               <span>Messo</span>
            </Link>
            <Link href={userPage} className={cn("flex items-center gap-3 font-semibold text-lg", !isCollapsed && "hidden")}>
-             <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                <ChefHat className="h-6 w-6" />
-              </div>
+             <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger>
+                      <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                        <ChefHat className="h-6 w-6" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={5}>Messo</TooltipContent>
+                </Tooltip>
+             </TooltipProvider>
            </Link>
         </div>
-        <NavContent navItems={navItems} isCollapsed={isCollapsed} />
+        <div className="flex-grow">
+          <NavContent navItems={navItems} isCollapsed={isCollapsed} />
+        </div>
         <div className="mt-auto border-t p-2">
-            <DropdownMenu>
-              <TooltipProvider>
-                 <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className={cn("w-full h-auto p-2", isCollapsed ? 'justify-center' : 'justify-start gap-3')}>
-                          <Avatar className="h-9 w-9">
-                              <AvatarImage src={user.avatarUrl} alt={user.name} />
-                              <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                          </Avatar>
-                           <div className={cn("flex flex-col items-start text-left", isCollapsed && "hidden")}>
-                              <span className="font-semibold text-sm">{user.name}</span>
-                              <span className="text-xs text-muted-foreground">{user.role}</span>
-                           </div>
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" sideOffset={5} className={cn(isCollapsed ? "block" : "hidden")}>
-                        <p>{user.name}</p>
-                    </TooltipContent>
-                 </Tooltip>
-              </TooltipProvider>
-               <DropdownMenuContent align="end" side="right" sideOffset={10} className="w-56">
-                <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link href={userPage}><User className="mr-2" />Profile</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2" />Settings</Link></DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem><LogOut className="mr-2" />Log Out</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {user.role === 'Mess Manager' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant={'ghost'} className={cn("w-full transition-colors duration-300", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}>
+                    <Link href={'/admin/support'}>
+                      <LifeBuoy className="h-5 w-5 shrink-0" />
+                      <span className={cn("truncate", isCollapsed && "sr-only")}>Support</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                {isCollapsed && <TooltipContent side="right" sideOffset={5}>Support</TooltipContent>}
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </aside>
       
@@ -251,21 +248,42 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
             <PanelLeft className="h-5 w-5" />
             <span className="sr-only">Toggle sidebar</span>
           </Button>
+          <div className="flex-1"></div>
           <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" asChild><Link href="/admin/announcements"><Bell /></Link></Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Announcements</p></TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" asChild><Link href="/admin/settings"><Settings /></Link></Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Settings</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {user.role === 'Mess Manager' && 
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" asChild><Link href="/admin/announcements"><Bell /></Link></Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Announcements</p></TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" asChild><Link href="/admin/settings"><Settings /></Link></Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Settings</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            }
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+               <DropdownMenuContent align="end" sideOffset={10} className="w-56">
+                <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2" />Profile</Link></DropdownMenuItem>
+                {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2" />Settings</Link></DropdownMenuItem>}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link href="/"><LogOut className="mr-2" />Log Out</Link></DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 relative">
