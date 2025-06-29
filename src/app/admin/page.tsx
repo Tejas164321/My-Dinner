@@ -102,7 +102,6 @@ export default function AdminDashboard() {
                             <Users className="mr-2 h-4 w-4"/> Manage Students
                         </Link>
                     </Button>
-                    <Button><Bell className="mr-2 h-4 w-4"/> Announce</Button>
                 </div>
             </div>
             <TabsContent value="menu" className="mt-4 animate-in fade-in-0 duration-500">

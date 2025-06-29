@@ -14,6 +14,7 @@ export const adminNavItems = [
     { href: '/admin/menu', label: 'Meal Menu', icon: 'Utensils' },
     { href: '/admin/billing', label: 'Billing', icon: 'CircleDollarSign' },
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
+    { href: '/admin/announcements', label: 'Announcements', icon: 'Bell' },
 ];
 
 export const adminUser = {
@@ -179,4 +180,32 @@ export const holidays: Holiday[] = [
     { date: new Date(2023, 9, 24), name: 'Dussehra', type: 'full_day' },
     { date: new Date(2023, 10, 12), name: 'Diwali', type: 'full_day' },
     { date: new Date(2023, 11, 25), name: 'Christmas', type: 'full_day' },
+];
+
+export interface Announcement {
+    id: string;
+    title: string;
+    message: string;
+    date: string;
+}
+
+export const pastAnnouncements: Announcement[] = [
+    {
+        id: '1',
+        title: 'Diwali Celebration Dinner',
+        message: 'A special dinner will be served on the occasion of Diwali. Please join us for the celebration!',
+        date: '2023-11-10',
+    },
+    {
+        id: '2',
+        title: 'Mess Closure for Maintenance',
+        message: 'The mess will be closed for regular maintenance on Sunday from 9 AM to 5 PM. Please make alternate arrangements.',
+        date: '2023-11-05',
+    },
+    {
+        id: '3',
+        title: 'Feedback Form for October',
+        message: 'Your feedback is valuable to us. Please fill out the feedback form for the month of October. Link is available on the student dashboard.',
+        date: '2023-10-30',
+    }
 ];
