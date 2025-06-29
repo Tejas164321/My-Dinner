@@ -81,28 +81,28 @@ export default function SettingsPage() {
                                     onValueChange={(value: 'manual' | 'auto') => setJoinRequestApproval(value)}
                                     className="space-y-2"
                                 >
-                                    <div className="flex items-center gap-3 rounded-lg border p-4 has-[[data-state=checked]]:border-primary">
+                                    <Label className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors hover:border-primary/50 has-[[data-state=checked]]:border-primary">
                                         <RadioGroupItem value="manual" id="manual" />
                                         <div className="grid gap-1.5 leading-none">
-                                            <Label htmlFor="manual" className="cursor-pointer font-normal">
+                                            <div className="font-normal">
                                                 Manual Approval
                                                 <p className="text-sm text-muted-foreground">
                                                     Admin must manually approve each new student join request. (Recommended)
                                                 </p>
-                                            </Label>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 rounded-lg border p-4 has-[[data-state=checked]]:border-primary">
+                                    </Label>
+                                    <Label className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors hover:border-primary/50 has-[[data-state=checked]]:border-primary">
                                         <RadioGroupItem value="auto" id="auto" />
                                         <div className="grid gap-1.5 leading-none">
-                                            <Label htmlFor="auto" className="cursor-pointer font-normal">
+                                            <div className="font-normal">
                                                 Automatic Approval
                                                 <p className="text-sm text-muted-foreground">
                                                     Automatically approve all new join requests. Use with caution.
                                                 </p>
-                                            </Label>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </Label>
                                 </RadioGroup>
                             </div>
                              <div className="space-y-4 pt-6 border-t">
