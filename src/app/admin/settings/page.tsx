@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,9 +17,27 @@ import { adminUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
-
-export default function SettingsPage() {
+function SettingsPageContent() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
+
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
+
+    useEffect(() => {
+        const currentTab = searchParams.get('tab') || 'profile';
+        if (currentTab !== activeTab) {
+            setActiveTab(currentTab);
+        }
+    }, [searchParams, activeTab]);
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', value);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    };
 
     // Profile Settings State
     const [profileName, setProfileName] = useState(adminUser.name);
@@ -84,7 +103,7 @@ export default function SettingsPage() {
                 <p className="text-muted-foreground">Manage your mess settings and preferences.</p>
             </div>
 
-            <Tabs defaultValue="profile" className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> Profile</TabsTrigger>
                     <TabsTrigger value="general"><Info className="mr-2 h-4 w-4" /> General</TabsTrigger>
@@ -369,5 +388,12 @@ export default function SettingsPage() {
                 </TabsContent>
             </Tabs>
         </div>
+    );
+}
+
+
+export default function SettingsPage() {
+    return (
+        <SettingsPageContent />
     );
 }

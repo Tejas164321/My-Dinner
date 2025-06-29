@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ComponentType, ReactNode } from 'react';
@@ -27,7 +28,8 @@ import {
   CircleDollarSign,
   CalendarDays,
   Bell,
-  UserCheck
+  UserCheck,
+  LifeBuoy
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -46,7 +48,9 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   CircleDollarSign,
   CalendarDays,
   Bell,
-  UserCheck
+  UserCheck,
+  Settings,
+  LifeBuoy
 };
 
 export interface NavItem {
@@ -136,8 +140,15 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>Settings</DropdownMenuItem>
-                    <DropdownMenuItem>Support</DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/settings?tab=profile">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/settings?tab=general">Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/support">Support</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
