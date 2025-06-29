@@ -123,7 +123,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                   <span className="sr-only">Toggle navigation menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="flex flex-col p-0 w-72 bg-card/80 backdrop-blur-sm border-r">
+              <SheetContent side="left" className="flex flex-col p-0 w-64 bg-card/80 backdrop-blur-sm border-r">
                  <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
                   <Link href="/admin" className="flex items-center gap-3 text-lg font-semibold">
                     <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
@@ -233,17 +233,17 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
         <div className="flex flex-1 overflow-hidden">
             <aside className={cn(
                 "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-500 ease-in-out relative",
-                isCollapsed ? "w-20" : "w-72"
+                isCollapsed ? "w-20" : "w-64"
             )}>
                 <div className="flex-grow overflow-y-auto">
                   <NavContent navItems={navItems} isCollapsed={isCollapsed} />
                 </div>
                 <div className="mt-auto border-t p-4">
-                    <TooltipProvider delayDuration={0}>
+                    <TooltipProvider delayDuration={300}>
                         <Tooltip>
                             <TooltipTrigger asChild>
                             <Button asChild variant={'ghost'} className={cn(
-                                "w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors duration-300", 
+                                "w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors duration-300", 
                                 isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3'
                             )}>
                                 <Link href={'/'}>
