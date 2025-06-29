@@ -32,14 +32,17 @@ export default function SettingsPage() {
     const [joinRequestApproval, setJoinRequestApproval] = useState<'manual' | 'auto'>('manual');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
+    const [uniqueSuffix] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
+
     const messUniqueId = useMemo(() => {
-        return messName
+        const slug = messName
             .toLowerCase()
             .trim()
             .replace(/&/g, 'and')
             .replace(/\s+/g, '-')
             .replace(/[^a-z0-9-]/g, '');
-    }, [messName]);
+        return `${slug}-${uniqueSuffix}`;
+    }, [messName, uniqueSuffix]);
 
     // Billing Settings State
     const [perMealCharge, setPerMealCharge] = useState('65.00');
