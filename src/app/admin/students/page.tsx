@@ -15,7 +15,7 @@ export default function AdminStudentsPage() {
   const [status, setStatus] = useState('all');
 
   return (
-    <div className="flex flex-col gap-8 animate-in fade-in-0 duration-500">
+    <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>

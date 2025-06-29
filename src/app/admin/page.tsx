@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -50,7 +49,7 @@ export default function AdminDashboard() {
   }, [today]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">An overview of mess activities and student management.</p>
@@ -78,7 +77,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
         <Link href="/admin/students" className="block transition-transform duration-300 hover:-translate-y-1">
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200 h-full hover:border-primary/50 transition-colors">
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200 h-full hover:border-primary/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Students</CardTitle>
                 <Users className="h-5 w-5 text-primary" />
@@ -90,7 +89,7 @@ export default function AdminDashboard() {
             </Card>
         </Link>
         <Link href="/admin/billing" className="block transition-transform duration-300 hover:-translate-y-1">
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300 h-full hover:border-primary/50 transition-colors">
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300 h-full hover:border-primary/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">This Month's Revenue</CardTitle>
                 <TrendingUp className="h-5 w-5 text-primary" />

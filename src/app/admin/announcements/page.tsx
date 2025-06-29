@@ -36,7 +36,7 @@ export default function AnnouncementsPage() {
     };
 
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in-0 duration-500">
+        <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Announcements</h1>
                 <p className="text-muted-foreground">Broadcast messages and important updates to all students.</p>

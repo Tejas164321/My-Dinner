@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ComponentType, ReactNode } from 'react';
@@ -112,7 +111,6 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
   
   const handleToggle = () => setIsCollapsed(!isCollapsed);
   const handleMobileNavClose = () => setIsMobileNavOpen(false);
-  const userPage = user.role === 'Mess Manager' ? '/admin' : '/student';
 
   if (isMobile) {
     return (
@@ -127,7 +125,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
               </SheetTrigger>
               <SheetContent side="left" className="flex flex-col p-0 w-72 bg-card/80 backdrop-blur-sm border-r">
                  <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
-                  <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
+                  <Link href="/admin" className="flex items-center gap-3 text-lg font-semibold">
                     <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                       <ChefHat className="h-6 w-6" />
                     </div>
@@ -184,7 +182,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
     <div className="flex h-screen w-full flex-col bg-background">
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card/80 px-6 backdrop-blur-sm">
             <div className="flex items-center gap-3">
-               <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
+               <Link href="/admin" className="flex items-center gap-3 text-lg font-semibold">
                   <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                     <ChefHat className="h-6 w-6" />
                   </div>
@@ -193,7 +191,6 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
             </div>
 
             <div className="flex items-center gap-2">
-                {user.role === 'Mess Manager' && 
                 <TooltipProvider>
                     <Tooltip>
                     <TooltipTrigger asChild>
@@ -208,7 +205,6 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                     <TooltipContent><p>Settings</p></TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
-                }
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
@@ -222,7 +218,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                     <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
-                    {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>}
+                    <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>
                     <DropdownMenuSeparator />
                      <DropdownMenuItem asChild>
                         <Link href="/" className="text-destructive focus:text-destructive">
@@ -236,7 +232,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
         
         <div className="flex flex-1 overflow-hidden">
             <aside className={cn(
-                "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-300 ease-in-out relative",
+                "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-500 ease-in-out relative",
                 isCollapsed ? "w-20" : "w-72"
             )}>
                 <div className="flex-grow overflow-y-auto">
