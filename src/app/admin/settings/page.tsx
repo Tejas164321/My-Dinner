@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { adminUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function SettingsPageContent() {
     const router = useRouter();
@@ -52,6 +53,11 @@ function SettingsPageContent() {
     const [joinRequestApproval, setJoinRequestApproval] = useState<'manual' | 'auto'>('manual');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
+    // Leave Deadline Settings
+    const [leaveDeadlineEnabled, setLeaveDeadlineEnabled] = useState(true);
+    const [lunchDeadline, setLunchDeadline] = useState('10:00');
+    const [dinnerDeadline, setDinnerDeadline] = useState('18:00');
+
     const [uniqueSuffix] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
 
     const messUniqueId = useMemo(() => {
@@ -70,6 +76,23 @@ function SettingsPageContent() {
 
     // Appearance Settings State
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+    const lunchTimeOptions = [
+        { value: '09:00', label: '09:00 AM' },
+        { value: '09:30', label: '09:30 AM' },
+        { value: '10:00', label: '10:00 AM' },
+        { value: '10:30', label: '10:30 AM' },
+        { value: '11:00', label: '11:00 AM' },
+        { value: '11:30', label: '11:30 AM' },
+    ];
+
+    const dinnerTimeOptions = [
+        { value: '17:00', label: '05:00 PM' },
+        { value: '17:30', label: '05:30 PM' },
+        { value: '18:00', label: '06:00 PM' },
+        { value: '18:30', label: '06:30 PM' },
+        { value: '19:00', label: '07:00 PM' },
+    ];
 
     const handleRegenerateCode = () => {
         const newCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -305,6 +328,54 @@ function SettingsPageContent() {
                                     </Label>
                                 </RadioGroup>
                             </div>
+                            
+                             <div className="space-y-4 pt-6 border-t">
+                                <h3 className="font-medium">Leave Application Settings</h3>
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="leave-deadline-enabled" className="text-base">Enforce Leave Deadlines</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Set cutoff times for students to apply for meal leaves.
+                                        </p>
+                                    </div>
+                                    <Switch 
+                                        id="leave-deadline-enabled" 
+                                        checked={leaveDeadlineEnabled} 
+                                        onCheckedChange={setLeaveDeadlineEnabled} 
+                                    />
+                                </div>
+                                {leaveDeadlineEnabled && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-4 pt-4 border-l-2 border-primary/20 ml-6 animate-in fade-in-0 duration-300">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="lunch-deadline">Lunch Leave Deadline</Label>
+                                            <Select value={lunchDeadline} onValueChange={setLunchDeadline}>
+                                                <SelectTrigger id="lunch-deadline">
+                                                    <SelectValue placeholder="Select a time" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {lunchTimeOptions.map(option => (
+                                                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="dinner-deadline">Dinner Leave Deadline</Label>
+                                            <Select value={dinnerDeadline} onValueChange={setDinnerDeadline}>
+                                                <SelectTrigger id="dinner-deadline">
+                                                    <SelectValue placeholder="Select a time" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {dinnerTimeOptions.map(option => (
+                                                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                              <div className="space-y-4 pt-6 border-t">
                                 <h3 className="font-medium">Notification Settings</h3>
                                 <div className="flex items-center justify-between rounded-lg border p-4">
