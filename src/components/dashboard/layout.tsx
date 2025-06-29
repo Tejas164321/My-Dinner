@@ -41,6 +41,7 @@ import {
   UserCheck,
   LifeBuoy,
   PanelLeft,
+  ChevronsLeft,
 } from 'lucide-react';
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
@@ -116,7 +117,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
   if (isMobile) {
     return (
        <div className="flex min-h-screen w-full flex-col">
-          <header className="sticky top-0 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 z-30 backdrop-blur-sm">
+          <header className="sticky top-0 flex h-16 items-center justify-between gap-4 border-b bg-card/80 px-4 z-30 backdrop-blur-sm">
             <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="shrink-0">
@@ -124,8 +125,8 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                   <span className="sr-only">Toggle navigation menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="flex flex-col p-0 w-72 bg-background/80 backdrop-blur-sm border-r">
-                 <div className="border-b p-4">
+              <SheetContent side="left" className="flex flex-col p-0 w-72 bg-card/80 backdrop-blur-sm border-r">
+                 <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
                   <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
                     <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                       <ChefHat className="h-6 w-6" />
@@ -133,7 +134,17 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                     <span>Messo</span>
                   </Link>
                 </div>
-                <NavContent navItems={navItems} isCollapsed={false} onLinkClick={handleMobileNavClose} />
+                <div className="flex-1 overflow-y-auto">
+                    <NavContent navItems={navItems} isCollapsed={false} onLinkClick={handleMobileNavClose} />
+                </div>
+                <div className="mt-auto border-t p-2">
+                    <Button asChild variant={'ghost'} className="w-full justify-start h-10 gap-3 px-3">
+                        <Link href={'/'}>
+                            <LogOut className="h-5 w-5 shrink-0" />
+                            <span className="truncate">Log Out</span>
+                        </Link>
+                    </Button>
+                </div>
               </SheetContent>
             </Sheet>
             
@@ -167,20 +178,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
 
   return (
     <div className="flex h-screen w-full flex-col bg-background">
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm">
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={handleToggle} className="hidden md:flex">
-                    <PanelLeft className="h-5 w-5" />
-                    <span className="sr-only">Toggle sidebar</span>
-                </Button>
-                <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
-                    <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
-                      <ChefHat className="h-6 w-6" />
-                    </div>
-                    <span className={cn(isCollapsed && "hidden")}>Messo</span>
-                </Link>
-            </div>
-          
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-end border-b bg-card/80 px-4 backdrop-blur-sm">
             <div className="flex items-center gap-2">
                 {user.role === 'Mess Manager' && 
                 <TooltipProvider>
@@ -221,29 +219,53 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
         
         <div className="flex flex-1 overflow-hidden">
             <aside className={cn(
-                "hidden md:flex flex-col border-r bg-background/60 backdrop-blur-xl transition-[width] duration-300 ease-in-out",
+                "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-300 ease-in-out relative",
                 isCollapsed ? "w-16" : "w-64"
             )}>
-                <div className="flex-grow">
+                <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
+                  <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
+                      <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
+                        <ChefHat className="h-6 w-6" />
+                      </div>
+                      <span className={cn("truncate", isCollapsed && "hidden")}>Messo</span>
+                  </Link>
+                </div>
+                <div className="flex-grow overflow-y-auto">
                   <NavContent navItems={navItems} isCollapsed={isCollapsed} />
                 </div>
                 <div className="mt-auto border-t p-2">
-                {user.role === 'Mess Manager' && (
                     <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                            <Button asChild variant={'ghost'} className={cn("w-full transition-colors duration-300", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}>
+                                <Link href={'/'}>
+                                <LogOut className="h-5 w-5 shrink-0" />
+                                <span className={cn("truncate", isCollapsed && "sr-only")}>Log Out</span>
+                                </Link>
+                            </Button>
+                            </TooltipTrigger>
+                            {isCollapsed && <TooltipContent side="right" sideOffset={5}>Log Out</TooltipContent>}
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
+                 <TooltipProvider delayDuration={0}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                        <Button asChild variant={'ghost'} className={cn("w-full transition-colors duration-300", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}>
-                            <Link href={'/admin/support'}>
-                            <LifeBuoy className="h-5 w-5 shrink-0" />
-                            <span className={cn("truncate", isCollapsed && "sr-only")}>Support</span>
-                            </Link>
-                        </Button>
+                            <Button 
+                                variant="outline"
+                                size="icon" 
+                                onClick={handleToggle} 
+                                className="absolute -right-4 top-20 rounded-full h-8 w-8"
+                            >
+                                <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
+                                <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"}</span>
+                            </Button>
                         </TooltipTrigger>
-                        {isCollapsed && <TooltipContent side="right" sideOffset={5}>Support</TooltipContent>}
+                        <TooltipContent side="right" sideOffset={8}>
+                            {isCollapsed ? "Expand" : "Collapse"}
+                        </TooltipContent>
                     </Tooltip>
-                    </TooltipProvider>
-                )}
-                </div>
+                </TooltipProvider>
             </aside>
             
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
