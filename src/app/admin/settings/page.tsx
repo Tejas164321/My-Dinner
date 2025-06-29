@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { DollarSign, Palette, Bell, Info } from 'lucide-react';
+import { DollarSign, Palette, Bell, Info, Moon, Sun } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function SettingsPage() {
     // General Settings State
@@ -18,8 +19,7 @@ export default function SettingsPage() {
     const [address, setAddress] = useState('123 College Road, University Campus, New Delhi - 110001');
 
     // Billing Settings State
-    const [dailyRate, setDailyRate] = useState('120.00');
-    const [extraMealCharge, setExtraMealCharge] = useState('50.00');
+    const [perMealCharge, setPerMealCharge] = useState('65.00');
 
     // Notification Settings State
     const [joinRequestNotif, setJoinRequestNotif] = useState(true);
@@ -27,8 +27,7 @@ export default function SettingsPage() {
     const [feedbackNotif, setFeedbackNotif] = useState(false);
 
     // Appearance Settings State
-    const [primaryColor, setPrimaryColor] = useState('217.2 91.2% 59.8%');
-    const [accentColor, setAccentColor] = useState('262.1 83.3% 57.8%');
+    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 duration-500">
@@ -85,20 +84,12 @@ export default function SettingsPage() {
                         </CardHeader>
                         <CardContent className="space-y-6 max-w-md">
                             <div className="space-y-2">
-                                <Label htmlFor="daily-rate">Daily Rate (INR)</Label>
+                                <Label htmlFor="per-meal-charge">Per Meal Charge (INR)</Label>
                                 <div className="relative">
                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input id="daily-rate" type="number" placeholder="120.00" value={dailyRate} onChange={(e) => setDailyRate(e.target.value)} className="pl-8" />
+                                    <Input id="per-meal-charge" type="number" placeholder="65.00" value={perMealCharge} onChange={(e) => setPerMealCharge(e.target.value)} className="pl-8" />
                                 </div>
-                                <p className="text-xs text-muted-foreground">The base rate charged per student per day for meals.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="extra-meal-charge">Extra Meal Charge (INR)</Label>
-                                <div className="relative">
-                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input id="extra-meal-charge" type="number" placeholder="50.00" value={extraMealCharge} onChange={(e) => setExtraMealCharge(e.target.value)} className="pl-8" />
-                                </div>
-                                <p className="text-xs text-muted-foreground">The cost for an extra meal taken by a guest or non-registered person.</p>
+                                <p className="text-xs text-muted-foreground">The base rate charged per student for a single meal (lunch or dinner).</p>
                             </div>
                         </CardContent>
                         <CardFooter>
@@ -150,14 +141,33 @@ export default function SettingsPage() {
                         </CardHeader>
                         <CardContent className="space-y-6 max-w-md">
                             <div className="space-y-2">
-                                <Label htmlFor="primary-color">Primary Color (HSL)</Label>
-                                <Input id="primary-color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} />
-                                <p className="text-xs text-muted-foreground">Used for main buttons, links, and highlights. E.g., `217.2 91.2% 59.8%`</p>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="accent-color">Accent Color (HSL)</Label>
-                                <Input id="accent-color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} />
-                                <p className="text-xs text-muted-foreground">Used for secondary highlights and visual flair. E.g., `262.1 83.3% 57.8%`</p>
+                                <Label>Theme</Label>
+                                <RadioGroup
+                                    value={theme}
+                                    onValueChange={(value: 'light' | 'dark') => setTheme(value)}
+                                    className="grid max-w-md grid-cols-2 gap-4 pt-2"
+                                >
+                                    <div>
+                                        <RadioGroupItem value="light" id="light" className="peer sr-only" />
+                                        <Label
+                                            htmlFor="light"
+                                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                        >
+                                            <Sun className="mb-3 h-6 w-6" />
+                                            Light
+                                        </Label>
+                                    </div>
+                                    <div>
+                                        <RadioGroupItem value="dark" id="dark" className="peer sr-only" />
+                                        <Label
+                                            htmlFor="dark"
+                                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                        >
+                                            <Moon className="mb-3 h-6 w-6" />
+                                            Dark
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
                             </div>
                         </CardContent>
                          <CardFooter>
