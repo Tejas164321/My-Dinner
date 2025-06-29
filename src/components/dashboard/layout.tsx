@@ -83,7 +83,7 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
               <TooltipTrigger asChild>
                 <Button
                   asChild
-                  variant={isActive ? 'default' : 'secondary'}
+                  variant={isActive ? 'default' : 'ghost'}
                   className={cn("w-full transition-colors duration-300", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}
                   onClick={onLinkClick}
                 >
@@ -117,7 +117,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
 
   if (isMobile) {
     return (
-       <div className="flex min-h-screen w-full flex-col">
+       <div className="flex min-h-screen w-full flex-col bg-background">
           <header className="sticky top-0 flex h-16 items-center justify-between gap-4 border-b bg-card/80 px-4 z-30 backdrop-blur-sm">
             <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
               <SheetTrigger asChild>
@@ -132,7 +132,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                     <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                       <ChefHat className="h-6 w-6" />
                     </div>
-                    <span>Messo</span>
+                    <span className="font-bold">Messo</span>
                   </Link>
                 </div>
                 <div className="flex-1 overflow-y-auto">
@@ -180,12 +180,14 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
   return (
     <div className="flex h-screen w-full flex-col bg-background">
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card/80 px-6 backdrop-blur-sm">
-            <Link href={userPage} className="flex items-center gap-3 text-lg font-semibold">
-                <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
-                  <ChefHat className="h-6 w-6" />
-                </div>
-                <span className="font-bold">Messo</span>
-            </Link>
+            <div className="flex items-center gap-3">
+               <Link href={userPage} className={cn("flex items-center gap-3 text-lg font-semibold transition-all duration-300", !isCollapsed && "pl-6")}>
+                  <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
+                    <ChefHat className="h-6 w-6" />
+                  </div>
+                  <span className={cn("font-bold transition-all duration-300", isCollapsed && "opacity-0 w-0")}>Messo</span>
+              </Link>
+            </div>
 
             <div className="flex items-center gap-2">
                 {user.role === 'Mess Manager' && 
@@ -254,7 +256,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                             <button
                                 onClick={handleToggle}
                                 className={cn(
-                                    "absolute -right-3 top-1/2 -translate-y-1/2 z-20 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
+                                    "absolute top-1/2 -translate-y-1/2 -right-3 z-20 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
                                 )}
                             >
                                 <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
