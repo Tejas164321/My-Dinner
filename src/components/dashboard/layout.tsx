@@ -72,7 +72,7 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
   const pathname = usePathname();
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delayDuration={300}>
       <nav className="flex flex-col items-start gap-3 px-4 py-4">
         {navItems.map((item) => {
           const Icon = iconMap[item.icon];
@@ -184,7 +184,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                   <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                     <ChefHat className="h-6 w-6" />
                   </div>
-                  <span>Messo</span>
+                  <span className={cn(isCollapsed && "sr-only")}>Messo</span>
               </Link>
             </div>
 
@@ -235,7 +235,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                   <NavContent navItems={navItems} isCollapsed={isCollapsed} />
                 </div>
                 <div className="mt-auto border-t p-4">
-                    <TooltipProvider>
+                    <TooltipProvider delayDuration={0}>
                         <Tooltip>
                             <TooltipTrigger asChild>
                             <Button asChild variant={'ghost'} className={cn(
