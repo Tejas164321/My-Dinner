@@ -74,7 +74,7 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
 
   return (
     <TooltipProvider delayDuration={0}>
-      <nav className="flex flex-col items-start gap-2 px-2 py-4">
+      <nav className="flex flex-col items-start gap-3 px-4 py-4">
         {navItems.map((item) => {
           const Icon = iconMap[item.icon];
           const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/student' && pathname.startsWith(item.href));
@@ -83,7 +83,7 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
               <TooltipTrigger asChild>
                 <Button
                   asChild
-                  variant={isActive ? 'secondary' : 'ghost'}
+                  variant={isActive ? 'default' : 'secondary'}
                   className={cn("w-full transition-colors duration-300", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}
                   onClick={onLinkClick}
                 >
@@ -228,7 +228,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
         <div className="flex flex-1 overflow-hidden">
             <aside className={cn(
                 "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-300 ease-in-out relative",
-                isCollapsed ? "w-16" : "w-64"
+                isCollapsed ? "w-20" : "w-72"
             )}>
                 <div className="flex-grow overflow-y-auto">
                   <NavContent navItems={navItems} isCollapsed={isCollapsed} />
@@ -254,7 +254,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                             <button
                                 onClick={handleToggle}
                                 className={cn(
-                                    "absolute -right-[7px] top-1/2 -translate-y-1/2 z-20 flex h-12 w-3 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
+                                    "absolute -right-3 top-1/2 -translate-y-1/2 z-20 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
                                 )}
                             >
                                 <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
@@ -275,5 +275,3 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
     </div>
   );
 }
-
-    

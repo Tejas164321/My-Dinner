@@ -16,7 +16,6 @@ export const adminNavItems = [
     { href: '/admin/billing', label: 'Billing', icon: 'CircleDollarSign' },
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
     { href: '/admin/announcements', label: 'Announcements', icon: 'Bell' },
-    { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
 ];
 
 export const adminUser = {
