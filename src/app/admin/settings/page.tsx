@@ -22,7 +22,7 @@ export default function SettingsPage() {
     // Profile Settings State
     const [profileName, setProfileName] = useState(adminUser.name);
     const [profileEmail, setProfileEmail] = useState(adminUser.email);
-    const [secretCode, setSecretCode] = useState('A8XFGT');
+    const [secretCode, setSecretCode] = useState('1234');
 
     // General Settings State
     const [messName, setMessName] = useState('Messo Central Kitchen');
@@ -39,7 +39,7 @@ export default function SettingsPage() {
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
     const handleRegenerateCode = () => {
-        const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const newCode = Math.floor(1000 + Math.random() * 9000).toString();
         setSecretCode(newCode);
         toast({
             title: "Code Regenerated",
@@ -51,7 +51,7 @@ export default function SettingsPage() {
         navigator.clipboard.writeText(secretCode);
         toast({
             title: "Copied to clipboard!",
-            description: "The secret code has been copied.",
+            description: `The code "${secretCode}" has been copied.`,
         });
     };
 
@@ -93,12 +93,23 @@ export default function SettingsPage() {
                                     <div className="space-y-1">
                                         <h3 className="font-medium">Mess Secret Code</h3>
                                         <p className="text-sm text-muted-foreground">
-                                            Students use this code to join.
+                                            Students use this 4-digit code to join.
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="flex-1">
-                                            <span className="font-mono text-lg tracking-widest bg-background px-3 py-1.5 rounded-md">{secretCode}</span>
+                                            <Input
+                                                id="secret-code"
+                                                value={secretCode}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    if (/^\d*$/.test(value) && value.length <= 4) {
+                                                        setSecretCode(value);
+                                                    }
+                                                }}
+                                                maxLength={4}
+                                                className="font-mono text-lg tracking-widest text-center"
+                                            />
                                         </div>
                                         <TooltipProvider>
                                             <Tooltip>
