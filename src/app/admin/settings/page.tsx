@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,15 @@ export default function SettingsPage() {
     const [joinRequestApproval, setJoinRequestApproval] = useState<'manual' | 'auto'>('manual');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
+    const messUniqueId = useMemo(() => {
+        return messName
+            .toLowerCase()
+            .trim()
+            .replace(/&/g, 'and')
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '');
+    }, [messName]);
+
     // Billing Settings State
     const [perMealCharge, setPerMealCharge] = useState('65.00');
 
@@ -52,6 +61,14 @@ export default function SettingsPage() {
         toast({
             title: "Copied to clipboard!",
             description: `The code "${secretCode}" has been copied.`,
+        });
+    };
+
+    const handleCopyUniqueId = () => {
+        navigator.clipboard.writeText(messUniqueId);
+        toast({
+            title: "Copied to clipboard!",
+            description: `The unique ID "${messUniqueId}" has been copied.`,
         });
     };
 
@@ -179,12 +196,30 @@ export default function SettingsPage() {
                             <CardDescription>Update basic details and core operational settings for your mess.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="space-y-4">
+                             <div className="space-y-4">
                                 <h3 className="font-medium">Mess Information</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="mess-name">Mess Name</Label>
                                         <Input id="mess-name" value={messName} onChange={(e) => setMessName(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="mess-id">Mess Unique ID</Label>
+                                        <div className="relative">
+                                            <Input id="mess-id" value={messUniqueId} readOnly className="pr-10 font-mono bg-muted/50" />
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" onClick={handleCopyUniqueId} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
+                                                            <Copy className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Copy Unique ID</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="contact-email">Contact Email</Label>
