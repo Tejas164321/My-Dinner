@@ -10,13 +10,13 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const MenuSuggestionInputSchema = z.object({
+const MenuSuggestionInputSchema = z.object({
   mealType: z.string().describe('The type of meal, e.g., "Lunch" or "Dinner".'),
   existingItems: z.array(z.string()).describe('A list of items already on the menu for this meal.'),
 });
 export type MenuSuggestionInput = z.infer<typeof MenuSuggestionInputSchema>;
 
-export const MenuSuggestionOutputSchema = z.object({
+const MenuSuggestionOutputSchema = z.object({
   suggestions: z
     .array(z.string())
     .describe('A list of 3-5 creative and balanced meal item suggestions based on the provided meal type and existing items.'),
