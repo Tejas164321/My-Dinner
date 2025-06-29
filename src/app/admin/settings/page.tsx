@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { DollarSign, Palette, Bell, Info, Moon, Sun, RefreshCw, Copy, User } from 'lucide-react';
+import { DollarSign, Palette, Bell, Info, Moon, Sun, RefreshCw, Copy, User, CalendarClock } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from "@/hooks/use-toast";
 import { adminUser } from '@/lib/data';
@@ -127,10 +127,11 @@ function SettingsPageContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> Profile</TabsTrigger>
                     <TabsTrigger value="general"><Info className="mr-2 h-4 w-4" /> General</TabsTrigger>
                     <TabsTrigger value="billing"><DollarSign className="mr-2 h-4 w-4" /> Billing</TabsTrigger>
+                    <TabsTrigger value="leave"><CalendarClock className="mr-2 h-4 w-4" /> Leave</TabsTrigger>
                     <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" /> Appearance</TabsTrigger>
                 </TabsList>
                 
@@ -328,9 +329,55 @@ function SettingsPageContent() {
                                     </Label>
                                 </RadioGroup>
                             </div>
-                            
+
                              <div className="space-y-4 pt-6 border-t">
-                                <h3 className="font-medium">Leave Application Settings</h3>
+                                <h3 className="font-medium">Notification Settings</h3>
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="notif-master" className="text-base">Enable In-App Notifications</Label>
+                                        <p className="text-sm text-muted-foreground">Master control for dashboard notifications and alerts.</p>
+                                    </div>
+                                    <Switch id="notif-master" checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button>Save Changes</Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="billing" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Billing & Financials</CardTitle>
+                            <CardDescription>Configure rates and billing parameters.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6 max-w-md">
+                            <div className="space-y-2">
+                                <Label htmlFor="per-meal-charge">Per Meal Charge (INR)</Label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input id="per-meal-charge" type="number" placeholder="65.00" value={perMealCharge} onChange={(e) => setPerMealCharge(e.target.value)} className="pl-8" />
+                                </div>
+                                <p className="text-xs text-muted-foreground">The base rate charged per student for a single meal (lunch or dinner).</p>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button>Save Changes</Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+                
+                <TabsContent value="leave" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Leave Settings</CardTitle>
+                            <CardDescription>Configure rules and deadlines for student leave applications.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="space-y-4 pt-6">
+                                <h3 className="font-medium">Leave Application Deadlines</h3>
                                 <div className="flex items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
                                         <Label htmlFor="leave-deadline-enabled" className="text-base">Enforce Leave Deadlines</Label>
@@ -375,41 +422,8 @@ function SettingsPageContent() {
                                     </div>
                                 )}
                             </div>
-
-                             <div className="space-y-4 pt-6 border-t">
-                                <h3 className="font-medium">Notification Settings</h3>
-                                <div className="flex items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="notif-master" className="text-base">Enable In-App Notifications</Label>
-                                        <p className="text-sm text-muted-foreground">Master control for dashboard notifications and alerts.</p>
-                                    </div>
-                                    <Switch id="notif-master" checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
-                                </div>
-                            </div>
                         </CardContent>
-                        <CardFooter>
-                            <Button>Save Changes</Button>
-                        </CardFooter>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="billing" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Billing & Financials</CardTitle>
-                            <CardDescription>Configure rates and billing parameters.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6 max-w-md">
-                            <div className="space-y-2">
-                                <Label htmlFor="per-meal-charge">Per Meal Charge (INR)</Label>
-                                <div className="relative">
-                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input id="per-meal-charge" type="number" placeholder="65.00" value={perMealCharge} onChange={(e) => setPerMealCharge(e.target.value)} className="pl-8" />
-                                </div>
-                                <p className="text-xs text-muted-foreground">The base rate charged per student for a single meal (lunch or dinner).</p>
-                            </div>
-                        </CardContent>
-                        <CardFooter>
+                         <CardFooter>
                             <Button>Save Changes</Button>
                         </CardFooter>
                     </Card>
@@ -468,3 +482,5 @@ export default function SettingsPage() {
         <SettingsPageContent />
     );
 }
+
+    
