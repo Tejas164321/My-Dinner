@@ -161,10 +161,14 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2" />Profile</Link></DropdownMenuItem>
-                  {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2" />Settings</Link></DropdownMenuItem>}
+                  <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
+                  {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href="/"><LogOut className="mr-2" />Log Out</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/" className="text-destructive focus:text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />Log Out
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -184,7 +188,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                   <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                     <ChefHat className="h-6 w-6" />
                   </div>
-                  <span className={cn(isCollapsed && "sr-only")}>Messo</span>
+                  <span>Messo</span>
               </Link>
             </div>
 
@@ -217,10 +221,14 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 <DropdownMenuContent align="end" sideOffset={10} className="w-56">
                     <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2" />Profile</Link></DropdownMenuItem>
-                    {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2" />Settings</Link></DropdownMenuItem>}
+                    <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
+                    {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><Link href="/"><LogOut className="mr-2" />Log Out</Link></DropdownMenuItem>
+                     <DropdownMenuItem asChild>
+                        <Link href="/" className="text-destructive focus:text-destructive">
+                          <LogOut className="mr-2 h-4 w-4" />Log Out
+                        </Link>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
                 </DropdownMenu>
             </div>
