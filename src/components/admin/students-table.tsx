@@ -6,7 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { studentsData, joinRequests, monthMap, Student } from "@/lib/data";
-import { Check, X, Trash2, UserX } from "lucide-react";
+import { Check, X, Trash2, UserX, Search } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 interface StudentsTableProps {
     filterMonth: string;
     filterStatus: string;
+    searchQuery: string;
 }
 
 const StudentRowCard = ({ student, month, initialDate, showActions }: { student: Student, month: string, initialDate: Date, showActions: boolean }) => {
@@ -43,7 +44,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
     
     return (
         <Dialog>
-            <Card className={cn("hover:border-primary/50 hover:shadow-lg transition-all duration-300 group animate-in fade-in-0", !showActions && "opacity-70")}>
+            <Card className={cn("hover:border-primary/50 hover:shadow-lg transition-all duration-150 group animate-in fade-in-0", !showActions && "opacity-70")}>
                 <CardContent className="p-3 flex items-center gap-4">
                     <DialogTrigger asChild>
                         <div className="flex-1 flex items-center gap-4 cursor-pointer">
@@ -129,7 +130,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
 };
 
 
-export function StudentsTable({ filterMonth, filterStatus }: StudentsTableProps) {
+export function StudentsTable({ filterMonth, filterStatus, searchQuery }: StudentsTableProps) {
     const { activeStudents, suspendedStudents } = useMemo(() => {
         const active: Student[] = [];
         const suspended: Student[] = [];
@@ -140,12 +141,20 @@ export function StudentsTable({ filterMonth, filterStatus }: StudentsTableProps)
     }, []);
 
     const filteredActiveStudents = useMemo(() => {
-        return activeStudents.filter(student => {
-            if (filterStatus === 'all') return true;
-            const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
-            return monthDetails?.status === filterStatus;
-        });
-    }, [activeStudents, filterMonth, filterStatus]);
+        return activeStudents
+            .filter(student => {
+                if (filterStatus === 'all') return true;
+                const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
+                return monthDetails?.status === filterStatus;
+            })
+            .filter(student => {
+                if (!searchQuery) return true;
+                const searchLower = searchQuery.toLowerCase();
+                const nameMatch = student.name.toLowerCase().includes(searchLower);
+                const idMatch = student.studentId.toLowerCase().includes(searchLower);
+                return nameMatch || idMatch;
+            });
+    }, [activeStudents, filterMonth, filterStatus, searchQuery]);
     
     const initialDate = useMemo(() => monthMap[filterMonth], [filterMonth]);
 
@@ -161,9 +170,18 @@ export function StudentsTable({ filterMonth, filterStatus }: StudentsTableProps)
                     
                     <TabsContent value="joined" className="mt-4">
                         <div className="flex flex-col gap-4">
-                            {filteredActiveStudents.map((student) => (
-                               <StudentRowCard key={student.id} student={student} month={filterMonth} initialDate={initialDate} showActions={true} />
-                            ))}
+                            {filteredActiveStudents.length > 0 ? (
+                                filteredActiveStudents.map((student) => (
+                                   <StudentRowCard key={student.id} student={student} month={filterMonth} initialDate={initialDate} showActions={true} />
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
+                                    <Search className="h-10 w-10 mb-4" />
+                                    <h3 className="text-lg font-semibold text-foreground">No Students Found</h3>
+                                    <p>Your search for "{searchQuery}" did not match any students.</p>
+                                    <p>Try searching by a different name or ID, or clear the search.</p>
+                                </div>
+                            )}
                         </div>
                     </TabsContent>
 

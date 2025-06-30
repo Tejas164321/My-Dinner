@@ -9,10 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 export default function AdminStudentsPage() {
   const [month, setMonth] = useState('october');
   const [status, setStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -21,7 +24,16 @@ export default function AdminStudentsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
           <p className="text-muted-foreground">Approve new student requests and manage existing students.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 w-[250px]"
+            />
+          </div>
           <Select value={month} onValueChange={setMonth}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select month" />
@@ -45,7 +57,7 @@ export default function AdminStudentsPage() {
           </Select>
         </div>
       </div>
-      <StudentsTable filterMonth={month} filterStatus={status} />
+      <StudentsTable filterMonth={month} filterStatus={status} searchQuery={searchQuery} />
     </div>
   );
 }
