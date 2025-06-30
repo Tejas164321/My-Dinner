@@ -76,7 +76,7 @@ export default function AdminDashboard() {
             <p className="text-xs text-muted-foreground">Up from 88% yesterday</p>
           </CardContent>
         </Card>
-        <Link href="/admin/students" className="block transition-transform hover:-translate-y-1">
+        <Link href="/admin/students" className="block transition-transform duration-300 hover:-translate-y-1">
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200 h-full hover:border-primary/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Students</CardTitle>
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
         </Link>
-        <Link href="/admin/billing" className="block transition-transform hover:-translate-y-1">
+        <Link href="/admin/billing" className="block transition-transform duration-300 hover:-translate-y-1">
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300 h-full hover:border-primary/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">This Month's Revenue</CardTitle>
