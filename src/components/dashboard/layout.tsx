@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ComponentType, ReactNode } from 'react';
@@ -42,6 +43,7 @@ import {
   LifeBuoy,
   PanelLeft,
   ChevronsLeft,
+  MessageSquare
 } from 'lucide-react';
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
@@ -52,7 +54,9 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   CalendarDays,
   Bell,
   UserCheck,
-  LifeBuoy
+  LifeBuoy,
+  User,
+  MessageSquare
 };
 
 export interface NavItem {
@@ -112,6 +116,8 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
   const handleToggle = () => setIsCollapsed(!isCollapsed);
   const handleMobileNavClose = () => setIsMobileNavOpen(false);
 
+  const profileLink = user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings';
+
   if (isMobile) {
     return (
        <div className="flex min-h-screen w-full flex-col bg-background">
@@ -125,7 +131,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
               </SheetTrigger>
               <SheetContent side="left" className="flex flex-col p-0 w-64 bg-card/80 backdrop-blur-sm border-r">
                  <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
-                  <Link href="/admin" className="flex items-center gap-3 text-lg font-semibold">
+                  <Link href={user.role === 'Mess Manager' ? '/admin' : '/student'} className="flex items-center gap-3 text-lg font-semibold">
                     <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                       <ChefHat className="h-6 w-6" />
                     </div>
@@ -159,7 +165,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href={profileLink}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
                   {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -182,7 +188,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
     <div className="flex h-screen w-full flex-col bg-background">
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card/80 px-6 backdrop-blur-sm">
             <div className="flex items-center gap-3">
-               <Link href="/admin" className="flex items-center gap-3 text-lg font-semibold">
+               <Link href={user.role === 'Mess Manager' ? '/admin' : '/student'} className="flex items-center gap-3 text-lg font-semibold">
                   <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                     <ChefHat className="h-6 w-6" />
                   </div>
@@ -194,13 +200,13 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 <TooltipProvider>
                     <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" asChild><Link href="/admin/announcements"><Bell /></Link></Button>
+                        <Button variant="ghost" size="icon" asChild><Link href={user.role === 'Mess Manager' ? '/admin/announcements' : '/student/notifications'}><Bell /></Link></Button>
                     </TooltipTrigger>
                     <TooltipContent><p>Announcements</p></TooltipContent>
                     </Tooltip>
                     <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" asChild><Link href="/admin/settings"><Settings /></Link></Button>
+                        <Button variant="ghost" size="icon" asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings'}><Settings /></Link></Button>
                     </TooltipTrigger>
                     <TooltipContent><p>Settings</p></TooltipContent>
                     </Tooltip>
@@ -217,8 +223,8 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 <DropdownMenuContent align="end" sideOffset={10} className="w-56">
                     <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student'}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
-                    <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link href={profileLink}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
+                    {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>}
                     <DropdownMenuSeparator />
                      <DropdownMenuItem asChild>
                         <Link href="/" className="text-destructive focus:text-destructive">

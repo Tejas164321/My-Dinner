@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,6 +17,7 @@ import Image from 'next/image';
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, MessageSquare, ShieldAlert } from 'lucide-react';
 import { dailyMenus } from "@/lib/data";
 import { format, addDays, startOfDay } from 'date-fns';
+import Link from 'next/link';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
@@ -163,7 +165,9 @@ export default function StudentDashboard() {
                      </div>
                      <Badge variant="destructive">DUE</Badge>
                    </div>
-                   <Button className="w-full">Pay Now</Button>
+                   <Button asChild className="w-full">
+                        <Link href="/student/bills">Pay Now</Link>
+                   </Button>
                 </CardContent>
             </Card>
 
@@ -173,14 +177,14 @@ export default function StudentDashboard() {
                     <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
-                    <Button variant="outline" className="justify-start">
-                        <Calendar className="mr-2"/> Apply for Leave
+                    <Button asChild variant="outline" className="justify-start">
+                        <Link href="/student/leave"><Calendar className="mr-2"/> Apply for Leave</Link>
                     </Button>
-                    <Button variant="outline" className="justify-start">
-                        <MessageSquare className="mr-2"/> Give Feedback
+                    <Button asChild variant="outline" className="justify-start">
+                        <Link href="/student/feedback"><MessageSquare className="mr-2"/> Give Feedback</Link>
                     </Button>
-                     <Button variant="outline" className="justify-start">
-                        <ShieldAlert className="mr-2"/> Report an Issue
+                     <Button asChild variant="outline" className="justify-start">
+                        <Link href="/student/feedback"><ShieldAlert className="mr-2"/> Report an Issue</Link>
                     </Button>
                 </CardContent>
             </Card>

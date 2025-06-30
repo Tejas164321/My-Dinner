@@ -7,6 +7,8 @@ export const studentNavItems = [
     { href: '/student/attendance', label: 'My Attendance', icon: 'UserCheck' },
     { href: '/student/bills', label: 'My Bills', icon: 'CircleDollarSign' },
     { href: '/student/notifications', label: 'Notifications', icon: 'Bell' },
+    { href: '/student/feedback', label: 'Feedback', icon: 'MessageSquare' },
+    { href: '/student/settings', label: 'My Profile', icon: 'User' },
 ];
 
 export const adminNavItems = [
@@ -27,6 +29,7 @@ export const adminUser = {
 };
 
 export const studentUser = {
+    id: '8',
     name: 'Alex Doe',
     role: 'Student',
     email: 'alex.doe@example.com',
@@ -156,7 +159,7 @@ export interface DailyMenu {
 }
 
 // Use a fixed date to ensure consistent mock data and prevent hydration errors.
-const today = new Date(2023, 9, 27);
+const today = new Date(2023, 9, 27, 12, 0, 0); // Set a fixed time to avoid date shifts
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 const pastMenus: [string, DailyMenu][] = [
@@ -186,6 +189,44 @@ export const holidays: Holiday[] = [
     { date: new Date(2023, 10, 12), name: 'Diwali', type: 'full_day' },
     { date: new Date(2023, 11, 25), name: 'Christmas', type: 'full_day' },
 ];
+
+export const leaveHistory: Holiday[] = [
+    { date: new Date(2023, 9, 15), name: 'Student Leave', type: 'full_day' },
+    { date: new Date(2023, 9, 16), name: 'Student Leave', type: 'full_day' },
+];
+
+export interface Bill {
+    id: string;
+    month: string;
+    generationDate: string;
+    totalAmount: number;
+    status: 'Paid' | 'Due';
+    details: {
+        totalMeals: number;
+        chargePerMeal: number;
+        rebate: number;
+    }
+}
+
+export const billHistory: Bill[] = [
+    {
+        id: 'bill1', month: 'October 2023', generationDate: '2023-11-01', totalAmount: 3250, status: 'Paid',
+        details: { totalMeals: 50, chargePerMeal: 65, rebate: 0 }
+    },
+    {
+        id: 'bill2', month: 'September 2023', generationDate: '2023-10-01', totalAmount: 3120, status: 'Paid',
+        details: { totalMeals: 48, chargePerMeal: 65, rebate: 0 }
+    },
+    {
+        id: 'bill3', month: 'August 2023', generationDate: '2023-09-01', totalAmount: 2925, status: 'Paid',
+        details: { totalMeals: 45, chargePerMeal: 65, rebate: 0 }
+    },
+     {
+        id: 'bill4', month: 'July 2023', generationDate: '2023-08-01', totalAmount: 3250, status: 'Due',
+        details: { totalMeals: 50, chargePerMeal: 65, rebate: 0 }
+    },
+];
+
 
 export interface Announcement {
     id: string;
