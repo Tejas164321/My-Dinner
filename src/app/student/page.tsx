@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import Image from 'next/image';
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, MessageSquare, ShieldAlert } from 'lucide-react';
 import { dailyMenus } from "@/lib/data";
 import { format, addDays, startOfDay } from 'date-fns';
@@ -61,8 +60,7 @@ export default function StudentDashboard() {
               <CardDescription>What's cooking today in the mess.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6 md:grid-cols-2">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
                   <div className="bg-secondary/50 p-3 rounded-lg">
                       <Sun className="h-6 w-6 text-yellow-400"/>
                   </div>
@@ -70,20 +68,15 @@ export default function StudentDashboard() {
                       <h3 className="font-semibold text-lg">Lunch</h3>
                       <p className="text-muted-foreground">{todaysMenu.lunch.join(', ')}</p>
                   </div>
-                </div>
-                <Image src="https://placehold.co/600x400.png" alt="Lunch meal" width={600} height={400} className="rounded-lg object-cover" data-ai-hint="indian food" />
               </div>
-              <div className="flex flex-col gap-4">
-                 <div className="flex items-center gap-4">
-                   <div className="bg-secondary/50 p-3 rounded-lg">
+              <div className="flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+                  <div className="bg-secondary/50 p-3 rounded-lg">
                       <Moon className="h-6 w-6 text-purple-400"/>
                   </div>
                   <div>
                       <h3 className="font-semibold text-lg">Dinner</h3>
                       <p className="text-muted-foreground">{todaysMenu.dinner.join(', ')}</p>
                   </div>
-                </div>
-                 <Image src="https://placehold.co/600x400.png" alt="Dinner meal" width={600} height={400} className="rounded-lg object-cover" data-ai-hint="north indian food" />
               </div>
             </CardContent>
           </Card>
