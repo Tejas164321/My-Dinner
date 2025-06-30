@@ -6,6 +6,7 @@ import type { DayContentProps } from "react-day-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Student, Holiday } from "@/lib/data";
 import { holidays } from "@/lib/data";
 import { User, Phone, Home, Calendar as CalendarIcon, X } from "lucide-react";
