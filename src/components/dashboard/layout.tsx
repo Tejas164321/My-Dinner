@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
 import {
@@ -130,6 +133,12 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="flex flex-col p-0 w-64 bg-card/80 backdrop-blur-sm border-r">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Main Menu</SheetTitle>
+                  <SheetDescription>
+                    Navigate through the application sections.
+                  </SheetDescription>
+                </SheetHeader>
                  <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
                   <Link href={user.role === 'Mess Manager' ? '/admin' : '/student'} className="flex items-center gap-3 text-lg font-semibold">
                     <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
