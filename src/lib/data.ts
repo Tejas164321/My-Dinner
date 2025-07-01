@@ -33,6 +33,9 @@ export const studentUser = {
     role: 'Student',
     email: 'alex.doe@example.com',
     avatarUrl: 'https://placehold.co/100x100.png',
+    studentId: 'A56789',
+    joinDate: '2023-09-11',
+    contact: '+91 98765 43214'
 };
 
 export const attendanceData = [

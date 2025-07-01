@@ -20,7 +20,7 @@ export default function StudentSettingsPage() {
     // Profile Settings State
     const [name, setName] = useState(studentUser.name);
     const [email, setEmail] = useState(studentUser.email);
-    const [contact, setContact] = useState('+91 98765 43210');
+    const [contact, setContact] = useState(studentUser.contact);
 
     // Notification Settings
     const [inAppNotifications, setInAppNotifications] = useState(true);
@@ -85,6 +85,14 @@ export default function StudentSettingsPage() {
                                     <div className="space-y-2">
                                         <Label htmlFor="profile-contact">Contact Number</Label>
                                         <Input id="profile-contact" type="tel" value={contact} onChange={(e) => setContact(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="student-id">Student ID</Label>
+                                        <Input id="student-id" value={studentUser.studentId} readOnly disabled />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="join-date">Joined Date</Label>
+                                        <Input id="join-date" value={studentUser.joinDate} readOnly disabled />
                                     </div>
                                     <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor="profile-email">Email Address</Label>
