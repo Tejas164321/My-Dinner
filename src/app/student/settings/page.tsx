@@ -63,15 +63,27 @@ export default function StudentSettingsPage() {
                             <CardDescription>Update your personal information and manage your account.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-8">
-                            <div className="flex items-center gap-6">
-                                <Avatar className="w-24 h-24 border-4 border-primary/20">
-                                    <AvatarImage src={studentUser.avatarUrl} alt={studentUser.name} />
-                                    <AvatarFallback>{studentUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                </Avatar>
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-semibold">{name}</h3>
-                                    <p className="text-muted-foreground">{studentUser.role}</p>
-                                    <Button variant="outline">Upload New Photo</Button>
+                            <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
+                                <div className="flex items-center gap-6">
+                                    <Avatar className="w-24 h-24 border-4 border-primary/20">
+                                        <AvatarImage src={studentUser.avatarUrl} alt={studentUser.name} />
+                                        <AvatarFallback>{studentUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-semibold">{name}</h3>
+                                        <p className="text-muted-foreground">{studentUser.role}</p>
+                                        <Button variant="outline">Upload New Photo</Button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 text-sm text-muted-foreground sm:text-right pt-2">
+                                    <div className="flex gap-2 items-center justify-end">
+                                        <span className="font-semibold text-foreground">Student ID:</span>
+                                        <span>{studentUser.studentId}</span>
+                                    </div>
+                                    <div className="flex gap-2 items-center justify-end">
+                                        <span className="font-semibold text-foreground">Joined:</span>
+                                        <span>{studentUser.joinDate}</span>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -85,14 +97,6 @@ export default function StudentSettingsPage() {
                                     <div className="space-y-2">
                                         <Label htmlFor="profile-contact">Contact Number</Label>
                                         <Input id="profile-contact" type="tel" value={contact} onChange={(e) => setContact(e.target.value)} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="student-id">Student ID</Label>
-                                        <Input id="student-id" value={studentUser.studentId} readOnly disabled />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="join-date">Joined Date</Label>
-                                        <Input id="join-date" value={studentUser.joinDate} readOnly disabled />
                                     </div>
                                     <div className="space-y-2 md:col-span-2">
                                         <Label htmlFor="profile-email">Email Address</Label>
