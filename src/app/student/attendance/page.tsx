@@ -155,7 +155,7 @@ export default function StudentAttendancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{fullDaysCount + halfDaysCount} Days</div>
-                        <p className="text-xs text-muted-foreground">Full days and half days</p>
+                        <p className="text-xs text-muted-foreground">{fullDaysCount} full days & {halfDaysCount} half days</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -164,7 +164,7 @@ export default function StudentAttendancePage() {
                         <UserX className="h-5 w-5 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{absentDaysCount} Days</div>
+                        <div className="text-2xl font-bold">{absentDaysCount}</div>
                         <p className="text-xs text-muted-foreground">Days you were marked absent</p>
                     </CardContent>
                 </Card>
@@ -173,7 +173,6 @@ export default function StudentAttendancePage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Attendance Calendar for {format(month, 'MMMM yyyy')}</CardTitle>
-                    <CardDescription>Visual representation of your monthly attendance.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col lg:flex-row lg:items-center lg:justify-center gap-8">
                     <Calendar
