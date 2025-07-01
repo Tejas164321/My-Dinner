@@ -111,6 +111,56 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
   );
 }
 
+function UserProfile({ user, isCollapsed }: { user: DashboardLayoutProps['user'], isCollapsed?: boolean }) {
+    const profileLink = user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings';
+    
+    return (
+        <DropdownMenu>
+            <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className={cn("w-full h-auto transition-colors duration-300", isCollapsed ? 'justify-center p-2' : 'justify-start p-2 gap-3')}>
+                                <Avatar className="h-9 w-9">
+                                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                    <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                </Avatar>
+                                <div className={cn("text-left", isCollapsed === true ? "sr-only" : "w-full")}>
+                                    <p className="font-semibold text-sm truncate">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{user.role}</p>
+                                </div>
+                            </Button>
+                        </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    {isCollapsed && <TooltipContent side="right" sideOffset={5}>{user.name}</TooltipContent>}
+                </Tooltip>
+            </TooltipProvider>
+
+            <DropdownMenuContent align="start" side={isCollapsed ? "right" : "bottom"} sideOffset={10} className="w-56">
+                <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href={profileLink}><User className="mr-2 h-4 w-4" />Profile</Link>
+                </DropdownMenuItem>
+                {user.role === 'Mess Manager' && 
+                    <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>
+                }
+                 {user.role === 'Mess Manager' ? (
+                     <DropdownMenuItem asChild><Link href="/admin/announcements"><Bell className="mr-2 h-4 w-4"/>Announcements</Link></DropdownMenuItem>
+                 ) : (
+                      <DropdownMenuItem asChild><Link href="/student/notifications"><Bell className="mr-2 h-4 w-4"/>Notifications</Link></DropdownMenuItem>
+                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/" className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />Log Out
+                    </Link>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+
 export function DashboardLayout({ children, navItems, user }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -118,8 +168,6 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
   
   const handleToggle = () => setIsCollapsed(!isCollapsed);
   const handleMobileNavClose = () => setIsMobileNavOpen(false);
-
-  const profileLink = user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings';
 
   if (isMobile) {
     return (
@@ -139,7 +187,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                     Navigate through the application sections.
                   </SheetDescription>
                 </SheetHeader>
-                 <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
+                 <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
                   <Link href={user.role === 'Mess Manager' ? '/admin' : '/student'} className="flex items-center gap-3 text-lg font-semibold">
                     <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
                       <ChefHat className="h-6 w-6" />
@@ -147,44 +195,19 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                     <span className="font-bold">Messo</span>
                   </Link>
                 </div>
+                <div className="border-b p-2">
+                    <UserProfile user={user} isCollapsed={false} />
+                </div>
                 <div className="flex-1 overflow-y-auto">
                     <NavContent navItems={navItems} isCollapsed={false} onLinkClick={handleMobileNavClose} />
                 </div>
-                <div className="mt-auto border-t p-4">
-                    <Button asChild variant={'ghost'} className="w-full justify-start h-10 gap-3 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                        <Link href={'/'}>
-                            <LogOut className="h-5 w-5 shrink-0" />
-                            <span className="truncate">Log Out</span>
-                        </Link>
-                    </Button>
-                </div>
               </SheetContent>
             </Sheet>
+
+            <Link href={user.role === 'Mess Manager' ? '/admin' : '/student'} className="flex items-center gap-3 text-lg font-semibold">
+                <span className="font-bold">Dashboard</span>
+            </Link>
             
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
-                      <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href={profileLink}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
-                  {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/" className="text-destructive focus:text-destructive">
-                      <LogOut className="mr-2 h-4 w-4" />Log Out
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
               {children}
@@ -194,107 +217,48 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-background">
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-card/80 px-6 backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-               <Link href={user.role === 'Mess Manager' ? '/admin' : '/student'} className="flex items-center gap-3 text-lg font-semibold">
-                  <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
-                    <ChefHat className="h-6 w-6" />
-                  </div>
-                  <span>Messo</span>
-              </Link>
+    <div className="flex h-screen w-full bg-background">
+        <aside className={cn(
+            "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-500 ease-in-out relative",
+            isCollapsed ? "w-20" : "w-64"
+        )}>
+            <div className={cn("flex items-center border-b", isCollapsed ? 'h-16 justify-center' : 'h-16 justify-between px-4')}>
+                <Link href={user.role === 'Mess Manager' ? '/admin' : '/student'} className="flex items-center gap-3 text-lg font-semibold">
+                    <div className={cn("rounded-lg bg-primary/10 p-2.5 text-primary", isCollapsed && "p-2")}>
+                        <ChefHat className={cn("h-6 w-6", isCollapsed && "h-5 w-5")} />
+                    </div>
+                    <span className={cn("font-bold", isCollapsed && "sr-only")}>Messo</span>
+                </Link>
             </div>
-
-            <div className="flex items-center gap-2">
-                <TooltipProvider>
-                    <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" asChild><Link href={user.role === 'Mess Manager' ? '/admin/announcements' : '/student/notifications'}><Bell /></Link></Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Announcements</p></TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" asChild><Link href={user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings'}><Settings /></Link></Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Settings</p></TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-9 w-9">
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
-                        <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={10} className="w-56">
-                    <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><Link href={profileLink}><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
-                    {user.role === 'Mess Manager' && <DropdownMenuItem asChild><Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>}
-                    <DropdownMenuSeparator />
-                     <DropdownMenuItem asChild>
-                        <Link href="/" className="text-destructive focus:text-destructive">
-                          <LogOut className="mr-2 h-4 w-4" />Log Out
-                        </Link>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-                </DropdownMenu>
+             <div className={cn("border-b", isCollapsed ? 'p-2' : 'p-2')}>
+                <UserProfile user={user} isCollapsed={isCollapsed} />
             </div>
-        </header>
+            <div className="flex-grow overflow-y-auto">
+                <NavContent navItems={navItems} isCollapsed={isCollapsed} />
+            </div>
+            <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            onClick={handleToggle}
+                            className={cn(
+                                "absolute top-1/2 -translate-y-1/2 -right-3 z-10 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
+                            )}
+                        >
+                            <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
+                            <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"}</span>
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={5}>
+                        {isCollapsed ? "Expand" : "Collapse"}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        </aside>
         
-        <div className="flex flex-1 overflow-hidden">
-            <aside className={cn(
-                "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-500 ease-in-out relative",
-                isCollapsed ? "w-20" : "w-64"
-            )}>
-                <div className="flex-grow overflow-y-auto">
-                  <NavContent navItems={navItems} isCollapsed={isCollapsed} />
-                </div>
-                <div className="mt-auto border-t p-4">
-                    <TooltipProvider delayDuration={300}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                            <Button asChild variant={'ghost'} className={cn(
-                                "w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors duration-300", 
-                                isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3'
-                            )}>
-                                <Link href={'/'}>
-                                <LogOut className="h-5 w-5 shrink-0" />
-                                <span className={cn("truncate", isCollapsed && "sr-only")}>Log Out</span>
-                                </Link>
-                            </Button>
-                            </TooltipTrigger>
-                            {isCollapsed && <TooltipContent side="right" sideOffset={5}>Log Out</TooltipContent>}
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                 <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <button
-                                onClick={handleToggle}
-                                className={cn(
-                                    "absolute top-1/2 -translate-y-1/2 -right-3 z-10 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground",
-                                )}
-                            >
-                                <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
-                                <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"}</span>
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={5}>
-                            {isCollapsed ? "Expand" : "Collapse"}
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            </aside>
-            
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                {children}
-            </main>
-        </div>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            {children}
+        </main>
     </div>
   );
 }
