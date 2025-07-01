@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -129,43 +130,51 @@ export default function StudentBillsPage() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-      <div>
+      <div className="flex flex-wrap justify-between items-center gap-4">
         <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
-      </div>
-
-      <Card>
-        <CardHeader>
-            <div className="flex items-center gap-3">
-                <ShieldAlert className="h-6 w-6 text-destructive"/>
-                <div>
-                    <CardTitle>Due Reminders</CardTitle>
-                    <CardDescription>
-                        Important notifications from the admin regarding your pending payments.
-                    </CardDescription>
-                </div>
+        
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="relative">
+                <ShieldAlert className="mr-2 h-4 w-4 text-destructive" />
+                View Reminders
+                {paymentReminders.length > 0 && (
+                    <Badge variant="destructive" className="absolute -top-2 -right-2 px-2 h-6 w-6 flex items-center justify-center rounded-full">
+                        {paymentReminders.length}
+                    </Badge>
+                )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Due Reminders</DialogTitle>
+                <DialogDescription>
+                    Important notifications from the admin regarding your pending payments.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+                {paymentReminders.length > 0 ? (
+                    paymentReminders.map((reminder) => (
+                        <Alert key={reminder.id} variant="destructive">
+                            <ShieldAlert className="h-4 w-4" />
+                            <AlertTitle>{reminder.title}</AlertTitle>
+                            <AlertDescription>
+                                {reminder.message}
+                                <p className="text-xs text-destructive-foreground/80 mt-2">
+                                    Received on: {format(new Date(reminder.date), 'MMMM do, yyyy')}
+                                </p>
+                            </AlertDescription>
+                        </Alert>
+                    ))
+                ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                        You have no pending payment reminders.
+                    </div>
+                )}
             </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            {paymentReminders.length > 0 ? (
-                paymentReminders.map((reminder) => (
-                    <Alert key={reminder.id} variant="destructive">
-                        <ShieldAlert className="h-4 w-4" />
-                        <AlertTitle>{reminder.title}</AlertTitle>
-                        <AlertDescription>
-                            {reminder.message}
-                            <p className="text-xs text-destructive-foreground/80 mt-2">
-                                Received on: {format(new Date(reminder.date), 'MMMM do, yyyy')}
-                            </p>
-                        </AlertDescription>
-                    </Alert>
-                ))
-            ) : (
-                <div className="text-center text-muted-foreground py-4">
-                    You have no pending payment reminders.
-                </div>
-            )}
-        </CardContent>
-      </Card>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       <Card>
         <CardHeader>
