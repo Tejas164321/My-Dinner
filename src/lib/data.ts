@@ -82,7 +82,7 @@ export interface Student {
         [key: string]: {
             attendance: string;
             bill: { total: number; paid: number };
-            status: 'Paid' | 'Due';
+            status: 'Paid' | 'Due' | 'Partially Paid';
         }
     }
 }
@@ -104,7 +104,7 @@ export const studentsData: Student[] = [
         monthlyDetails: {
             'october': { attendance: '88%', bill: { total: 3250, paid: 0 }, status: 'Due' },
             'september': { attendance: '90%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'august': { attendance: '85%', bill: { total: 3150, paid: 0 }, status: 'Due' },
+            'august': { attendance: '85%', bill: { total: 3150, paid: 1500 }, status: 'Partially Paid' },
             'july': { attendance: '89%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
         }
     },
@@ -203,7 +203,8 @@ export interface Bill {
     year: number;
     generationDate: string;
     totalAmount: number;
-    status: 'Paid' | 'Due';
+    paidAmount: number;
+    status: 'Paid' | 'Due' | 'Partially Paid';
     details: {
         totalDaysInMonth: number;
         holidays: number;
@@ -218,7 +219,7 @@ export interface Bill {
 
 export const billHistory: Bill[] = [
     {
-        id: 'bill1', month: 'October', year: 2023, generationDate: '2023-11-01', totalAmount: 3445, status: 'Paid',
+        id: 'bill1', month: 'October', year: 2023, generationDate: '2023-11-01', totalAmount: 3445, paidAmount: 3445, status: 'Paid',
         details: { 
             totalDaysInMonth: 31, 
             holidays: 2,
@@ -231,33 +232,33 @@ export const billHistory: Bill[] = [
         }
     },
     {
-        id: 'bill2', month: 'September', year: 2023, generationDate: '2023-10-01', totalAmount: 3380, status: 'Paid',
+        id: 'bill2', month: 'September', year: 2023, generationDate: '2023-10-01', totalAmount: 3380, paidAmount: 3380, status: 'Paid',
         details: { 
             totalDaysInMonth: 30, 
-            holidays: 0,
-            billableDays: 30,
+            holidays: 1,
+            billableDays: 29,
             fullDays: 24, 
             halfDays: 4, 
-            absentDays: 2, 
+            absentDays: 1, 
             totalMeals: 52, 
             chargePerMeal: 65 
         }
     },
     {
-        id: 'bill3', month: 'August', year: 2023, generationDate: '2023-09-01', totalAmount: 3120, status: 'Paid',
+        id: 'bill3', month: 'August', year: 2023, generationDate: '2023-09-01', totalAmount: 3120, paidAmount: 1000, status: 'Partially Paid',
         details: { 
             totalDaysInMonth: 31, 
-            holidays: 0,
-            billableDays: 31,
+            holidays: 1,
+            billableDays: 30,
             fullDays: 22, 
             halfDays: 4, 
-            absentDays: 5, 
+            absentDays: 4, 
             totalMeals: 48, 
             chargePerMeal: 65 
         }
     },
      {
-        id: 'bill4', month: 'July', year: 2023, generationDate: '2023-08-01', totalAmount: 3445, status: 'Due',
+        id: 'bill4', month: 'July', year: 2023, generationDate: '2023-08-01', totalAmount: 3445, paidAmount: 0, status: 'Due',
         details: { 
             totalDaysInMonth: 31, 
             holidays: 0,

@@ -1,19 +1,34 @@
 'use client';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { billHistory, Bill } from "@/lib/data";
-import { cn } from "@/lib/utils";
-import { Receipt, Wallet } from "lucide-react";
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card';
+import { billHistory as initialBillHistory, Bill } from '@/lib/data';
+import { cn } from '@/lib/utils';
+import {
+  Receipt,
+  Wallet,
+  CreditCard,
+  Banknote,
+  X,
+  Info,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+  DialogClose,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,79 +38,260 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { BillDetailDialog } from "@/components/student/bill-detail-dialog";
+} from '@/components/ui/alert-dialog';
+import { BillDetailDialog } from '@/components/student/bill-detail-dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function StudentBillsPage() {
-    return (
-        <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
-            </div>
+  const [bills, setBills] = useState<Bill[]>(initialBillHistory);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
+  const [customAmount, setCustomAmount] = useState('');
+  const { toast } = useToast();
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Billing History</CardTitle>
-                    <CardDescription>A record of all your past and present mess bills. Click on a bill to view details.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {billHistory.map((bill) => (
-                        <Card key={bill.id} className="hover:border-primary/50 transition-all duration-150 group">
-                            <CardContent className="p-4 flex items-center justify-between gap-4">
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <div className="flex items-center gap-4 flex-1 cursor-pointer">
-                                            <div className="bg-secondary/50 p-3 rounded-lg">
-                                                <Receipt className="h-6 w-6 text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-lg">{bill.month} {bill.year}</p>
-                                                <p className="text-sm text-muted-foreground">Generated on: {bill.generationDate}</p>
-                                            </div>
-                                        </div>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
-                                        <DialogHeader className="sr-only">
-                                            <DialogTitle>Bill Details for {bill.month} {bill.year}</DialogTitle>
-                                            <DialogDescription>
-                                                Detailed breakdown of your mess bill for {bill.month} {bill.year}.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <BillDetailDialog bill={bill} />
-                                    </DialogContent>
-                                </Dialog>
+  const handleOpenPaymentDialog = (bill: Bill) => {
+    setSelectedBill(bill);
+  };
 
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                        <p className="text-xl font-bold">₹{bill.totalAmount.toLocaleString()}</p>
-                                        <Badge variant={bill.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7 w-20 justify-center", bill.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{bill.status}</Badge>
-                                    </div>
-                                    {bill.status === 'Due' && (
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                 <Button><Wallet className="mr-2 h-4 w-4" /> Pay Now</Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Choose Payment Method</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        How would you like to pay your bill of ₹{bill.totalAmount.toLocaleString()}?
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter className="grid grid-cols-2 gap-4">
-                                                    <AlertDialogAction>Pay Online</AlertDialogAction>
-                                                    <AlertDialogCancel>Pay with Cash</AlertDialogCancel>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </CardContent>
-            </Card>
-        </div>
+  const handleClosePaymentDialogs = () => {
+    setSelectedBill(null);
+    setIsCashPaymentOpen(false);
+    setCustomAmount('');
+  };
+
+  const handleMakePayment = (amount: number) => {
+    if (!selectedBill || isNaN(amount) || amount <= 0) {
+       toast({
+        variant: 'destructive',
+        title: 'Invalid Amount',
+        description: 'Please enter a valid positive number.',
+      });
+      return;
+    }
+
+    const dueAmount = selectedBill.totalAmount - selectedBill.paidAmount;
+    if (amount > dueAmount) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Amount',
+        description: `Payment cannot be more than the due amount of ₹${dueAmount.toLocaleString()}.`,
+      });
+      return;
+    }
+
+    setBills((prevBills) =>
+      prevBills.map((b) => {
+        if (b.id === selectedBill.id) {
+          const newPaidAmount = b.paidAmount + amount;
+          let newStatus: Bill['status'] = 'Partially Paid';
+          if (newPaidAmount >= b.totalAmount) {
+            newStatus = 'Paid';
+          }
+          return { ...b, paidAmount: newPaidAmount, status: newStatus };
+        }
+        return b;
+      })
     );
+
+    toast({
+      title: 'Payment Recorded',
+      description: `A payment of ₹${amount.toLocaleString()} for your ${
+        selectedBill.month
+      } bill has been recorded.`,
+    });
+
+    handleClosePaymentDialogs();
+  };
+
+  const getStatusInfo = (status: Bill['status']) => {
+    switch (status) {
+      case 'Paid':
+        return {
+          variant: 'secondary',
+          className:
+            'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80',
+        };
+      case 'Partially Paid':
+        return {
+          variant: 'outline',
+          className: 'border-yellow-500 text-yellow-500',
+        };
+      case 'Due':
+        return { variant: 'destructive', className: '' };
+      default:
+        return { variant: 'secondary', className: '' };
+    }
+  };
+
+  const dueBillForDialog = selectedBill
+    ? selectedBill.totalAmount - selectedBill.paidAmount
+    : 0;
+
+  return (
+    <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Billing History</CardTitle>
+          <CardDescription>
+            A record of all your past and present mess bills. Click on a bill to
+            view details.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {bills.map((bill) => {
+            const statusInfo = getStatusInfo(bill.status);
+            const dueAmount = bill.totalAmount - bill.paidAmount;
+            return (
+              <Card
+                key={bill.id}
+                className="hover:border-primary/50 transition-all duration-150 group"
+              >
+                <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="flex items-center gap-4 flex-1 cursor-pointer min-w-[200px]">
+                        <div className="bg-secondary/50 p-3 rounded-lg">
+                          <Receipt className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-lg">
+                            {bill.month} {bill.year}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Due:{' '}
+                            <span
+                              className={cn(
+                                dueAmount > 0
+                                  ? 'text-destructive'
+                                  : 'text-muted-foreground'
+                              )}
+                            >
+                              ₹{dueAmount.toLocaleString()}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
+                      <BillDetailDialog bill={bill} />
+                    </DialogContent>
+                  </Dialog>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-xl font-bold">
+                        ₹{bill.totalAmount.toLocaleString()}
+                      </p>
+                      <Badge
+                        variant={statusInfo.variant as any}
+                        className={cn(
+                          'capitalize text-sm h-7 w-28 justify-center',
+                          statusInfo.className
+                        )}
+                      >
+                        {bill.status}
+                      </Badge>
+                    </div>
+                    {bill.status !== 'Paid' && (
+                      <Button onClick={() => handleOpenPaymentDialog(bill)}>
+                        <Wallet className="mr-2 h-4 w-4" /> Pay Now
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* Payment Method Dialog */}
+      <AlertDialog
+        open={!!selectedBill && !isCashPaymentOpen}
+        onOpenChange={(open) => !open && handleClosePaymentDialogs()}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Choose Payment Method</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have a due amount of ₹{dueBillForDialog.toLocaleString()} for
+              the {selectedBill?.month} bill. How would you like to pay?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+            <Button variant="outline" disabled>
+              <CreditCard /> Pay Online (Coming Soon)
+            </Button>
+            <Button onClick={() => setIsCashPaymentOpen(true)}>
+              <Banknote /> Pay with Cash
+            </Button>
+          </AlertDialogFooter>
+          <AlertDialogCancel
+            className="w-full mt-2"
+            onClick={handleClosePaymentDialogs}
+          >
+            Cancel
+          </AlertDialogCancel>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cash Payment Dialog */}
+      <Dialog
+        open={isCashPaymentOpen}
+        onOpenChange={(open) => !open && handleClosePaymentDialogs()}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pay with Cash</DialogTitle>
+            <DialogDescription>
+              Confirm the amount to pay for your {selectedBill?.month} bill. The
+              due amount is ₹{dueBillForDialog.toLocaleString()}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Instructions</AlertTitle>
+              <AlertDescription>
+                Please hand over the cash amount to the mess admin to complete
+                this transaction.
+              </AlertDescription>
+            </Alert>
+            <div className="space-y-2">
+              <Label htmlFor="payment-amount">Enter Amount (INR)</Label>
+              <Input
+                id="payment-amount"
+                type="number"
+                placeholder={`e.g., ${dueBillForDialog.toLocaleString()}`}
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <CardFooter className="flex-col sm:flex-row p-0 gap-2">
+            <Button
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={() => handleMakePayment(dueBillForDialog)}
+            >
+              Pay Full Amount (₹{dueBillForDialog.toLocaleString()})
+            </Button>
+            <Button
+              className="w-full sm:w-auto flex-1"
+              onClick={() => handleMakePayment(parseFloat(customAmount))}
+            >
+              Submit Payment
+            </Button>
+          </CardFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
