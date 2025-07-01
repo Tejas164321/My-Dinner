@@ -32,10 +32,12 @@ import {
   LifeBuoy,
   PanelLeft,
   ChevronsLeft,
-  MessageSquare
+  MessageSquare,
+  LayoutDashboard
 } from 'lucide-react';
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
+  LayoutDashboard,
   BarChart,
   Users,
   Utensils,
