@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { studentUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, KeyRound, Bell, Palette, Moon, Sun } from 'lucide-react';
+import { User, Bell, Palette, Moon, Sun, Camera } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -63,26 +63,29 @@ export default function StudentSettingsPage() {
                             <CardDescription>Update your personal information and manage your account.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-8">
-                            <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
-                                <div className="flex items-center gap-6">
+                             <div className="flex items-center gap-8">
+                                <div className="relative flex-shrink-0">
                                     <Avatar className="w-24 h-24 border-4 border-primary/20">
-                                        <AvatarImage src={studentUser.avatarUrl} alt={studentUser.name} />
-                                        <AvatarFallback>{studentUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                        <AvatarImage src={studentUser.avatarUrl} alt={name} />
+                                        <AvatarFallback>{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                     </Avatar>
-                                    <div className="space-y-2">
-                                        <h3 className="text-2xl font-semibold">{name}</h3>
-                                        <p className="text-muted-foreground">{studentUser.role}</p>
-                                        <Button variant="outline">Upload New Photo</Button>
-                                    </div>
+                                    <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 z-10 rounded-full h-9 w-9 border-2 bg-background hover:bg-accent border-background">
+                                        <Camera className="h-4 w-4" />
+                                        <span className="sr-only">Upload New Photo</span>
+                                    </Button>
                                 </div>
-                                <div className="space-y-2 text-sm text-muted-foreground sm:text-right pt-2">
-                                    <div className="flex gap-2 items-center justify-end">
-                                        <span className="font-semibold text-foreground">Student ID:</span>
-                                        <span>{studentUser.studentId}</span>
-                                    </div>
-                                    <div className="flex gap-2 items-center justify-end">
-                                        <span className="font-semibold text-foreground">Joined:</span>
-                                        <span>{studentUser.joinDate}</span>
+                                <div className="space-y-1.5">
+                                    <h3 className="text-2xl font-semibold">{name}</h3>
+                                    <p className="text-muted-foreground">{studentUser.role}</p>
+                                    <div className="space-y-1 pt-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-foreground">Student ID:</span>
+                                            <span>{studentUser.studentId}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-foreground">Joined:</span>
+                                            <span>{studentUser.joinDate}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
