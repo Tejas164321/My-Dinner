@@ -11,9 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, Calendar, Sun, Moon, Wallet, Percent, MessageSquare, ShieldAlert } from 'lucide-react';
-import { dailyMenus } from "@/lib/data";
-import { format, startOfDay, isToday } from 'date-fns';
+import { Utensils, Calendar, Sun, Moon, Wallet, Percent } from 'lucide-react';
+import { dailyMenus, billHistory, monthMap } from "@/lib/data";
+import { format, startOfDay } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
@@ -25,7 +25,8 @@ export default function StudentDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
   useEffect(() => {
-    setSelectedDate(startOfDay(new Date()));
+    // Set a fixed date to ensure mock data consistency
+    setSelectedDate(startOfDay(new Date(2023, 9, 27)));
   }, []);
 
   const displayedMenu = useMemo(() => {
@@ -36,8 +37,23 @@ export default function StudentDashboard() {
   
   const menuTitle = useMemo(() => {
       if (!selectedDate) return "Today's Menu";
-      return isToday(selectedDate) ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
+      const isFixedToday = format(selectedDate, 'yyyy-MM-dd') === '2023-10-27';
+      return isFixedToday ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
   }, [selectedDate]);
+
+  const latestDueBill = useMemo(() => {
+    // Find the most recent bill that is still marked as 'Due'
+    return billHistory
+      .filter(bill => {
+        const paidAmount = bill.payments.reduce((sum, p) => sum + p.amount, 0);
+        return bill.totalAmount - paidAmount > 0;
+      })
+      .sort((a, b) => new Date(b.year, monthMap[a.month as keyof typeof monthMap], 1).getTime() - new Date(a.year, monthMap[a.month as keyof typeof monthMap], 1).getTime())[0];
+  }, []);
+  
+  const dueAmount = latestDueBill 
+      ? latestDueBill.totalAmount - latestDueBill.payments.reduce((sum, p) => sum + p.amount, 0)
+      : 0;
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -129,22 +145,32 @@ export default function StudentDashboard() {
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle>My Bill</CardTitle>
+                        <CardTitle>Bill for {latestDueBill?.month || 'Current Month'}</CardTitle>
                         <Wallet className="h-5 w-5 text-primary" />
                     </div>
-                    <CardDescription>Status of your monthly mess bill.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                   <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-lg">
-                     <div>
-                        <p className="text-muted-foreground text-sm">Amount Due</p>
-                        <p className="text-2xl font-bold">₹3,250</p>
-                     </div>
-                     <Badge variant="destructive">DUE</Badge>
-                   </div>
-                   <Button asChild className="w-full">
-                        <Link href="/student/bills">Pay Now</Link>
-                   </Button>
+                   {latestDueBill ? (
+                     <>
+                        <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-lg">
+                          <div>
+                              <p className="text-muted-foreground text-sm">Amount Due</p>
+                              <p className="text-2xl font-bold">₹{dueAmount.toLocaleString()}</p>
+                          </div>
+                          <Badge variant="destructive">DUE</Badge>
+                        </div>
+                        <Button asChild className="w-full">
+                              <Link href="/student/bills">Pay Now</Link>
+                        </Button>
+                     </>
+                   ) : (
+                      <div className="flex items-center justify-center text-center p-4 bg-secondary/50 rounded-lg h-28">
+                        <div>
+                          <p className="text-2xl font-bold text-green-400">All Cleared!</p>
+                          <p className="text-sm text-muted-foreground">You have no pending bills.</p>
+                        </div>
+                      </div>
+                   )}
                 </CardContent>
             </Card>
         </div>
