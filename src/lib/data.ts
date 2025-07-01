@@ -163,15 +163,15 @@ const today = new Date(2023, 9, 27, 12, 0, 0); // Set a fixed time to avoid date
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 const pastMenus: [string, DailyMenu][] = [
-    [formatDateKey(subDays(today, 7)), { lunch: ['Dal Makhani', 'Naan'], dinner: ['Mix Veg', 'Roti'] }],
-    [formatDateKey(subDays(today, 6)), { lunch: ['Idli Sambar', 'Chutney'], dinner: ['Masala Dosa'] }],
-    [formatDateKey(subDays(today, 5)), { lunch: ['Special Thali'], dinner: ['Pasta', 'Garlic Bread'] }],
-    [formatDateKey(subDays(today, 4)), { lunch: ['Puri Sabji', 'Halwa'], dinner: ['Pizza Night'] }],
-    [formatDateKey(subDays(today, 3)), { lunch: ['Veg Biryani', 'Raita'], dinner: ['Kadhi Pakora', 'Rice'] }],
-    [formatDateKey(subDays(today, 2)), { lunch: ['Aloo Gobi', 'Roti', 'Dal'], dinner: ['Paneer Butter Masala', 'Rice'] }],
-    [formatDateKey(subDays(today, 1)), { lunch: ['Rajma Chawal', 'Salad'], dinner: ['Chole Bhature'] }],
-    [formatDateKey(today), { lunch: ['Rajma Chawal', 'Salad'], dinner: ['Chole Bhature'] }],
-    [formatDateKey(addDays(today, 1)), { lunch: ['Aloo Gobi', 'Roti', 'Dal'], dinner: ['Paneer Butter Masala', 'Rice'] }]
+    [formatDateKey(subDays(today, 7)), { lunch: ['Dal Makhani', 'Jeera Rice', 'Naan', 'Salad'], dinner: ['Mix Veg', 'Roti', 'Dal Tadka'] }],
+    [formatDateKey(subDays(today, 6)), { lunch: ['Idli Sambar', 'Coconut Chutney'], dinner: ['Masala Dosa', 'Tomato Chutney'] }],
+    [formatDateKey(subDays(today, 5)), { lunch: ['Special Thali (Paneer, Dal, Roti, Rice)'], dinner: ['Pasta Arrabiata', 'Garlic Bread'] }],
+    [formatDateKey(subDays(today, 4)), { lunch: ['Puri Sabji', 'Suji Halwa'], dinner: ['Veg Manchurian', 'Fried Rice'] }],
+    [formatDateKey(subDays(today, 3)), { lunch: ['Veg Biryani', 'Boondi Raita'], dinner: ['Kadhi Pakora', 'Steamed Rice'] }],
+    [formatDateKey(subDays(today, 2)), { lunch: ['Aloo Gobi', 'Roti', 'Dal Fry'], dinner: ['Paneer Butter Masala', 'Jeera Rice', 'Chapatti'] }],
+    [formatDateKey(subDays(today, 1)), { lunch: ['Rajma', 'Steamed Rice', 'Salad'], dinner: ['Chole Bhature', 'Onion Salad'] }],
+    [formatDateKey(today), { lunch: ['Rajma Chawal', 'Boondi Raita', 'Green Salad'], dinner: ['Chole Bhature', 'Lassi', 'Pickle'] }],
+    [formatDateKey(addDays(today, 1)), { lunch: ['Aloo Gobi', 'Dal Tadka', 'Chapatti'], dinner: ['Paneer Butter Masala', 'Jeera Rice', 'Naan'] }]
 ];
 
 // Key: 'YYYY-MM-DD'
