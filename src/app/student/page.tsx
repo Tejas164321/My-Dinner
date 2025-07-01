@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent } from 'lucide-react';
-import { dailyMenus, billHistory, monthMap } from "@/lib/data";
+import { dailyMenus, billHistory } from "@/lib/data";
 import { format, startOfDay } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -41,19 +42,17 @@ export default function StudentDashboard() {
       return isFixedToday ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
   }, [selectedDate]);
 
-  const latestDueBill = useMemo(() => {
-    // Find the most recent bill that is still marked as 'Due'
-    return billHistory
-      .filter(bill => {
-        const paidAmount = bill.payments.reduce((sum, p) => sum + p.amount, 0);
-        return bill.totalAmount - paidAmount > 0;
-      })
-      .sort((a, b) => new Date(b.year, monthMap[a.month as keyof typeof monthMap], 1).getTime() - new Date(a.year, monthMap[a.month as keyof typeof monthMap], 1).getTime())[0];
-  }, []);
+  const currentMonthBill = useMemo(() => {
+    if (!selectedDate) return undefined;
+    const currentMonthName = format(selectedDate, 'MMMM');
+    return billHistory.find(bill => bill.month === currentMonthName);
+  }, [selectedDate]);
   
-  const dueAmount = latestDueBill 
-      ? latestDueBill.totalAmount - latestDueBill.payments.reduce((sum, p) => sum + p.amount, 0)
+  const dueAmount = currentMonthBill 
+      ? currentMonthBill.totalAmount - currentMonthBill.payments.reduce((sum, p) => sum + p.amount, 0)
       : 0;
+  
+  const isPaid = dueAmount <= 0;
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -145,29 +144,33 @@ export default function StudentDashboard() {
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle>Bill for {latestDueBill?.month || 'Current Month'}</CardTitle>
+                        <CardTitle>Bill for {currentMonthBill?.month || format(selectedDate || new Date(), 'MMMM')}</CardTitle>
                         <Wallet className="h-5 w-5 text-primary" />
                     </div>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                   {latestDueBill ? (
+                   {currentMonthBill ? (
                      <>
                         <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-lg">
                           <div>
-                              <p className="text-muted-foreground text-sm">Amount Due</p>
-                              <p className="text-2xl font-bold">₹{dueAmount.toLocaleString()}</p>
+                              <p className="text-muted-foreground text-sm">{isPaid ? 'Total Bill' : 'Amount Due'}</p>
+                              <p className={cn("text-2xl font-bold", !isPaid && "text-destructive")}>
+                                ₹{isPaid ? currentMonthBill.totalAmount.toLocaleString() : dueAmount.toLocaleString()}
+                              </p>
                           </div>
-                          <Badge variant="destructive">DUE</Badge>
+                           <Badge variant={isPaid ? 'secondary' : 'destructive'} className={cn(isPaid && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>
+                            {isPaid ? 'PAID' : 'DUE'}
+                          </Badge>
                         </div>
-                        <Button asChild className="w-full">
-                              <Link href="/student/bills">Pay Now</Link>
+                        <Button asChild className="w-full" variant={isPaid ? 'outline' : 'default'}>
+                            <Link href="/student/bills">{isPaid ? 'View Details' : 'Pay Now'}</Link>
                         </Button>
                      </>
                    ) : (
                       <div className="flex items-center justify-center text-center p-4 bg-secondary/50 rounded-lg h-28">
                         <div>
-                          <p className="text-2xl font-bold text-green-400">All Cleared!</p>
-                          <p className="text-sm text-muted-foreground">You have no pending bills.</p>
+                          <p className="font-semibold text-foreground">No Bill Yet</p>
+                          <p className="text-sm text-muted-foreground">The bill for this month has not been generated.</p>
                         </div>
                       </div>
                    )}
