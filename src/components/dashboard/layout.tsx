@@ -113,7 +113,7 @@ function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLa
                             <AvatarImage src={user.avatarUrl} alt={user.name} />
                             <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
-                        <div className={cn("flex flex-col w-full min-w-0 transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
+                        <div className={cn("flex flex-col w-full min-w-0 transition-all duration-200 overflow-hidden", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
                             <p className="font-semibold text-sm truncate whitespace-nowrap">{user.name}</p>
                             <p className="text-xs text-muted-foreground truncate whitespace-nowrap">{user.role}</p>
                         </div>
@@ -180,22 +180,13 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
         <div className="mt-auto border-t p-2">
            <LogoutButton isCollapsed={isCollapsed} />
         </div>
-        <TooltipProvider delayDuration={0}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleToggle}
-                className="absolute top-1/2 -translate-y-1/2 -right-3 z-10 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground"
-              >
-                <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
-                <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={5}>
-              {isCollapsed ? "Expand" : "Collapse"}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <button
+          onClick={handleToggle}
+          className="absolute top-1/2 -translate-y-1/2 -right-3 z-10 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground"
+        >
+          <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
+          <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"}</span>
+        </button>
       </aside>
       
       {/* --- Mobile Header & Main Content --- */}
