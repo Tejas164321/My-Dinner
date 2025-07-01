@@ -30,8 +30,8 @@ export default function HolidaysPage() {
   const [oneDayType, setOneDayType] = useState<HolidayType>('full_day');
   const [longLeaveFromDate, setLongLeaveFromDate] = useState<Date | undefined>();
   const [longLeaveToDate, setLongLeaveToDate] = useState<Date | undefined>();
-  const [longLeaveFromType, setLongLeaveFromType] = useState<HolidayType>('full_day');
-  const [longLeaveToType, setLongLeaveToType] = useState<HolidayType>('full_day');
+  const [longLeaveFromType, setLongLeaveFromType] = useState<HolidayType>('dinner_only');
+  const [longLeaveToType, setLongLeaveToType] = useState<HolidayType>('lunch_only');
   
   // Calendar View State
   const [month, setMonth] = useState<Date | undefined>();
@@ -60,14 +60,22 @@ export default function HolidaysPage() {
       const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
       
       if (dates.length === 1) {
-        newHolidays.push({ name: newHolidayName, date: dates[0], type: longLeaveFromType });
+        if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') {
+          newHolidays.push({ name: newHolidayName, date: dates[0], type: 'full_day' });
+        } else if (longLeaveFromType === 'dinner_only') {
+          newHolidays.push({ name: newHolidayName, date: dates[0], type: 'dinner_only' });
+        } else if (longLeaveToType === 'lunch_only') {
+          newHolidays.push({ name: newHolidayName, date: dates[0], type: 'lunch_only' });
+        } else {
+          newHolidays.push({ name: newHolidayName, date: dates[0], type: 'full_day' });
+        }
       } else {
         newHolidays = dates.map((date, index) => {
           if (index === 0) {
-            return { name: newHolidayName, date, type: longLeaveFromType };
+            return { name: newHolidayName, date, type: longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day' };
           }
           if (index === dates.length - 1) {
-            return { name: newHolidayName, date, type: longLeaveToType };
+            return { name: newHolidayName, date, type: longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day' };
           }
           return { name: newHolidayName, date, type: 'full_day' };
         });
@@ -87,8 +95,8 @@ export default function HolidaysPage() {
     setOneDayType('full_day');
     setLongLeaveFromDate(undefined);
     setLongLeaveToDate(undefined);
-    setLongLeaveFromType('full_day');
-    setLongLeaveToType('full_day');
+    setLongLeaveFromType('dinner_only');
+    setLongLeaveToType('lunch_only');
   };
 
   const handleDeleteHoliday = (dateToDelete: Date) => {
@@ -157,7 +165,7 @@ export default function HolidaysPage() {
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2">
-                    <Label>Leave Type</Label>
+                    <Label>Holiday Type</Label>
                     <RadioGroup value={leaveType} onValueChange={(value) => setLeaveType(value as LeaveType)} className="grid grid-cols-2 gap-4">
                         <Label htmlFor="r_one_day" className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
                             <RadioGroupItem value="one_day" id="r_one_day" className="sr-only" />
@@ -190,7 +198,7 @@ export default function HolidaysPage() {
                         </Popover>
                     </div>
                     <div className="space-y-3">
-                        <Label>Holiday Type</Label>
+                        <Label>Holiday For</Label>
                         <RadioGroup value={oneDayType} onValueChange={(value: HolidayType) => setOneDayType(value)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <Label htmlFor="full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
                                 <RadioGroupItem value="full_day" id="full_day" className="sr-only" />
@@ -242,42 +250,36 @@ export default function HolidaysPage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-3">
-                          <Label>From Type</Label>
-                          <RadioGroup value={longLeaveFromType} onValueChange={(value: HolidayType) => setLongLeaveFromType(value)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                               <Label htmlFor="from_full_day" className="sm:col-span-3 flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
+                          <Label>From (First Day)</Label>
+                          <RadioGroup value={longLeaveFromType} onValueChange={(value: HolidayType) => setLongLeaveFromType(value)} className="grid grid-cols-1 gap-4">
+                               <Label htmlFor="from_full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
                                     <RadioGroupItem value="full_day" id="from_full_day" className="sr-only" />
                                     <Utensils className="mb-3 h-6 w-6" />
                                     Full Day
-                                </Label>
-                                <Label htmlFor="from_lunch_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                    <RadioGroupItem value="lunch_only" id="from_lunch_only" className="sr-only" />
-                                    <Sun className="mb-3 h-6 w-6" />
-                                    Lunch Off
+                                    <p className="text-xs text-muted-foreground mt-1">(Holiday starts before lunch)</p>
                                 </Label>
                                 <Label htmlFor="from_dinner_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
                                     <RadioGroupItem value="dinner_only" id="from_dinner_only" className="sr-only" />
                                     <Moon className="mb-3 h-6 w-6" />
                                     Dinner Off
+                                    <p className="text-xs text-muted-foreground mt-1">(Attend lunch, holiday for dinner)</p>
                                 </Label>
                           </RadioGroup>
                       </div>
                        <div className="space-y-3">
-                          <Label>To Type</Label>
-                          <RadioGroup value={longLeaveToType} onValueChange={(value: HolidayType) => setLongLeaveToType(value)} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                               <Label htmlFor="to_full_day" className="sm:col-span-3 flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
+                          <Label>To (Last Day)</Label>
+                          <RadioGroup value={longLeaveToType} onValueChange={(value: HolidayType) => setLongLeaveToType(value)} className="grid grid-cols-1 gap-4">
+                               <Label htmlFor="to_full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
                                     <RadioGroupItem value="full_day" id="to_full_day" className="sr-only" />
                                     <Utensils className="mb-3 h-6 w-6" />
                                     Full Day
+                                    <p className="text-xs text-muted-foreground mt-1">(Mess reopens after dinner)</p>
                                 </Label>
                                 <Label htmlFor="to_lunch_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
                                     <RadioGroupItem value="lunch_only" id="to_lunch_only" className="sr-only" />
                                     <Sun className="mb-3 h-6 w-6" />
                                     Lunch Off
-                                </Label>
-                                <Label htmlFor="to_dinner_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                    <RadioGroupItem value="dinner_only" id="to_dinner_only" className="sr-only" />
-                                    <Moon className="mb-3 h-6 w-6" />
-                                    Dinner Off
+                                    <p className="text-xs text-muted-foreground mt-1">(Mess reopens for dinner)</p>
                                 </Label>
                           </RadioGroup>
                       </div>
