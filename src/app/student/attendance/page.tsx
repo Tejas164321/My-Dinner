@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, Utensils, Percent, UserX } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function CustomDayContent({ date, activeModifiers }: DayContentProps) {
     let dots = null;
@@ -37,7 +38,7 @@ function CustomDayContent({ date, activeModifiers }: DayContentProps) {
 }
 
 export default function StudentAttendancePage() {
-    const [month, setMonth] = useState<Date>(new Date());
+    const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
     const [today, setToday] = useState<Date | undefined>();
     const student = studentsData.find(s => s.id === '8'); // Alex Doe
 
@@ -46,6 +47,13 @@ export default function StudentAttendancePage() {
         now.setHours(0, 0, 0, 0);
         setToday(now);
     }, []);
+    
+    const monthOptions = [
+        { value: '2023-10', label: 'October 2023' },
+        { value: '2023-09', label: 'September 2023' },
+        { value: '2023-08', label: 'August 2023' },
+        { value: '2023-07', label: 'July 2023' },
+    ];
 
     const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
     const currentData = student?.monthlyDetails[monthName] || { attendance: '0%', bill: { total: 0, paid: 0 }, status: 'Paid' };
@@ -62,7 +70,10 @@ export default function StudentAttendancePage() {
         const monthIndex = month.getMonth();
         const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
         const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
-        const pastOrTodayDays = allDays.filter(d => d <= today);
+        
+        // Use a fixed "today" for consistent historical data view. 
+        // For a live app, you might compare against the actual `today` state.
+        const pastOrTodayDays = allDays.filter(d => d <= new Date(2023, 9, 27));
         
         const totalConsideredDays = pastOrTodayDays.length;
         const attendancePercent = parseFloat(currentData.attendance) / 100;
@@ -97,8 +108,23 @@ export default function StudentAttendancePage() {
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-            <div>
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold tracking-tight">My Attendance</h1>
+                 <Select
+                    value={format(month, 'yyyy-MM')}
+                    onValueChange={(value) => setMonth(new Date(value))}
+                >
+                    <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {monthOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
