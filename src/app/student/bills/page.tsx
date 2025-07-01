@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -54,6 +55,9 @@ export default function StudentBillsPage() {
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+  const [amountToConfirm, setAmountToConfirm] = useState<number | null>(null);
+
   const { toast } = useToast();
 
   const handleOpenPaymentDialog = (bill: Bill) => {
@@ -64,6 +68,8 @@ export default function StudentBillsPage() {
     setSelectedBill(null);
     setIsCashPaymentOpen(false);
     setCustomAmount('');
+    setIsConfirmingPayment(false);
+    setAmountToConfirm(null);
   };
 
   const handleMakePayment = (amountToPay: number) => {
@@ -92,13 +98,7 @@ export default function StudentBillsPage() {
       prevBills.map((b) => {
         if (b.id === selectedBill.id) {
           const newPayments = [...b.payments, { amount: amountToPay, date: format(new Date(), 'yyyy-MM-dd') }];
-          const newPaidAmount = newPayments.reduce((sum, p) => sum + p.amount, 0);
-          
-          let newStatus: Bill['status'] = 'Due';
-          if (newPaidAmount >= b.totalAmount) {
-            newStatus = 'Paid';
-          }
-          return { ...b, payments: newPayments, status: newStatus };
+          return { ...b, payments: newPayments };
         }
         return b;
       })
@@ -113,6 +113,19 @@ export default function StudentBillsPage() {
   };
 
   const dueBillForDialog = selectedBill ? selectedBill.totalAmount - getPaidAmount(selectedBill) : 0;
+  
+  const initiatePaymentConfirmation = (amount: number) => {
+      if (isNaN(amount) || amount <= 0) {
+        toast({
+            variant: 'destructive',
+            title: 'Invalid Amount',
+            description: 'Please enter a valid positive number.',
+        });
+        return;
+      }
+      setAmountToConfirm(amount);
+      setIsConfirmingPayment(true);
+  };
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -176,7 +189,7 @@ export default function StudentBillsPage() {
                   </Dialog>
 
                   <div className="flex items-center gap-4">
-                     <div className="flex flex-col items-center w-32">
+                     <div className="flex flex-col items-center justify-center w-32">
                        <p className="text-xl font-bold">
                         ₹{bill.totalAmount.toLocaleString()}
                       </p>
@@ -203,7 +216,7 @@ export default function StudentBillsPage() {
 
       {/* Payment Method Dialog */}
       <AlertDialog
-        open={!!selectedBill && !isCashPaymentOpen}
+        open={!!selectedBill && !isCashPaymentOpen && !isConfirmingPayment}
         onOpenChange={(open) => !open && handleClosePaymentDialogs()}
       >
         <AlertDialogContent>
@@ -233,7 +246,7 @@ export default function StudentBillsPage() {
 
       {/* Cash Payment Dialog */}
       <Dialog
-        open={isCashPaymentOpen}
+        open={isCashPaymentOpen && !isConfirmingPayment}
         onOpenChange={(open) => !open && handleClosePaymentDialogs()}
       >
         <DialogContent>
@@ -268,20 +281,40 @@ export default function StudentBillsPage() {
             <Button
               variant="secondary"
               className="w-full sm:w-auto"
-              onClick={() => handleMakePayment(dueBillForDialog)}
+              onClick={() => initiatePaymentConfirmation(dueBillForDialog)}
               disabled={dueBillForDialog <= 0}
             >
               Pay Full Amount (₹{dueBillForDialog.toLocaleString()})
             </Button>
             <Button
               className="w-full sm:w-auto flex-1"
-              onClick={() => handleMakePayment(parseFloat(customAmount))}
+              onClick={() => initiatePaymentConfirmation(parseFloat(customAmount))}
             >
               Submit Payment
             </Button>
           </CardFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Final Confirmation Dialog */}
+       <AlertDialog open={isConfirmingPayment} onOpenChange={setIsConfirmingPayment}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Cash Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+                You are about to record a cash payment of{' '}
+                <span className="font-bold text-foreground">₹{amountToConfirm?.toLocaleString()}</span>. 
+                Please ensure you have handed this amount to the mess admin.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleMakePayment(amountToConfirm!)}>
+                Confirm Payment
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
