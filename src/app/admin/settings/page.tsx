@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { DollarSign, Palette, Bell, Info, Moon, Sun, RefreshCw, Copy, User, CalendarClock } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from "@/hooks/use-toast";
-import { adminUser } from '@/lib/data';
+import { adminUser, messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -45,10 +45,10 @@ function SettingsPageContent() {
     const [secretCode, setSecretCode] = useState('1234');
 
     // General Settings State
-    const [messName, setMessName] = useState('Messo Central Kitchen');
-    const [contactEmail, setContactEmail] = useState('contact@messo.com');
-    const [contactPhone, setContactPhone] = useState('+91 12345 67890');
-    const [address, setAddress] = useState('123 College Road, University Campus, New Delhi - 110001');
+    const [messName, setMessName] = useState(messInfo.name);
+    const [contactEmail, setContactEmail] = useState(messInfo.email);
+    const [contactPhone, setContactPhone] = useState(messInfo.phone);
+    const [address, setAddress] = useState(messInfo.address);
     const [joinRequestApproval, setJoinRequestApproval] = useState<'manual' | 'auto'>('manual');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 

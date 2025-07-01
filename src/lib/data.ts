@@ -39,6 +39,13 @@ export const studentUser = {
     contact: '+91 98765 43214'
 };
 
+export const messInfo = {
+  name: 'Messo Central Kitchen',
+  address: '123 College Road, University Campus, New Delhi - 110001',
+  email: 'contact@messo.com',
+  phone: '+91 12345 67890',
+};
+
 export const attendanceData = [
   { name: 'Jan', total: 850, attended: 780 },
   { name: 'Feb', total: 920, attended: 850 },
