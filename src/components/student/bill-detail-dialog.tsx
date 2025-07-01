@@ -170,8 +170,9 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
 
   return (
     <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full relative bg-card/95 backdrop-blur-xl border-border">
+      {/* --- Left Column: Billing Details --- */}
       <div className="lg:col-span-3 flex flex-col gap-6">
-        <Card>
+        <Card className="flex flex-col h-full">
           <CardHeader>
             <div className="flex justify-between items-start">
               <div>
@@ -193,45 +194,8 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3 rounded-lg border p-4">
-              <div className="flex justify-between items-baseline">
-                <h4 className="font-semibold text-foreground">
-                  Attendance Summary
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {bill.month} had {bill.details.totalDaysInMonth} days
-                </p>
-              </div>
-              <div className="grid grid-cols-4 gap-2 text-center pt-2">
-                 <div>
-                  <p className="text-2xl font-bold text-green-400">
-                    {bill.details.fullDays}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Full Days</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-yellow-400">
-                    {bill.details.halfDays}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Half Days</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-blue-400">
-                    {bill.details.holidays}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Holidays</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-destructive">
-                    {bill.details.absentDays}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Absent</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 rounded-lg border p-4">
+          <CardContent className="space-y-4 flex-grow">
+            <div className="space-y-3 rounded-lg border p-4 h-full">
               <h4 className="font-semibold text-foreground">Calculation & Payments</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
@@ -286,68 +250,88 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
           </CardFooter>
         </Card>
       </div>
+
+      {/* --- Right Column: Attendance Details --- */}
       <div className="lg:col-span-2 flex flex-col gap-6 relative">
         <Card className="flex-1 flex flex-col">
-          <CardHeader className="p-4 pb-0">
-            <CardTitle className="text-base flex items-center gap-2">
-                <CalendarCheck2 className="h-5 w-5" />
-                Attendance for {bill.month}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow flex items-center justify-center p-0">
-            <Calendar
-              month={monthDate}
-              modifiers={{
-                fullDay: fullDayDays,
-                lunchOnly: lunchOnlyDays,
-                dinnerOnly: dinnerOnlyDays,
-                absent: absentDays,
-                holiday: holidays.map((h) => h.date),
-              }}
-              components={{ DayContent: CustomDayContent }}
-              modifiersClassNames={{
-                fullDay: 'bg-chart-2 text-primary-foreground',
-                lunchOnly: 'bg-chart-3 text-primary-foreground',
-                dinnerOnly: 'bg-chart-3 text-primary-foreground',
-                absent: 'bg-destructive text-destructive-foreground',
-                holiday: 'bg-primary/40 text-primary-foreground',
-              }}
-              classNames={{
-                months: 'w-full',
-                month: 'w-full space-y-4',
-                head_cell:
-                  'text-muted-foreground w-full font-normal text-sm',
-                cell: 'h-9 w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center',
-                day: 'h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center',
-                day_today: 'bg-accent text-accent-foreground rounded-full',
-                day_selected:
-                  'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-              }}
-              className="p-3"
-              showOutsideDays={false}
-              disabled
-            />
-          </CardContent>
-          <CardContent className="p-4 pt-2 mt-auto">
-            <div className="flex w-full items-center justify-center gap-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
-                Full Day
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
-                Half Day
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
-                Absent
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />
-                Holiday
-              </div>
-            </div>
-          </CardContent>
+            <CardHeader className="p-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                    <CalendarCheck2 className="h-5 w-5" />
+                    Attendance for {bill.month}
+                </CardTitle>
+                 <CardDescription>
+                    {bill.details.totalDaysInMonth} total days in the month.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 flex flex-col flex-grow">
+                {/* Attendance Summary Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                    <div>
+                        <p className="text-2xl font-bold text-green-400">{bill.details.fullDays}</p>
+                        <p className="text-xs text-muted-foreground">Full Days</p>
+                    </div>
+                    <div>
+                        <p className="text-2xl font-bold text-yellow-400">{bill.details.halfDays}</p>
+                        <p className="text-xs text-muted-foreground">Half Days</p>
+                    </div>
+                    <div>
+                        <p className="text-2xl font-bold text-blue-400">{bill.details.holidays}</p>
+                        <p className="text-xs text-muted-foreground">Holidays</p>
+                    </div>
+                    <div>
+                        <p className="text-2xl font-bold text-destructive">{bill.details.absentDays}</p>
+                        <p className="text-xs text-muted-foreground">Absent</p>
+                    </div>
+                </div>
+
+                <Separator className="my-4"/>
+
+                {/* Calendar */}
+                <div className="flex-grow flex items-center justify-center p-0">
+                    <Calendar
+                        month={monthDate}
+                        modifiers={{
+                            fullDay: fullDayDays,
+                            lunchOnly: lunchOnlyDays,
+                            dinnerOnly: dinnerOnlyDays,
+                            absent: absentDays,
+                            holiday: holidays.map((h) => h.date),
+                        }}
+                        components={{ DayContent: CustomDayContent }}
+                        modifiersClassNames={{
+                            fullDay: 'bg-chart-2 text-primary-foreground',
+                            lunchOnly: 'bg-chart-3 text-primary-foreground',
+                            dinnerOnly: 'bg-chart-3 text-primary-foreground',
+                            absent: 'bg-destructive text-destructive-foreground',
+                            holiday: 'bg-primary/40 text-primary-foreground',
+                        }}
+                        classNames={{
+                            months: 'w-full',
+                            month: 'w-full space-y-4',
+                            head_cell:
+                            'text-muted-foreground w-full font-normal text-sm',
+                            cell: 'h-9 w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center',
+                            day: 'h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center',
+                            day_today: 'bg-accent text-accent-foreground rounded-full',
+                            day_selected:
+                            'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                        }}
+                        className="p-0"
+                        showOutsideDays={false}
+                        disabled
+                    />
+                </div>
+                
+                {/* Legend */}
+                <div className="p-0 pt-4 mt-auto">
+                    <div className="flex w-full items-center justify-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Full Day</div>
+                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
+                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Absent</div>
+                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
+                    </div>
+                </div>
+            </CardContent>
         </Card>
       </div>
     </Card>
