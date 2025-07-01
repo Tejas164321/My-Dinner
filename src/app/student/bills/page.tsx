@@ -179,6 +179,12 @@ export default function StudentBillsPage() {
                       </div>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
+                      <DialogHeader className="sr-only">
+                        <DialogTitle>Bill Details: {bill.month} {bill.year}</DialogTitle>
+                        <DialogDescription>
+                            A detailed breakdown of your bill for {bill.month} {bill.year}, including attendance and payment history.
+                        </DialogDescription>
+                      </DialogHeader>
                       <BillDetailDialog bill={bill} onPayNow={() => handleOpenPaymentDialog(bill)} />
                     </DialogContent>
                   </Dialog>
