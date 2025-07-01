@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -146,24 +145,6 @@ export default function StudentDashboard() {
                    <Button asChild className="w-full">
                         <Link href="/student/bills">Pay Now</Link>
                    </Button>
-                </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
-                <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                    <Button asChild variant="outline" className="justify-start">
-                        <Link href="/student/leave"><Calendar className="mr-2"/> Apply for Leave</Link>
-                    </Button>
-                    <Button asChild variant="outline" className="justify-start">
-                        <Link href="/student/feedback"><MessageSquare className="mr-2"/> Give Feedback</Link>
-                    </Button>
-                     <Button asChild variant="outline" className="justify-start">
-                        <Link href="/student/feedback"><ShieldAlert className="mr-2"/> Report an Issue</Link>
-                    </Button>
                 </CardContent>
             </Card>
         </div>
