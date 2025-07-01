@@ -51,9 +51,10 @@ export default function StudentSettingsPage() {
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-                 <TabsList className="grid w-full grid-cols-3">
+                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> My Profile</TabsTrigger>
                     <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" /> Notifications</TabsTrigger>
+                    <TabsTrigger value="mess-info"><Building2 className="mr-2 h-4 w-4" /> Mess Info</TabsTrigger>
                     <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" /> Appearance</TabsTrigger>
                 </TabsList>
 
@@ -63,108 +64,68 @@ export default function StudentSettingsPage() {
                             <CardTitle>My Profile</CardTitle>
                             <CardDescription>Update your personal information and manage your account.</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                           <div className="lg:col-span-3 space-y-8">
-                                <div className="flex items-center gap-8">
-                                    <div className="relative flex-shrink-0">
-                                        <Avatar className="w-24 h-24 border-4 border-primary/20">
-                                            <AvatarImage src={studentUser.avatarUrl} alt={name} />
-                                            <AvatarFallback>{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                        </Avatar>
-                                        <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 z-10 rounded-full h-9 w-9 border-2 bg-background hover:bg-accent border-background">
-                                            <Camera className="h-4 w-4" />
-                                            <span className="sr-only">Upload New Photo</span>
-                                        </Button>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <h3 className="text-2xl font-semibold">{name}</h3>
-                                        <p className="text-muted-foreground">{studentUser.role}</p>
-                                        <div className="space-y-1 pt-2 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-semibold text-foreground">Student ID:</span>
-                                                <span>{studentUser.studentId}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-semibold text-foreground">Joined:</span>
-                                                <span>{studentUser.joinDate}</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                        <CardContent className="space-y-8">
+                            <div className="flex items-center gap-8">
+                                <div className="relative flex-shrink-0">
+                                    <Avatar className="w-24 h-24 border-4 border-primary/20">
+                                        <AvatarImage src={studentUser.avatarUrl} alt={name} />
+                                        <AvatarFallback>{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 z-10 rounded-full h-9 w-9 border-2 bg-background hover:bg-accent border-background">
+                                        <Camera className="h-4 w-4" />
+                                        <span className="sr-only">Upload New Photo</span>
+                                    </Button>
                                 </div>
-                                
-                                <div className="space-y-4 pt-6 border-t">
-                                    <h3 className="font-semibold text-foreground/90">Personal Information</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="profile-name">Full Name</Label>
-                                            <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} />
+                                <div className="space-y-1.5">
+                                    <h3 className="text-2xl font-semibold">{name}</h3>
+                                    <p className="text-muted-foreground">{studentUser.role}</p>
+                                    <div className="space-y-1 pt-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-foreground">Student ID:</span>
+                                            <span>{studentUser.studentId}</span>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="profile-contact">Contact Number</Label>
-                                            <Input id="profile-contact" type="tel" value={contact} onChange={(e) => setContact(e.target.value)} />
-                                        </div>
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label htmlFor="profile-email">Email Address</Label>
-                                            <Input id="profile-email" type="email" value={email} readOnly disabled />
-                                            <p className="text-xs text-muted-foreground">Your email address cannot be changed.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 pt-6 border-t">
-                                    <h3 className="font-semibold text-foreground/90">Change Password</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="current-password">Current Password</Label>
-                                            <Input id="current-password" type="password" placeholder="••••••••" />
-                                        </div>
-                                        <div></div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="new-password">New Password</Label>
-                                            <Input id="new-password" type="password" placeholder="••••••••" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                            <Input id="confirm-password" type="password" placeholder="••••••••" />
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-foreground">Joined:</span>
+                                            <span>{studentUser.joinDate}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div className="lg:col-span-2 space-y-4 pt-8 lg:pt-0 lg:border-l lg:pl-8 border-border/50">
-                                <div className="space-y-1">
-                                    <h3 className="font-semibold text-lg text-foreground/90">Mess Information</h3>
-                                    <p className="text-sm text-muted-foreground">Details of the mess facility you are enrolled in.</p>
+                            <div className="space-y-4 pt-6 border-t">
+                                <h3 className="font-semibold text-foreground/90">Personal Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="profile-name">Full Name</Label>
+                                        <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="profile-contact">Contact Number</Label>
+                                        <Input id="profile-contact" type="tel" value={contact} onChange={(e) => setContact(e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <Label htmlFor="profile-email">Email Address</Label>
+                                        <Input id="profile-email" type="email" value={email} readOnly disabled />
+                                        <p className="text-xs text-muted-foreground">Your email address cannot be changed.</p>
+                                    </div>
                                 </div>
-                                <Separator className="my-4" />
-                                <div className="space-y-4 text-sm pt-2">
-                                    <div className="flex items-start gap-4">
-                                        <Building2 className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                                        <div>
-                                            <p className="font-semibold text-foreground">{messInfo.name}</p>
-                                            <p className="text-xs text-muted-foreground">Mess Name</p>
-                                        </div>
+                            </div>
+
+                            <div className="space-y-4 pt-6 border-t">
+                                <h3 className="font-semibold text-foreground/90">Change Password</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="current-password">Current Password</Label>
+                                        <Input id="current-password" type="password" placeholder="••••••••" />
                                     </div>
-                                    <div className="flex items-start gap-4">
-                                        <MapPin className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-foreground">{messInfo.address}</p>
-                                            <p className="text-xs text-muted-foreground">Address</p>
-                                        </div>
+                                    <div></div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="new-password">New Password</Label>
+                                        <Input id="new-password" type="password" placeholder="••••••••" />
                                     </div>
-                                    <div className="flex items-start gap-4">
-                                        <Mail className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-foreground">{messInfo.email}</p>
-                                            <p className="text-xs text-muted-foreground">Contact Email</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <Phone className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-foreground">{messInfo.phone}</p>
-                                            <p className="text-xs text-muted-foreground">Contact Phone</p>
-                                        </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                        <Input id="confirm-password" type="password" placeholder="••••••••" />
                                     </div>
                                 </div>
                             </div>
@@ -193,6 +154,48 @@ export default function StudentSettingsPage() {
                         <CardFooter>
                             <Button>Save Preferences</Button>
                         </CardFooter>
+                    </Card>
+                </TabsContent>
+                
+                <TabsContent value="mess-info" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Mess Information</CardTitle>
+                            <CardDescription>Details of the mess facility you are enrolled in.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6 pt-4">
+                            <div className="flex items-start gap-4">
+                                <Building2 className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="font-semibold text-foreground">{messInfo.name}</p>
+                                    <p className="text-sm text-muted-foreground">Mess Name</p>
+                                </div>
+                            </div>
+                             <Separator />
+                            <div className="flex items-start gap-4">
+                                <MapPin className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="text-foreground">{messInfo.address}</p>
+                                    <p className="text-sm text-muted-foreground">Address</p>
+                                </div>
+                            </div>
+                             <Separator />
+                            <div className="flex items-start gap-4">
+                                <Mail className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="text-foreground">{messInfo.email}</p>
+                                    <p className="text-sm text-muted-foreground">Contact Email</p>
+                                </div>
+                            </div>
+                             <Separator />
+                            <div className="flex items-start gap-4">
+                                <Phone className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="text-foreground">{messInfo.phone}</p>
+                                    <p className="text-sm text-muted-foreground">Contact Phone</p>
+                                </div>
+                            </div>
+                        </CardContent>
                     </Card>
                 </TabsContent>
 
