@@ -24,7 +24,6 @@ export default function StudentSettingsPage() {
 
     // Notification Settings
     const [inAppNotifications, setInAppNotifications] = useState(true);
-    const [emailNotifications, setEmailNotifications] = useState(false);
 
     // Appearance Settings
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -133,13 +132,6 @@ export default function StudentSettingsPage() {
                                     <p className="text-sm text-muted-foreground">Receive alerts for announcements and billing directly in the app.</p>
                                 </div>
                                 <Switch id="in-app-notifs" checked={inAppNotifications} onCheckedChange={setInAppNotifications} />
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="email-notifs" className="text-base">Email Notifications</Label>
-                                    <p className="text-sm text-muted-foreground">Get important updates sent to your registered email address.</p>
-                                </div>
-                                <Switch id="email-notifs" checked={emailNotifications} onCheckedChange={setEmailNotifications} />
                             </div>
                         </CardContent>
                         <CardFooter>
