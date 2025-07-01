@@ -4,7 +4,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, isFuture, eachDayOfInterval } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
-import type { DateRange } from 'react-day-picker';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { leaveHistory as initialLeaves, Holiday as Leave } from '@/lib/data';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
 type LeaveType = 'one_day' | 'long_leave';
@@ -27,7 +25,8 @@ export default function StudentLeavePage() {
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
   const [oneDayDate, setOneDayDate] = useState<Date | undefined>();
   const [oneDayType, setOneDayType] = useState<HolidayType>('full_day');
-  const [longLeaveDateRange, setLongLeaveDateRange] = useState<DateRange | undefined>();
+  const [longLeaveFromDate, setLongLeaveFromDate] = useState<Date | undefined>();
+  const [longLeaveToDate, setLongLeaveToDate] = useState<Date | undefined>();
   const [longLeaveFromType, setLongLeaveFromType] = useState<HolidayType>('dinner_only');
   const [longLeaveToType, setLongLeaveToType] = useState<HolidayType>('lunch_only');
   
@@ -47,18 +46,14 @@ export default function StudentLeavePage() {
   const handleApplyForLeave = () => {
     let newLeaves: Leave[] = [];
     const reason = "Student Leave";
-    const { from: longLeaveFrom, to: longLeaveTo } = longLeaveDateRange || {};
-
+    
     if (leaveType === 'one_day' && oneDayDate) {
       newLeaves.push({ name: reason, date: oneDayDate, type: oneDayType });
-    } else if (leaveType === 'long_leave' && longLeaveFrom && longLeaveTo) {
-      const dates = eachDayOfInterval({ start: longLeaveFrom, end: longLeaveTo });
+    } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
+      const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
       
       if (dates.length === 1) {
-         // Special case for single-day long leave
          if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') {
-            // This is an impossible state (leaving after lunch and before dinner on the same day)
-            // Default to a full day leave
              newLeaves.push({ name: reason, date: dates[0], type: 'full_day' });
          } else if (longLeaveFromType === 'dinner_only') {
              newLeaves.push({ name: reason, date: dates[0], type: 'dinner_only' });
@@ -86,7 +81,8 @@ export default function StudentLeavePage() {
     
     setOneDayDate(today);
     setOneDayType('full_day');
-    setLongLeaveDateRange(undefined);
+    setLongLeaveFromDate(undefined);
+    setLongLeaveToDate(undefined);
     setLongLeaveFromType('dinner_only');
     setLongLeaveToType('lunch_only');
   };
@@ -167,45 +163,31 @@ export default function StudentLeavePage() {
                 
                 {leaveType === 'long_leave' && (
                   <div className="space-y-4 animate-in fade-in-0 duration-300">
-                    <div className="space-y-2">
-                      <Label>Date Range</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            id="date"
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !longLeaveDateRange && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {longLeaveDateRange?.from ? (
-                              longLeaveDateRange.to ? (
-                                <>
-                                  {format(longLeaveDateRange.from, "LLL dd, y")} -{" "}
-                                  {format(longLeaveDateRange.to, "LLL dd, y")}
-                                </>
-                              ) : (
-                                format(longLeaveDateRange.from, "LLL dd, y")
-                              )
-                            ) : (
-                              <span>Pick a date range</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={longLeaveDateRange?.from}
-                            selected={longLeaveDateRange}
-                            onSelect={setLongLeaveDateRange}
-                            numberOfMonths={2}
-                            showOutsideDays={false}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>From Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !longLeaveFromDate && 'text-muted-foreground')}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {longLeaveFromDate ? format(longLeaveFromDate, 'PPP') : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveFromDate} onSelect={setLongLeaveFromDate} initialFocus showOutsideDays={false} /></PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>To Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !longLeaveToDate && 'text-muted-foreground')}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {longLeaveToDate ? format(longLeaveToDate, 'PPP') : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveToDate} onSelect={setLongLeaveToDate} initialFocus showOutsideDays={false} /></PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-3">
