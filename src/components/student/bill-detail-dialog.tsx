@@ -204,13 +204,7 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
                 </p>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center pt-2">
-                <div>
-                  <p className="text-2xl font-bold text-blue-400">
-                    {bill.details.holidays}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Holidays</p>
-                </div>
-                <div>
+                 <div>
                   <p className="text-2xl font-bold text-green-400">
                     {bill.details.fullDays}
                   </p>
@@ -221,6 +215,12 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
                     {bill.details.halfDays}
                   </p>
                   <p className="text-xs text-muted-foreground">Half Days</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-blue-400">
+                    {bill.details.holidays}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Holidays</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-destructive">

@@ -131,7 +131,9 @@ export default function StudentBillsPage() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-      <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
+      </div>
 
       <Card>
         <CardHeader>
@@ -179,36 +181,34 @@ export default function StudentBillsPage() {
                       </div>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
-                      <DialogHeader className="sr-only">
-                        <DialogTitle>Bill Details: {bill.month} {bill.year}</DialogTitle>
-                        <DialogDescription>
-                            A detailed breakdown of your bill for {bill.month} {bill.year}, including attendance and payment history.
-                        </DialogDescription>
-                      </DialogHeader>
+                       <DialogHeader className="sr-only">
+                         <DialogTitle>Bill Details: {bill.month} {bill.year}</DialogTitle>
+                         <DialogDescription>
+                             A detailed breakdown of your bill for {bill.month} {bill.year}, including attendance and payment history.
+                         </DialogDescription>
+                       </DialogHeader>
                       <BillDetailDialog bill={bill} onPayNow={() => handleOpenPaymentDialog(bill)} />
                     </DialogContent>
                   </Dialog>
 
                   <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-xl font-bold">
+                    <div className="flex flex-col items-end w-28">
+                       <p className="text-xl font-bold">
                         ₹{bill.totalAmount.toLocaleString()}
                       </p>
                       <Badge
                         variant={statusInfo.variant as any}
                         className={cn(
-                          'capitalize text-sm h-7 w-28 justify-center',
+                          'capitalize text-sm h-7 w-20 justify-center mt-1',
                           statusInfo.className
                         )}
                       >
                         {dueAmount > 0 ? 'Due' : 'Paid'}
                       </Badge>
                     </div>
-                    {dueAmount > 0 && (
-                      <Button onClick={() => handleOpenPaymentDialog(bill)}>
+                    <Button onClick={() => handleOpenPaymentDialog(bill)} disabled={dueAmount <= 0}>
                         <Wallet className="mr-2 h-4 w-4" /> Pay Now
-                      </Button>
-                    )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
