@@ -45,6 +45,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { format } from 'date-fns';
+
+const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
 
 export default function StudentBillsPage() {
   const [bills, setBills] = useState<Bill[]>(initialBillHistory);
@@ -63,9 +66,9 @@ export default function StudentBillsPage() {
     setCustomAmount('');
   };
 
-  const handleMakePayment = (amount: number) => {
-    if (!selectedBill || isNaN(amount) || amount <= 0) {
-       toast({
+  const handleMakePayment = (amountToPay: number) => {
+    if (!selectedBill || isNaN(amountToPay) || amountToPay <= 0) {
+      toast({
         variant: 'destructive',
         title: 'Invalid Amount',
         description: 'Please enter a valid positive number.',
@@ -73,8 +76,10 @@ export default function StudentBillsPage() {
       return;
     }
 
-    const dueAmount = selectedBill.totalAmount - selectedBill.paidAmount;
-    if (amount > dueAmount) {
+    const paidAmount = getPaidAmount(selectedBill);
+    const dueAmount = selectedBill.totalAmount - paidAmount;
+    
+    if (amountToPay > dueAmount) {
       toast({
         variant: 'destructive',
         title: 'Invalid Amount',
@@ -86,12 +91,14 @@ export default function StudentBillsPage() {
     setBills((prevBills) =>
       prevBills.map((b) => {
         if (b.id === selectedBill.id) {
-          const newPaidAmount = b.paidAmount + amount;
-          let newStatus: Bill['status'] = 'Partially Paid';
+          const newPayments = [...b.payments, { amount: amountToPay, date: format(new Date(), 'yyyy-MM-dd') }];
+          const newPaidAmount = newPayments.reduce((sum, p) => sum + p.amount, 0);
+          
+          let newStatus: Bill['status'] = 'Due';
           if (newPaidAmount >= b.totalAmount) {
             newStatus = 'Paid';
           }
-          return { ...b, paidAmount: newPaidAmount, status: newStatus };
+          return { ...b, payments: newPayments, status: newStatus };
         }
         return b;
       })
@@ -99,9 +106,7 @@ export default function StudentBillsPage() {
 
     toast({
       title: 'Payment Recorded',
-      description: `A payment of ₹${amount.toLocaleString()} for your ${
-        selectedBill.month
-      } bill has been recorded.`,
+      description: `A payment of ₹${amountToPay.toLocaleString()} for your ${selectedBill.month} bill has been recorded.`,
     });
 
     handleClosePaymentDialogs();
@@ -115,11 +120,6 @@ export default function StudentBillsPage() {
           className:
             'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80',
         };
-      case 'Partially Paid':
-        return {
-          variant: 'outline',
-          className: 'border-yellow-500 text-yellow-500',
-        };
       case 'Due':
         return { variant: 'destructive', className: '' };
       default:
@@ -127,15 +127,11 @@ export default function StudentBillsPage() {
     }
   };
 
-  const dueBillForDialog = selectedBill
-    ? selectedBill.totalAmount - selectedBill.paidAmount
-    : 0;
+  const dueBillForDialog = selectedBill ? selectedBill.totalAmount - getPaidAmount(selectedBill) : 0;
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
-      </div>
+      <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
 
       <Card>
         <CardHeader>
@@ -147,8 +143,10 @@ export default function StudentBillsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {bills.map((bill) => {
-            const statusInfo = getStatusInfo(bill.status);
-            const dueAmount = bill.totalAmount - bill.paidAmount;
+            const paidAmount = getPaidAmount(bill);
+            const dueAmount = bill.totalAmount - paidAmount;
+            const statusInfo = getStatusInfo(dueAmount > 0 ? 'Due' : 'Paid');
+
             return (
               <Card
                 key={bill.id}
@@ -181,7 +179,7 @@ export default function StudentBillsPage() {
                       </div>
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
-                      <BillDetailDialog bill={bill} />
+                      <BillDetailDialog bill={bill} onPayNow={() => handleOpenPaymentDialog(bill)} />
                     </DialogContent>
                   </Dialog>
 
@@ -197,10 +195,10 @@ export default function StudentBillsPage() {
                           statusInfo.className
                         )}
                       >
-                        {bill.status}
+                        {dueAmount > 0 ? 'Due' : 'Paid'}
                       </Badge>
                     </div>
-                    {bill.status !== 'Paid' && (
+                    {dueAmount > 0 && (
                       <Button onClick={() => handleOpenPaymentDialog(bill)}>
                         <Wallet className="mr-2 h-4 w-4" /> Pay Now
                       </Button>
@@ -281,6 +279,7 @@ export default function StudentBillsPage() {
               variant="secondary"
               className="w-full sm:w-auto"
               onClick={() => handleMakePayment(dueBillForDialog)}
+              disabled={dueBillForDialog <= 0}
             >
               Pay Full Amount (₹{dueBillForDialog.toLocaleString()})
             </Button>

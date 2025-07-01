@@ -203,8 +203,8 @@ export interface Bill {
     year: number;
     generationDate: string;
     totalAmount: number;
-    paidAmount: number;
-    status: 'Paid' | 'Due' | 'Partially Paid';
+    payments: { amount: number; date: string }[];
+    status: 'Paid' | 'Due';
     details: {
         totalDaysInMonth: number;
         holidays: number;
@@ -219,7 +219,9 @@ export interface Bill {
 
 export const billHistory: Bill[] = [
     {
-        id: 'bill1', month: 'October', year: 2023, generationDate: '2023-11-01', totalAmount: 3445, paidAmount: 3445, status: 'Paid',
+        id: 'bill1', month: 'October', year: 2023, generationDate: '2023-11-01', totalAmount: 3445, 
+        payments: [{ amount: 3445, date: '2023-11-05' }], 
+        status: 'Paid',
         details: { 
             totalDaysInMonth: 31, 
             holidays: 2,
@@ -232,7 +234,9 @@ export const billHistory: Bill[] = [
         }
     },
     {
-        id: 'bill2', month: 'September', year: 2023, generationDate: '2023-10-01', totalAmount: 3380, paidAmount: 3380, status: 'Paid',
+        id: 'bill2', month: 'September', year: 2023, generationDate: '2023-10-01', totalAmount: 3380, 
+        payments: [{ amount: 3380, date: '2023-10-04' }], 
+        status: 'Paid',
         details: { 
             totalDaysInMonth: 30, 
             holidays: 1,
@@ -245,7 +249,12 @@ export const billHistory: Bill[] = [
         }
     },
     {
-        id: 'bill3', month: 'August', year: 2023, generationDate: '2023-09-01', totalAmount: 3120, paidAmount: 1000, status: 'Partially Paid',
+        id: 'bill3', month: 'August', year: 2023, generationDate: '2023-09-01', totalAmount: 3120, 
+        payments: [
+            { amount: 1000, date: '2023-09-10' },
+            { amount: 1000, date: '2023-09-20' }
+        ], 
+        status: 'Due',
         details: { 
             totalDaysInMonth: 31, 
             holidays: 1,
@@ -258,7 +267,9 @@ export const billHistory: Bill[] = [
         }
     },
      {
-        id: 'bill4', month: 'July', year: 2023, generationDate: '2023-08-01', totalAmount: 3445, paidAmount: 0, status: 'Due',
+        id: 'bill4', month: 'July', year: 2023, generationDate: '2023-08-01', totalAmount: 3445, 
+        payments: [], 
+        status: 'Due',
         details: { 
             totalDaysInMonth: 31, 
             holidays: 0,

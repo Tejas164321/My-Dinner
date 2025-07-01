@@ -18,22 +18,12 @@ import {
   Utensils,
   FileDown,
   Wallet,
+  CalendarCheck2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 
 function CustomDayContent({ date, activeModifiers }: DayContentProps) {
   // Re-using the same day content logic for consistency
@@ -83,6 +73,7 @@ function CustomDayContent({ date, activeModifiers }: DayContentProps) {
 
 interface BillDetailDialogProps {
   bill: Bill;
+  onPayNow: (bill: Bill) => void;
 }
 
 const monthMap: { [key: string]: number } = {
@@ -100,11 +91,15 @@ const monthMap: { [key: string]: number } = {
   December: 11,
 };
 
-export function BillDetailDialog({ bill }: BillDetailDialogProps) {
+const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
+
+
+export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
   const student = studentUser;
   const monthIndex = monthMap[bill.month];
   const monthDate = new Date(bill.year, monthIndex, 1);
-  const dueAmount = bill.totalAmount - bill.paidAmount;
+  const paidAmount = getPaidAmount(bill);
+  const dueAmount = bill.totalAmount - paidAmount;
 
   const { fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays } =
     useMemo(() => {
@@ -164,11 +159,6 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
           className:
             'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80',
         };
-      case 'Partially Paid':
-        return {
-          variant: 'outline',
-          className: 'border-yellow-500 text-yellow-500',
-        };
       case 'Due':
         return { variant: 'destructive', className: '' };
       default:
@@ -176,7 +166,7 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
     }
   };
 
-  const statusInfo = getStatusInfo(bill.status);
+  const statusInfo = getStatusInfo(dueAmount > 0 ? 'Due' : 'Paid');
 
   return (
     <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full relative bg-card/95 backdrop-blur-xl border-border">
@@ -199,7 +189,7 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
                   statusInfo.className
                 )}
               >
-                {bill.status}
+                {dueAmount > 0 ? 'Due' : 'Paid'}
               </Badge>
             </div>
           </CardHeader>
@@ -242,41 +232,42 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
             </div>
 
             <div className="space-y-3 rounded-lg border p-4">
-              <h4 className="font-semibold text-foreground">Calculation</h4>
+              <h4 className="font-semibold text-foreground">Calculation & Payments</h4>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <p className="text-muted-foreground">Total Billable Days</p>
-                  <p className="font-medium">
-                    {bill.details.billableDays} days
-                  </p>
-                </div>
                 <div className="flex justify-between items-center">
                   <p className="text-muted-foreground flex items-center gap-2">
                     <Utensils /> Total Meals Taken
                   </p>
-                  <p>{bill.details.totalMeals} meals</p>
-                </div>
-                <div className="flex justify-between items-center">
-                  <p className="text-muted-foreground">Charge per Meal</p>
-                  <p>x ₹{bill.details.chargePerMeal.toLocaleString()}</p>
+                  <p>{bill.details.totalMeals} meals x ₹{bill.details.chargePerMeal.toLocaleString()}</p>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center font-semibold text-lg">
-                  <p>Bill Amount</p>
+                  <p>Total Bill Amount</p>
                   <p>₹{bill.totalAmount.toLocaleString()}</p>
                 </div>
-                <div className="flex justify-between items-center text-green-400">
-                  <p className="text-muted-foreground">Amount Paid</p>
-                  <p>- ₹{bill.paidAmount.toLocaleString()}</p>
+                 {bill.payments.length > 0 && (
+                    <div className="pt-2">
+                        <p className="font-medium text-foreground/90 mb-2">Payments Received:</p>
+                        <div className="space-y-1.5 pl-2 border-l-2 border-dashed">
+                        {bill.payments.map((payment, index) => (
+                            <div key={index} className="flex justify-between items-center text-green-400">
+                                <p className="text-muted-foreground">
+                                    <span className="text-green-400 font-mono text-xs">✔</span> Payment on {format(new Date(payment.date), 'MMM do, yyyy')}
+                                </p>
+                                <p>- ₹{payment.amount.toLocaleString()}</p>
+                            </div>
+                        ))}
+                        </div>
+                    </div>
+                )}
+                 <div className="flex justify-between items-center pt-1">
+                    <p className="text-muted-foreground">Total Paid</p>
+                    <p className="text-green-400">- ₹{paidAmount.toLocaleString()}</p>
                 </div>
                 <Separator />
                 <div className="flex justify-between items-center font-semibold text-lg">
-                  <p>Due Amount</p>
-                  <p
-                    className={cn(
-                      dueAmount > 0 ? 'text-destructive' : 'text-foreground'
-                    )}
-                  >
+                  <p>Final Due Amount</p>
+                  <p className={cn(dueAmount > 0 ? 'text-destructive' : 'text-foreground')}>
                     ₹{dueAmount.toLocaleString()}
                   </p>
                 </div>
@@ -287,28 +278,10 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
             <Button variant="outline" className="w-full">
               <FileDown /> Download Bill
             </Button>
-            {bill.status !== 'Paid' && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button className="w-full">
-                    <Wallet /> Pay Now
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Choose Payment Method</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You have a due amount of ₹
-                      {dueAmount.toLocaleString()}. How would you like to
-                      pay?
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter className="grid grid-cols-2 gap-4">
-                    <AlertDialogAction disabled>Pay Online</AlertDialogAction>
-                    <AlertDialogCancel>Pay with Cash</AlertDialogCancel>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+            {dueAmount > 0 && (
+              <Button className="w-full" onClick={() => onPayNow(bill)}>
+                  <Wallet /> Pay Now
+              </Button>
             )}
           </CardFooter>
         </Card>
@@ -316,8 +289,9 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
       <div className="lg:col-span-2 flex flex-col gap-6 relative">
         <Card className="flex-1 flex flex-col">
           <CardHeader className="p-4 pb-0">
-            <CardTitle className="text-base">
-              Attendance for {bill.month}
+            <CardTitle className="text-base flex items-center gap-2">
+                <CalendarCheck2 className="h-5 w-5" />
+                Attendance for {bill.month}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-grow flex items-center justify-center p-0">
