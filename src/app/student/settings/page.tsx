@@ -63,8 +63,8 @@ export default function StudentSettingsPage() {
                             <CardTitle>My Profile</CardTitle>
                             <CardDescription>Update your personal information and manage your account.</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                           <div className="lg:col-span-2 space-y-8">
+                        <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                           <div className="lg:col-span-3 space-y-8">
                                 <div className="flex items-center gap-8">
                                     <div className="relative flex-shrink-0">
                                         <Avatar className="w-24 h-24 border-4 border-primary/20">
@@ -131,7 +131,7 @@ export default function StudentSettingsPage() {
                                 </div>
                             </div>
                             
-                            <div className="lg:col-span-1 space-y-4 pt-8 lg:pt-0 lg:border-l lg:pl-8 border-border/50">
+                            <div className="lg:col-span-2 space-y-4 pt-8 lg:pt-0 lg:border-l lg:pl-8 border-border/50">
                                 <div className="space-y-1">
                                     <h3 className="font-semibold text-lg text-foreground/90">Mess Information</h3>
                                     <p className="text-sm text-muted-foreground">Details of the mess facility you are enrolled in.</p>
