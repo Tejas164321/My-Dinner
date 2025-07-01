@@ -65,7 +65,6 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
     const monthIndex = monthMap[bill.month];
     const monthDate = new Date(bill.year, monthIndex, 1);
     
-    // This is mock logic for demonstration. A real app would fetch this.
     const { fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays } = useMemo(() => {
         const year = bill.year;
         const monthIndex = monthMap[bill.month];
@@ -80,15 +79,14 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
         };
         const shuffledDays = [...allDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
         
-        const absentCount = bill.details.absentDays;
-        const presentCount = bill.details.presentDays;
-        
-        const fDaysCount = Math.round(presentCount * 0.9); // Mock data assumption
-        const hDaysCount = presentCount - fDaysCount;
+        // Use counts directly from the bill details
+        const fDaysCount = bill.details.fullDays;
+        const hDaysCount = bill.details.halfDays;
+        const aDaysCount = bill.details.absentDays;
 
-        const add = shuffledDays.slice(0, absentCount);
-        const fdd = shuffledDays.slice(absentCount, absentCount + fDaysCount);
-        const hdd = shuffledDays.slice(absentCount + fDaysCount, absentCount + fDaysCount + hDaysCount);
+        const fdd = shuffledDays.slice(0, fDaysCount);
+        const hdd = shuffledDays.slice(fDaysCount, fDaysCount + hDaysCount);
+        const add = shuffledDays.slice(fDaysCount + hDaysCount, fDaysCount + hDaysCount + aDaysCount);
         
         const lod = hdd.filter((_, i) => i % 2 === 0);
         const dod = hdd.filter((_, i) => i % 2 !== 0);
@@ -106,15 +104,18 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-3 rounded-lg border p-4">
-                            <h4 className="font-semibold text-foreground">Summary</h4>
-                            <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="flex justify-between items-baseline">
+                                <h4 className="font-semibold text-foreground">Attendance Summary</h4>
+                                <p className="text-sm text-muted-foreground">{bill.month} had {bill.details.totalDaysInMonth} days</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 text-center pt-2">
                                 <div>
-                                    <p className="text-3xl font-bold">{bill.details.totalDays}</p>
-                                    <p className="text-xs text-muted-foreground">Total Days</p>
+                                    <p className="text-3xl font-bold text-green-400">{bill.details.fullDays}</p>
+                                    <p className="text-xs text-muted-foreground">Full Days</p>
                                 </div>
                                 <div>
-                                    <p className="text-3xl font-bold text-green-400">{bill.details.presentDays}</p>
-                                    <p className="text-xs text-muted-foreground">Present</p>
+                                    <p className="text-3xl font-bold text-yellow-400">{bill.details.halfDays}</p>
+                                    <p className="text-xs text-muted-foreground">Half Days</p>
                                 </div>
                                 <div>
                                     <p className="text-3xl font-bold text-destructive">{bill.details.absentDays}</p>
@@ -133,15 +134,6 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
                                 <div className="flex justify-between items-center">
                                     <p className="text-muted-foreground">Charge per Meal</p>
                                     <p>x ₹{bill.details.chargePerMeal.toLocaleString()}</p>
-                                </div>
-                                <Separator />
-                                <div className="flex justify-between items-center font-medium">
-                                    <p>Base Amount</p>
-                                    <p>₹{bill.details.baseAmount.toLocaleString()}</p>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <p className="text-muted-foreground flex items-center gap-2 text-green-400"><Ticket /> Rebate for Leaves</p>
-                                    <p className="text-green-400">- ₹{bill.details.rebate.toLocaleString()}</p>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between items-center font-semibold text-lg">

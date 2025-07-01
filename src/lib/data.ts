@@ -171,7 +171,10 @@ const pastMenus: [string, DailyMenu][] = [
     [formatDateKey(subDays(today, 2)), { lunch: ['Aloo Gobi', 'Roti', 'Dal Fry'], dinner: ['Paneer Butter Masala', 'Jeera Rice', 'Chapatti'] }],
     [formatDateKey(subDays(today, 1)), { lunch: ['Rajma', 'Steamed Rice', 'Salad'], dinner: ['Chole Bhature', 'Onion Salad'] }],
     [formatDateKey(today), { lunch: ['Rajma Chawal', 'Boondi Raita', 'Green Salad'], dinner: ['Chole Bhature', 'Lassi', 'Pickle'] }],
-    [formatDateKey(addDays(today, 1)), { lunch: ['Aloo Gobi', 'Dal Tadka', 'Chapatti'], dinner: ['Paneer Butter Masala', 'Jeera Rice', 'Naan'] }]
+    [formatDateKey(addDays(today, 1)), { lunch: ['Aloo Gobi', 'Dal Tadka', 'Chapatti'], dinner: ['Paneer Butter Masala', 'Jeera Rice', 'Naan'] }],
+    [formatDateKey(addDays(today, 2)), { lunch: ["Dal Fry", "Rice", "Salad"], dinner: ["Paneer Do Pyaza", "Roti"] }],
+    [formatDateKey(addDays(today, 3)), { lunch: ["Kadhi Chawal", "Papad"], dinner: ["Mix Veg", "Paratha"] }],
+    [formatDateKey(addDays(today, 4)), { lunch: ["Masoor Dal", "Rice", "Bhindi Fry"], dinner: ["Aloo Matar", "Roti"] }],
 ];
 
 // Key: 'YYYY-MM-DD'
@@ -203,32 +206,31 @@ export interface Bill {
     totalAmount: number;
     status: 'Paid' | 'Due';
     details: {
-        totalDays: number;
-        presentDays: number;
+        totalDaysInMonth: number;
+        fullDays: number;
+        halfDays: number;
         absentDays: number;
         totalMeals: number;
         chargePerMeal: number;
-        rebate: number;
-        baseAmount: number;
     }
 }
 
 export const billHistory: Bill[] = [
     {
-        id: 'bill1', month: 'October', year: 2023, generationDate: '2023-11-01', totalAmount: 3250, status: 'Paid',
-        details: { totalDays: 31, presentDays: 28, absentDays: 3, totalMeals: 50, chargePerMeal: 65, rebate: 195, baseAmount: 3445 }
+        id: 'bill1', month: 'October', year: 2023, generationDate: '2023-11-01', totalAmount: 3445, status: 'Paid',
+        details: { totalDaysInMonth: 31, fullDays: 25, halfDays: 3, absentDays: 3, totalMeals: 53, chargePerMeal: 65 }
     },
     {
-        id: 'bill2', month: 'September', year: 2023, generationDate: '2023-10-01', totalAmount: 3120, status: 'Paid',
-        details: { totalDays: 30, presentDays: 28, absentDays: 2, totalMeals: 48, chargePerMeal: 65, rebate: 130, baseAmount: 3250 }
+        id: 'bill2', month: 'September', year: 2023, generationDate: '2023-10-01', totalAmount: 3380, status: 'Paid',
+        details: { totalDaysInMonth: 30, fullDays: 24, halfDays: 4, absentDays: 2, totalMeals: 52, chargePerMeal: 65 }
     },
     {
-        id: 'bill3', month: 'August', year: 2023, generationDate: '2023-09-01', totalAmount: 2925, status: 'Paid',
-        details: { totalDays: 31, presentDays: 26, absentDays: 5, totalMeals: 45, chargePerMeal: 65, rebate: 325, baseAmount: 3250 }
+        id: 'bill3', month: 'August', year: 2023, generationDate: '2023-09-01', totalAmount: 3120, status: 'Paid',
+        details: { totalDaysInMonth: 31, fullDays: 22, halfDays: 4, absentDays: 5, totalMeals: 48, chargePerMeal: 65 }
     },
      {
-        id: 'bill4', month: 'July', year: 2023, generationDate: '2023-08-01', totalAmount: 3250, status: 'Due',
-        details: { totalDays: 31, presentDays: 28, absentDays: 3, totalMeals: 50, chargePerMeal: 65, rebate: 195, baseAmount: 3445 }
+        id: 'bill4', month: 'July', year: 2023, generationDate: '2023-08-01', totalAmount: 3445, status: 'Due',
+        details: { totalDaysInMonth: 31, fullDays: 25, halfDays: 3, absentDays: 3, totalMeals: 53, chargePerMeal: 65 }
     },
 ];
 
