@@ -149,16 +149,16 @@ export default function StudentBillsPage() {
                           <p className="font-semibold text-lg">
                             {bill.month} {bill.year}
                           </p>
-                          <p className="text-sm text-muted-foreground">
-                            Due:{' '}
+                           <p className="text-sm text-muted-foreground">
+                            Paid:{' '}
                             <span
                               className={cn(
-                                dueAmount > 0
-                                  ? 'text-destructive'
+                                paidAmount > 0
+                                  ? 'text-green-400'
                                   : 'text-muted-foreground'
                               )}
                             >
-                              ₹{dueAmount.toLocaleString()}
+                              ₹{paidAmount.toLocaleString()}
                             </span>
                           </p>
                         </div>
@@ -176,7 +176,7 @@ export default function StudentBillsPage() {
                   </Dialog>
 
                   <div className="flex items-center gap-4">
-                     <div className="flex flex-col items-end w-32 text-right">
+                     <div className="flex flex-col items-center w-32">
                        <p className="text-xl font-bold">
                         ₹{bill.totalAmount.toLocaleString()}
                       </p>
