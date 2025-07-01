@@ -10,38 +10,43 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, MessageSquare, ShieldAlert } from 'lucide-react';
 import { dailyMenus } from "@/lib/data";
-import { format, addDays, startOfDay } from 'date-fns';
+import { format, startOfDay, isToday } from 'date-fns';
 import Link from 'next/link';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export default function StudentDashboard() {
-  const [currentDate, setCurrentDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
   useEffect(() => {
-    setCurrentDate(startOfDay(new Date()));
+    setSelectedDate(startOfDay(new Date()));
   }, []);
 
-  const todayKey = currentDate ? formatDateKey(currentDate) : '';
-  const todaysMenu = dailyMenus.get(todayKey) || { lunch: ['Not set'], dinner: ['Not set'] };
-
-  const weekDays = useMemo(() => {
-    if (!currentDate) return [];
-    return Array.from({ length: 7 }).map((_, i) => addDays(currentDate, i));
-  }, [currentDate]);
+  const displayedMenu = useMemo(() => {
+    if (!selectedDate) return { lunch: ['Loading...'], dinner: ['Loading...'] };
+    const dateKey = formatDateKey(selectedDate);
+    return dailyMenus.get(dateKey) || { lunch: ['Not set'], dinner: ['Not set'] };
+  }, [selectedDate]);
+  
+  const menuTitle = useMemo(() => {
+      if (!selectedDate) return "Today's Menu";
+      return isToday(selectedDate) ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
+  }, [selectedDate]);
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Welcome back, Alex!</h1>
         <p className="text-muted-foreground">
-          {currentDate
-            ? `Here's your dashboard for ${currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.`
+          {selectedDate
+            ? `Here's your dashboard for ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.`
             : 'Loading dashboard...'}
         </p>
       </div>
@@ -53,11 +58,32 @@ export default function StudentDashboard() {
           {/* Today's Menu */}
           <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
             <CardHeader>
-              <div className="flex items-center gap-2">
-                <Utensils className="h-5 w-5 text-primary" />
-                <CardTitle>Today's Menu</CardTitle>
+               <div className="flex flex-wrap items-center justify-between gap-2">
+                 <div className="flex items-center gap-2">
+                    <Utensils className="h-5 w-5 text-primary" />
+                    <CardTitle>{menuTitle}</CardTitle>
+                 </div>
+                 <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn("w-[240px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarPicker
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
               </div>
-              <CardDescription>What's cooking today in the mess.</CardDescription>
+              <CardDescription>Select a date to view the menu for that day.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6 md:grid-cols-2">
               <div className="flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
@@ -66,7 +92,7 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                       <h3 className="font-semibold text-lg">Lunch</h3>
-                      <p className="text-muted-foreground">{todaysMenu.lunch.join(', ')}</p>
+                      <p className="text-muted-foreground">{displayedMenu.lunch.join(', ')}</p>
                   </div>
               </div>
               <div className="flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
@@ -75,45 +101,9 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                       <h3 className="font-semibold text-lg">Dinner</h3>
-                      <p className="text-muted-foreground">{todaysMenu.dinner.join(', ')}</p>
+                      <p className="text-muted-foreground">{displayedMenu.dinner.join(', ')}</p>
                   </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Weekly Menu */}
-          <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100">
-             <CardHeader>
-                <CardTitle>Upcoming Menu</CardTitle>
-                <CardDescription>Plan your meals for the week ahead.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {weekDays.length > 0 && (
-                <Tabs defaultValue={formatDateKey(weekDays[0])} className="w-full">
-                  <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7">
-                    {weekDays.map((day) => (
-                      <TabsTrigger key={formatDateKey(day)} value={formatDateKey(day)} className="capitalize">{format(day, 'E')}</TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {weekDays.map((day) => {
-                    const menuForDay = dailyMenus.get(formatDateKey(day)) || { lunch: ['Not Set'], dinner: ['Not Set'] };
-                    return (
-                      <TabsContent key={formatDateKey(day)} value={formatDateKey(day)} className="mt-4">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div>
-                                <h4 className="font-semibold mb-2">Lunch</h4>
-                                <p className="text-muted-foreground">{menuForDay.lunch.join(', ')}</p>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold mb-2">Dinner</h4>
-                                <p className="text-muted-foreground">{menuForDay.dinner.join(', ')}</p>
-                            </div>
-                        </div>
-                      </TabsContent>
-                    )
-                  })}
-                </Tabs>
-              )}
             </CardContent>
           </Card>
 
