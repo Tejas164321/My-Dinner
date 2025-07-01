@@ -20,7 +20,7 @@ export default function AdminStudentsPage() {
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Student Management</h1>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -47,8 +47,7 @@ export default function AdminBillingPage() {
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Billing & Payments</h1>
-          <p className="text-muted-foreground">Manage and track all mess-related finances.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Billing & Payments</h1>
         </div>
         <div className="flex items-center gap-4">
           <Select value={month} onValueChange={setMonth}>

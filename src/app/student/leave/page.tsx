@@ -98,8 +98,7 @@ export default function StudentLeavePage() {
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Apply for Leave</h1>
-        <p className="text-muted-foreground">Manage your meal leaves and track your applications.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Apply for Leave</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">

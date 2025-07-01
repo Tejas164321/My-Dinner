@@ -13,8 +13,7 @@ export default function StudentFeedbackPage() {
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Feedback & Support</h1>
-                <p className="text-muted-foreground">Share your thoughts, suggestions, or report any issues.</p>
+                <h1 className="text-2xl font-bold tracking-tight">Feedback & Support</h1>
             </div>
 
             <Card>

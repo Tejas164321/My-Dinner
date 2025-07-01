@@ -51,12 +51,11 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">An overview of mess activities and student management.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 hover:-translate-y-1 hover:border-primary/50">
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 hover:-translate-y-1 hover:border-primary/50 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{mealInfo.title}</CardTitle>
             <Utensils className="h-5 w-5 text-primary" />
@@ -66,7 +65,7 @@ export default function AdminDashboard() {
             <p className="text-xs text-muted-foreground">Estimated students for the meal</p>
           </CardContent>
         </Card>
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100 hover:-translate-y-1 hover:border-primary/50">
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100 hover:-translate-y-1 hover:border-primary/50 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Attendance Today</CardTitle>
             <UserCheck className="h-5 w-5 text-primary" />

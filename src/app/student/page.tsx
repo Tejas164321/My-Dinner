@@ -43,12 +43,7 @@ export default function StudentDashboard() {
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Welcome back, Alex!</h1>
-        <p className="text-muted-foreground">
-          {selectedDate
-            ? `Here's your dashboard for ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}.`
-            : 'Loading dashboard...'}
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">Welcome back, Alex!</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

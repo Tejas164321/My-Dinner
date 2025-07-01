@@ -98,8 +98,7 @@ export default function StudentAttendancePage() {
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">My Attendance</h1>
-                <p className="text-muted-foreground">An overview of your monthly attendance and meal consumption.</p>
+                <h1 className="text-2xl font-bold tracking-tight">My Attendance</h1>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
