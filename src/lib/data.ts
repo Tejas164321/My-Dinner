@@ -332,4 +332,52 @@ export const paymentReminders: PaymentReminder[] = [
         message: 'This is a final reminder that your July bill of ₹3,445 is still pending. Please clear your dues immediately.',
         date: '2023-09-15',
     },
+    {
+        id: 'rem3',
+        title: 'Gentle Reminder: August Bill',
+        message: 'A friendly reminder that your August bill payment is pending. The due amount is ₹1,120.',
+        date: '2023-09-10',
+    },
+    {
+        id: 'rem4',
+        title: 'Urgent: July Bill Payment',
+        message: 'Your July bill of ₹3,445 is significantly overdue. Please pay now to restore full services.',
+        date: '2023-09-05',
+    },
+    {
+        id: 'rem5',
+        title: 'First Reminder for August Bill',
+        message: 'This is a reminder that your August bill is now due. The total amount is ₹3,120.',
+        date: '2023-09-02',
+    },
+    {
+        id: 'rem6',
+        title: 'Final Reminder: June Bill',
+        message: 'Your June bill of ₹3,200 is overdue. This is the final reminder before action is taken.',
+        date: '2023-08-20',
+    },
+    {
+        id: 'rem7',
+        title: 'Payment Pending for June',
+        message: 'Your payment for the June bill is still pending. Amount due: ₹3,200.',
+        date: '2023-08-10',
+    },
+    {
+        id: 'rem8',
+        title: 'May Bill Overdue',
+        message: 'Your bill for May of ₹3,300 is overdue. Please pay at the earliest.',
+        date: '2023-07-25',
+    },
+    {
+        id: 'rem9',
+        title: 'Gentle Reminder: May Bill',
+        message: 'A friendly reminder that your May bill payment of ₹3,300 is pending.',
+        date: '2023-07-15',
+    },
+    {
+        id: 'rem10',
+        title: 'April Bill Payment Reminder',
+        message: 'This is a reminder for your April bill payment of ₹3,150.',
+        date: '2023-06-10',
+    },
 ];
