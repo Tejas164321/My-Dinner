@@ -112,21 +112,6 @@ export default function StudentBillsPage() {
     handleClosePaymentDialogs();
   };
 
-  const getStatusInfo = (status: Bill['status']) => {
-    switch (status) {
-      case 'Paid':
-        return {
-          variant: 'secondary',
-          className:
-            'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80',
-        };
-      case 'Due':
-        return { variant: 'destructive', className: '' };
-      default:
-        return { variant: 'secondary', className: '' };
-    }
-  };
-
   const dueBillForDialog = selectedBill ? selectedBill.totalAmount - getPaidAmount(selectedBill) : 0;
 
   return (
@@ -147,7 +132,6 @@ export default function StudentBillsPage() {
           {bills.map((bill) => {
             const paidAmount = getPaidAmount(bill);
             const dueAmount = bill.totalAmount - paidAmount;
-            const statusInfo = getStatusInfo(dueAmount > 0 ? 'Due' : 'Paid');
 
             return (
               <Card
@@ -180,7 +164,7 @@ export default function StudentBillsPage() {
                         </div>
                       </div>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
+                     <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
                        <DialogHeader className="sr-only">
                          <DialogTitle>Bill Details: {bill.month} {bill.year}</DialogTitle>
                          <DialogDescription>
@@ -192,18 +176,18 @@ export default function StudentBillsPage() {
                   </Dialog>
 
                   <div className="flex items-center gap-4">
-                    <div className="flex flex-col items-end w-28">
+                     <div className="flex flex-col items-end w-32 text-right">
                        <p className="text-xl font-bold">
                         ₹{bill.totalAmount.toLocaleString()}
                       </p>
-                      <Badge
-                        variant={statusInfo.variant as any}
+                       <Badge
+                        variant={dueAmount > 0 ? 'destructive' : 'secondary'}
                         className={cn(
-                          'capitalize text-sm h-7 w-20 justify-center mt-1',
-                          statusInfo.className
+                          'text-sm font-normal h-7 w-full justify-center mt-1',
+                          dueAmount <= 0 && 'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80'
                         )}
                       >
-                        {dueAmount > 0 ? 'Due' : 'Paid'}
+                        Due: ₹{dueAmount.toLocaleString()}
                       </Badge>
                     </div>
                     <Button onClick={() => handleOpenPaymentDialog(bill)} disabled={dueAmount <= 0}>
