@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
@@ -75,12 +75,12 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
                 <Button
                   asChild
                   variant={isActive ? 'default' : 'ghost'}
-                  className={cn("w-full transition-colors duration-300", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}
+                  className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}
                   onClick={onLinkClick}
                 >
                   <Link href={item.href}>
                     {Icon && <Icon className="h-5 w-5 shrink-0" />}
-                    <span className={cn("truncate", isCollapsed && "sr-only")}>{item.label}</span>
+                    <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>{item.label}</span>
                   </Link>
                 </Button>
               </TooltipTrigger>
@@ -106,16 +106,16 @@ function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLa
                 <TooltipTrigger asChild>
                      <Link 
                         href={profileLink} 
-                        className={cn(buttonVariants({ variant: 'ghost' }), "w-full h-auto transition-colors duration-300", isCollapsed ? 'justify-center p-2' : 'justify-start p-2 gap-3')}
+                        className={cn("flex items-center gap-3 w-full h-auto transition-colors duration-300 rounded-lg hover:bg-accent p-2 overflow-hidden", isCollapsed ? 'justify-center' : 'justify-start')}
                         onClick={onLinkClick}
                     >
-                        <Avatar className="h-9 w-9">
+                        <Avatar className="h-9 w-9 shrink-0">
                             <AvatarImage src={user.avatarUrl} alt={user.name} />
                             <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
-                        <div className={cn("text-left", isCollapsed === true ? "sr-only" : "w-full")}>
-                            <p className="font-semibold text-sm truncate">{user.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{user.role}</p>
+                        <div className={cn("flex flex-col w-full min-w-0 transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
+                            <p className="font-semibold text-sm truncate whitespace-nowrap">{user.name}</p>
+                            <p className="text-xs text-muted-foreground truncate whitespace-nowrap">{user.role}</p>
                         </div>
                     </Link>
                 </TooltipTrigger>
@@ -130,10 +130,10 @@ function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onL
         <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button asChild variant="ghost" className={cn("w-full transition-colors duration-300", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
+                    <Button asChild variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
                         <Link href="/">
                             <LogOut className="h-5 w-5 shrink-0" />
-                            <span className={cn("truncate", isCollapsed && "sr-only")}>Log Out</span>
+                            <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Log Out</span>
                         </Link>
                     </Button>
                 </TooltipTrigger>
@@ -163,12 +163,12 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
         "hidden md:flex flex-col border-r bg-card/80 backdrop-blur-xl transition-[width] duration-500 ease-in-out relative",
         isCollapsed ? "w-20" : "w-64"
       )}>
-        <div className={cn("flex items-center border-b", isCollapsed ? 'h-16 justify-center' : 'h-16 justify-between px-4')}>
+        <div className={cn("flex items-center border-b overflow-hidden", isCollapsed ? 'h-16 justify-center' : 'h-16 justify-between px-4')}>
           <Link href={dashboardPath} className="flex items-center gap-3 text-lg font-semibold">
-            <div className={cn("rounded-lg bg-primary/10 p-2.5 text-primary", isCollapsed && "p-2")}>
+            <div className={cn("rounded-lg bg-primary/10 p-2.5 text-primary shrink-0", isCollapsed && "p-2")}>
               <ChefHat className={cn("h-6 w-6", isCollapsed && "h-5 w-5")} />
             </div>
-            <span className={cn("font-bold", isCollapsed && "sr-only")}>Messo</span>
+            <span className={cn("font-bold whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Messo</span>
           </Link>
         </div>
         <div className={cn("border-b", isCollapsed ? 'p-1' : 'p-2')}>

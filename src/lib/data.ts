@@ -25,7 +25,7 @@ export const adminUser = {
   name: 'Admin Staff',
   role: 'Mess Manager',
   email: 'admin@messo.com',
-  avatarUrl: 'https://placehold.co/100x100.png',
+  avatarUrl: '',
 };
 
 export const studentUser = {
@@ -33,7 +33,7 @@ export const studentUser = {
     name: 'Alex Doe',
     role: 'Student',
     email: 'alex.doe@example.com',
-    avatarUrl: 'https://placehold.co/100x100.png',
+    avatarUrl: '',
     studentId: 'A56789',
     joinDate: '2023-09-11',
     contact: '+91 98765 43214'
