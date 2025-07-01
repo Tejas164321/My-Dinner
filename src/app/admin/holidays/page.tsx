@@ -114,49 +114,6 @@ export default function HolidaysPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-        <div className="lg:col-span-2 flex flex-col">
-          <Card>
-            <CardHeader>
-              <CardTitle>Holiday Calendar</CardTitle>
-              <CardDescription>An overview of all scheduled holidays for the year.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-center">
-              {month ? (
-                <Calendar
-                  mode="multiple"
-                  month={month}
-                  onMonthChange={setMonth}
-                  modifiers={{
-                    holiday_full: holidays.filter(h => h.type === 'full_day').map(h => h.date),
-                    holiday_half: holidays.filter(h => h.type === 'lunch_only' || h.type === 'dinner_only').map(h => h.date),
-                  }}
-                  modifiersClassNames={{
-                    holiday_full: 'bg-destructive text-destructive-foreground',
-                    holiday_half: 'bg-chart-3 text-primary-foreground',
-                  }}
-                  className="p-0"
-                  classNames={{
-                      months: 'w-full',
-                      month: 'w-full space-y-4',
-                  }}
-                  showOutsideDays={false}
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
-                  <p>Loading calendar...</p>
-                </div>
-              )}
-            </CardContent>
-             <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">
-                <p className="font-semibold text-foreground text-base mb-1">Legend</p>
-                <div className="flex flex-wrap gap-x-6 gap-y-2">
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-destructive" /> Full Day Holiday</div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-chart-3" /> Half Day Holiday</div>
-                </div>
-            </CardFooter>
-          </Card>
-        </div>
-
         <div className="lg:col-span-3 flex flex-col gap-8">
           <Card>
             <CardHeader>
@@ -341,6 +298,49 @@ export default function HolidaysPage() {
                 </div>
               </ScrollArea>
             </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-2 flex flex-col">
+          <Card>
+            <CardHeader>
+              <CardTitle>Holiday Calendar</CardTitle>
+              <CardDescription>An overview of all scheduled holidays for the year.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center">
+              {month ? (
+                <Calendar
+                  mode="multiple"
+                  month={month}
+                  onMonthChange={setMonth}
+                  modifiers={{
+                    holiday_full: holidays.filter(h => h.type === 'full_day').map(h => h.date),
+                    holiday_half: holidays.filter(h => h.type === 'lunch_only' || h.type === 'dinner_only').map(h => h.date),
+                  }}
+                  modifiersClassNames={{
+                    holiday_full: 'bg-destructive text-destructive-foreground',
+                    holiday_half: 'bg-chart-3 text-primary-foreground',
+                  }}
+                  className="p-0"
+                  classNames={{
+                      months: 'w-full',
+                      month: 'w-full space-y-4',
+                  }}
+                  showOutsideDays={false}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                  <p>Loading calendar...</p>
+                </div>
+              )}
+            </CardContent>
+             <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">
+                <p className="font-semibold text-foreground text-base mb-1">Legend</p>
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-destructive" /> Full Day Holiday</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-chart-3" /> Half Day Holiday</div>
+                </div>
+            </CardFooter>
           </Card>
         </div>
       </div>
