@@ -7,7 +7,7 @@ export const studentNavItems = [
     { href: '/student/bills', label: 'My Bills', icon: 'CircleDollarSign' },
     { href: '/student/notifications', label: 'Notifications', icon: 'Bell' },
     { href: '/student/feedback', label: 'Feedback', icon: 'MessageSquare' },
-    { href: '/student/settings', label: 'My Profile', icon: 'User' },
+    { href: '/student/settings', label: 'Settings', icon: 'Settings' },
 ];
 
 export const adminNavItems = [
@@ -17,6 +17,7 @@ export const adminNavItems = [
     { href: '/admin/billing', label: 'Billing', icon: 'CircleDollarSign' },
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
     { href: '/admin/announcements', label: 'Announcements', icon: 'Bell' },
+    { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
     { href: '/admin/support', label: 'Support', icon: 'LifeBuoy' },
 ];
 
