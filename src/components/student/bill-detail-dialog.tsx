@@ -77,16 +77,16 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
             let x = Math.sin(seed + student.id.charCodeAt(0)) * 10000;
             return x - Math.floor(x);
         };
-        const shuffledDays = [...allDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
+
+        const billableDays = allDays.filter(d => !holidays.some(h => format(h.date, 'yyyy-MM-dd') === format(d, 'yyyy-MM-dd')));
+        const shuffledDays = [...billableDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
         
-        // Use counts directly from the bill details
         const fDaysCount = bill.details.fullDays;
         const hDaysCount = bill.details.halfDays;
-        const aDaysCount = bill.details.absentDays;
-
+        
         const fdd = shuffledDays.slice(0, fDaysCount);
         const hdd = shuffledDays.slice(fDaysCount, fDaysCount + hDaysCount);
-        const add = shuffledDays.slice(fDaysCount + hDaysCount, fDaysCount + hDaysCount + aDaysCount);
+        const add = shuffledDays.slice(fDaysCount + hDaysCount);
         
         const lod = hdd.filter((_, i) => i % 2 === 0);
         const dod = hdd.filter((_, i) => i % 2 !== 0);
@@ -99,8 +99,13 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
             <div className="lg:col-span-3 flex flex-col gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Bill for {bill.month} {bill.year}</CardTitle>
-                        <CardDescription>Generated on: {bill.generationDate}</CardDescription>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle>Bill for {bill.month} {bill.year}</CardTitle>
+                                <CardDescription>Generated on: {bill.generationDate}</CardDescription>
+                            </div>
+                            <Badge variant={bill.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7 w-20 justify-center", bill.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{bill.status}</Badge>
+                        </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-3 rounded-lg border p-4">
@@ -108,17 +113,21 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
                                 <h4 className="font-semibold text-foreground">Attendance Summary</h4>
                                 <p className="text-sm text-muted-foreground">{bill.month} had {bill.details.totalDaysInMonth} days</p>
                             </div>
-                            <div className="grid grid-cols-3 gap-4 text-center pt-2">
+                            <div className="grid grid-cols-4 gap-2 text-center pt-2">
                                 <div>
-                                    <p className="text-3xl font-bold text-green-400">{bill.details.fullDays}</p>
+                                    <p className="text-2xl font-bold text-blue-400">{bill.details.holidays}</p>
+                                    <p className="text-xs text-muted-foreground">Holidays</p>
+                                </div>
+                                 <div>
+                                    <p className="text-2xl font-bold text-green-400">{bill.details.fullDays}</p>
                                     <p className="text-xs text-muted-foreground">Full Days</p>
                                 </div>
                                 <div>
-                                    <p className="text-3xl font-bold text-yellow-400">{bill.details.halfDays}</p>
+                                    <p className="text-2xl font-bold text-yellow-400">{bill.details.halfDays}</p>
                                     <p className="text-xs text-muted-foreground">Half Days</p>
                                 </div>
                                 <div>
-                                    <p className="text-3xl font-bold text-destructive">{bill.details.absentDays}</p>
+                                    <p className="text-2xl font-bold text-destructive">{bill.details.absentDays}</p>
                                     <p className="text-xs text-muted-foreground">Absent</p>
                                 </div>
                             </div>
@@ -127,6 +136,10 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
                          <div className="space-y-3 rounded-lg border p-4">
                             <h4 className="font-semibold text-foreground">Calculation</h4>
                             <div className="space-y-2 text-sm">
+                                <div className="flex justify-between items-center">
+                                    <p className="text-muted-foreground">Total Billable Days</p>
+                                    <p className="font-medium">{bill.details.billableDays} days</p>
+                                </div>
                                 <div className="flex justify-between items-center">
                                     <p className="text-muted-foreground flex items-center gap-2"><Utensils /> Total Meals Taken</p>
                                     <p>{bill.details.totalMeals} meals</p>
@@ -209,6 +222,7 @@ export function BillDetailDialog({ bill }: BillDetailDialogProps) {
                             <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Full Day</div>
                             <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
                             <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Absent</div>
+                             <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
                         </div>
                     </CardContent>
                 </Card>

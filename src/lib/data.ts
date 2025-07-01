@@ -1,4 +1,3 @@
-
 import { format, subDays, addDays } from 'date-fns';
 
 export const studentNavItems = [
@@ -207,6 +206,8 @@ export interface Bill {
     status: 'Paid' | 'Due';
     details: {
         totalDaysInMonth: number;
+        holidays: number;
+        billableDays: number;
         fullDays: number;
         halfDays: number;
         absentDays: number;
@@ -218,19 +219,55 @@ export interface Bill {
 export const billHistory: Bill[] = [
     {
         id: 'bill1', month: 'October', year: 2023, generationDate: '2023-11-01', totalAmount: 3445, status: 'Paid',
-        details: { totalDaysInMonth: 31, fullDays: 25, halfDays: 3, absentDays: 3, totalMeals: 53, chargePerMeal: 65 }
+        details: { 
+            totalDaysInMonth: 31, 
+            holidays: 2,
+            billableDays: 29,
+            fullDays: 25, 
+            halfDays: 3, 
+            absentDays: 1, 
+            totalMeals: 53, 
+            chargePerMeal: 65 
+        }
     },
     {
         id: 'bill2', month: 'September', year: 2023, generationDate: '2023-10-01', totalAmount: 3380, status: 'Paid',
-        details: { totalDaysInMonth: 30, fullDays: 24, halfDays: 4, absentDays: 2, totalMeals: 52, chargePerMeal: 65 }
+        details: { 
+            totalDaysInMonth: 30, 
+            holidays: 0,
+            billableDays: 30,
+            fullDays: 24, 
+            halfDays: 4, 
+            absentDays: 2, 
+            totalMeals: 52, 
+            chargePerMeal: 65 
+        }
     },
     {
         id: 'bill3', month: 'August', year: 2023, generationDate: '2023-09-01', totalAmount: 3120, status: 'Paid',
-        details: { totalDaysInMonth: 31, fullDays: 22, halfDays: 4, absentDays: 5, totalMeals: 48, chargePerMeal: 65 }
+        details: { 
+            totalDaysInMonth: 31, 
+            holidays: 0,
+            billableDays: 31,
+            fullDays: 22, 
+            halfDays: 4, 
+            absentDays: 5, 
+            totalMeals: 48, 
+            chargePerMeal: 65 
+        }
     },
      {
         id: 'bill4', month: 'July', year: 2023, generationDate: '2023-08-01', totalAmount: 3445, status: 'Due',
-        details: { totalDaysInMonth: 31, fullDays: 25, halfDays: 3, absentDays: 3, totalMeals: 53, chargePerMeal: 65 }
+        details: { 
+            totalDaysInMonth: 31, 
+            holidays: 0,
+            billableDays: 31,
+            fullDays: 25, 
+            halfDays: 3, 
+            absentDays: 3, 
+            totalMeals: 53, 
+            chargePerMeal: 65 
+        }
     },
 ];
 
