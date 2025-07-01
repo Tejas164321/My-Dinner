@@ -1,12 +1,24 @@
 
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { pastAnnouncements, Announcement } from '@/lib/data';
-import { Bell, Rss } from 'lucide-react';
+import { pastAnnouncements, Announcement, paymentReminders, PaymentReminder } from '@/lib/data';
+import { Bell, Rss, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
 
+type Notification = (Announcement & { type: 'announcement' }) | (PaymentReminder & { type: 'reminder' });
+
 export default function StudentNotificationsPage() {
+
+    const combinedNotifications = useMemo(() => {
+        const announcements: Notification[] = pastAnnouncements.map(ann => ({ ...ann, type: 'announcement' }));
+        const reminders: Notification[] = paymentReminders.map(rem => ({ ...rem, type: 'reminder' }));
+
+        const allNotifications = [...announcements, ...reminders];
+
+        return allNotifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, []);
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -19,31 +31,37 @@ export default function StudentNotificationsPage() {
                      <div className="flex items-center gap-3">
                         <Rss className="h-6 w-6 text-primary"/>
                         <div>
-                            <CardTitle>Announcements Feed</CardTitle>
-                            <CardDescription>A log of all announcements sent by the admin.</CardDescription>
+                            <CardTitle>Notifications Feed</CardTitle>
+                            <CardDescription>A log of all announcements and reminders from the admin.</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent>
                      <div className="space-y-6">
-                        {pastAnnouncements.length > 0 ? (
-                            pastAnnouncements.map((ann) => (
-                                <div key={ann.id} className="p-5 bg-secondary/50 rounded-lg relative group border-l-4 border-primary/50">
+                        {combinedNotifications.length > 0 ? (
+                            combinedNotifications.map((item) => (
+                                <div key={`${item.type}-${item.id}`} className={`p-5 bg-secondary/50 rounded-lg relative group border-l-4 ${item.type === 'announcement' ? 'border-primary/50' : 'border-destructive/50'}`}>
                                     <div className="flex items-start gap-4">
+                                        {item.type === 'announcement' ? (
                                             <div className="bg-primary/10 p-2.5 rounded-full mt-1">
-                                            <Bell className="h-5 w-5 text-primary flex-shrink-0" />
-                                        </div>
+                                                <Bell className="h-5 w-5 text-primary flex-shrink-0" />
+                                            </div>
+                                        ) : (
+                                            <div className="bg-destructive/10 p-2.5 rounded-full mt-1">
+                                                <ShieldAlert className="h-5 w-5 text-destructive flex-shrink-0" />
+                                            </div>
+                                        )}
                                         <div className="flex-1">
-                                            <p className="font-semibold text-base">{ann.title}</p>
-                                            <p className="text-sm text-muted-foreground mt-1">{ann.message}</p>
-                                            <p className="text-xs text-muted-foreground/70 mt-3">{format(new Date(ann.date), 'MMMM do, yyyy')}</p>
+                                            <p className="font-semibold text-base">{item.title}</p>
+                                            <p className="text-sm text-muted-foreground mt-1">{item.message}</p>
+                                            <p className="text-xs text-muted-foreground/70 mt-3">{format(new Date(item.date), 'MMMM do, yyyy')}</p>
                                         </div>
                                     </div>
                                 </div>
                             ))
                         ) : (
                             <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
-                                <p>No announcements yet.</p>
+                                <p>No notifications yet.</p>
                             </div>
                         )}
                     </div>

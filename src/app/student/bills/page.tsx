@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -12,7 +11,7 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { billHistory as initialBillHistory, Bill } from '@/lib/data';
+import { billHistory as initialBillHistory, Bill, paymentReminders } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import {
   Receipt,
@@ -21,6 +20,7 @@ import {
   Banknote,
   X,
   Info,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   Dialog,
@@ -132,6 +132,40 @@ export default function StudentBillsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
       </div>
+
+      <Card>
+        <CardHeader>
+            <div className="flex items-center gap-3">
+                <ShieldAlert className="h-6 w-6 text-destructive"/>
+                <div>
+                    <CardTitle>Due Reminders</CardTitle>
+                    <CardDescription>
+                        Important notifications from the admin regarding your pending payments.
+                    </CardDescription>
+                </div>
+            </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            {paymentReminders.length > 0 ? (
+                paymentReminders.map((reminder) => (
+                    <Alert key={reminder.id} variant="destructive">
+                        <ShieldAlert className="h-4 w-4" />
+                        <AlertTitle>{reminder.title}</AlertTitle>
+                        <AlertDescription>
+                            {reminder.message}
+                            <p className="text-xs text-destructive-foreground/80 mt-2">
+                                Received on: {format(new Date(reminder.date), 'MMMM do, yyyy')}
+                            </p>
+                        </AlertDescription>
+                    </Alert>
+                ))
+            ) : (
+                <div className="text-center text-muted-foreground py-4">
+                    You have no pending payment reminders.
+                </div>
+            )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

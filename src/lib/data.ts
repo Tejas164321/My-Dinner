@@ -82,7 +82,7 @@ export interface Student {
         [key: string]: {
             attendance: string;
             bill: { total: number; paid: number };
-            status: 'Paid' | 'Due' | 'Partially Paid';
+            status: 'Paid' | 'Due';
         }
     }
 }
@@ -104,7 +104,7 @@ export const studentsData: Student[] = [
         monthlyDetails: {
             'october': { attendance: '88%', bill: { total: 3250, paid: 0 }, status: 'Due' },
             'september': { attendance: '90%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'august': { attendance: '85%', bill: { total: 3150, paid: 1500 }, status: 'Partially Paid' },
+            'august': { attendance: '85%', bill: { total: 3150, paid: 1500 }, status: 'Due' },
             'july': { attendance: '89%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
         }
     },
@@ -310,4 +310,26 @@ export const pastAnnouncements: Announcement[] = [
         message: 'Your feedback is valuable to us. Please fill out the feedback form for the month of October. Link is available on the student dashboard.',
         date: '2023-10-30',
     }
+];
+
+export interface PaymentReminder {
+    id: string;
+    title: string;
+    message: string;
+    date: string;
+}
+
+export const paymentReminders: PaymentReminder[] = [
+    {
+        id: 'rem1',
+        title: 'Payment Due for August',
+        message: 'Your bill for August of ₹3,120 is overdue. Please pay at the earliest to avoid late fees.',
+        date: '2023-09-25',
+    },
+    {
+        id: 'rem2',
+        title: 'Reminder: July Bill Overdue',
+        message: 'This is a final reminder that your July bill of ₹3,445 is still pending. Please clear your dues immediately.',
+        date: '2023-09-15',
+    },
 ];
