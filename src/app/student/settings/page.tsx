@@ -9,11 +9,20 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { studentUser, messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Palette, Moon, Sun, Camera, Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { User, Bell, Palette, Moon, Sun, Camera, Building2, Mail, Phone, MapPin, Utensils, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+type MessPlan = 'full_day' | 'lunch_only' | 'dinner_only';
+
+const planDetails: Record<MessPlan, { name: string; icon: React.ElementType; description: string }> = {
+    full_day: { name: "Full Day", icon: Utensils, description: "Includes both lunch and dinner." },
+    lunch_only: { name: "Lunch Only", icon: Sun, description: "Includes only lunch." },
+    dinner_only: { name: "Dinner Only", icon: Moon, description: "Includes only dinner." },
+};
 
 export default function StudentSettingsPage() {
     const { toast } = useToast();
@@ -22,6 +31,9 @@ export default function StudentSettingsPage() {
     const [name, setName] = useState(studentUser.name);
     const [email, setEmail] = useState(studentUser.email);
     const [contact, setContact] = useState(studentUser.contact);
+    const [currentPlan, setCurrentPlan] = useState<MessPlan>(studentUser.messPlan as MessPlan);
+    const [selectedPlan, setSelectedPlan] = useState<MessPlan>(studentUser.messPlan as MessPlan);
+    const [pendingPlan, setPendingPlan] = useState<MessPlan | null>(null);
 
     // Notification Settings
     const [inAppNotifications, setInAppNotifications] = useState(true);
@@ -43,6 +55,14 @@ export default function StudentSettingsPage() {
             description: `The theme has been set to ${theme}.`,
         });
     }
+
+    const handleRequestPlanChange = () => {
+        setPendingPlan(selectedPlan);
+        toast({
+            title: "Plan Change Request Sent",
+            description: `Your request to switch to the "${planDetails[selectedPlan].name}" plan is now pending admin approval.`,
+        });
+    };
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -127,6 +147,54 @@ export default function StudentSettingsPage() {
                                         <Label htmlFor="confirm-password">Confirm New Password</Label>
                                         <Input id="confirm-password" type="password" placeholder="••••••••" />
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 pt-6 border-t">
+                                <h3 className="font-semibold text-foreground/90">Manage Mess Plan</h3>
+                                {pendingPlan ? (
+                                    <Alert variant="default" className="border-accent text-accent-foreground">
+                                        <AlertCircle className="h-4 w-4 !text-accent" />
+                                        <AlertTitle>Request Pending Approval</AlertTitle>
+                                        <AlertDescription>
+                                            Your request to switch to the <span className="font-semibold">{planDetails[pendingPlan].name}</span> plan is being reviewed by the admin.
+                                        </AlertDescription>
+                                    </Alert>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">
+                                        Your current plan is <span className="font-semibold text-primary">{planDetails[currentPlan].name}</span>. Select a new plan below to request a change.
+                                    </p>
+                                )}
+                                
+                                <RadioGroup
+                                    value={selectedPlan}
+                                    onValueChange={(value: MessPlan) => setSelectedPlan(value)}
+                                    className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                                    disabled={!!pendingPlan}
+                                >
+                                    {(Object.keys(planDetails) as MessPlan[]).map((plan) => {
+                                        const { name, icon: Icon, description } = planDetails[plan];
+                                        return (
+                                            <Label 
+                                                key={plan}
+                                                htmlFor={plan} 
+                                                className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
+                                            >
+                                                <RadioGroupItem value={plan} id={plan} className="sr-only" disabled={!!pendingPlan} />
+                                                <Icon className="mb-3 h-6 w-6" />
+                                                <span className="font-semibold text-foreground">{name}</span>
+                                                <span className="text-xs text-muted-foreground mt-1">{description}</span>
+                                            </Label>
+                                        );
+                                    })}
+                                </RadioGroup>
+                                 <div className="flex justify-end pt-2">
+                                    <Button
+                                        onClick={handleRequestPlanChange}
+                                        disabled={!!pendingPlan || selectedPlan === currentPlan}
+                                    >
+                                        Request Plan Change
+                                    </Button>
                                 </div>
                             </div>
                         </CardContent>

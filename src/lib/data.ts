@@ -36,7 +36,8 @@ export const studentUser = {
     avatarUrl: '',
     studentId: 'A56789',
     joinDate: '2023-09-11',
-    contact: '+91 98765 43214'
+    contact: '+91 98765 43214',
+    messPlan: 'full_day'
 };
 
 export const messInfo = {
@@ -372,30 +373,30 @@ export const paymentReminders: PaymentReminder[] = [
         id: 'rem6',
         title: 'Final Reminder: June Bill',
         message: 'Your June bill of ₹3,200 is overdue. This is the final reminder before action is taken.',
-        date: '2023-08-20',
+        date: '2023-8-20',
     },
     {
         id: 'rem7',
         title: 'Payment Pending for June',
         message: 'Your payment for the June bill is still pending. Amount due: ₹3,200.',
-        date: '2023-08-10',
+        date: '2023-8-10',
     },
     {
         id: 'rem8',
         title: 'May Bill Overdue',
         message: 'Your bill for May of ₹3,300 is overdue. Please pay at the earliest.',
-        date: '2023-07-25',
+        date: '2023-7-25',
     },
     {
         id: 'rem9',
         title: 'Gentle Reminder: May Bill',
         message: 'A friendly reminder that your May bill payment of ₹3,300 is pending.',
-        date: '2023-07-15',
+        date: '2023-7-15',
     },
     {
         id: 'rem10',
         title: 'April Bill Payment Reminder',
         message: 'This is a reminder for your April bill payment of ₹3,150.',
-        date: '2023-06-10',
+        date: '2023-6-10',
     },
 ];
