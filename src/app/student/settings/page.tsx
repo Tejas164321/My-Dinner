@@ -9,13 +9,12 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { studentUser, messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Palette, Moon, Sun, Camera, Building2, Mail, Phone, MapPin, Utensils, Send } from 'lucide-react';
+import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { cn } from '@/lib/utils';
 
 export default function StudentSettingsPage() {
     const { toast } = useToast();
@@ -43,14 +42,7 @@ export default function StudentSettingsPage() {
             description: "Your changes have been saved successfully.",
         });
     };
-
-    const handleSaveAppearance = () => {
-         toast({
-            title: "Theme Updated",
-            description: `The theme has been set to ${theme}.`,
-        });
-    };
-
+    
     const handlePlanChangeRequest = () => {
         setIsRequestPending(true);
         toast({
@@ -68,16 +60,19 @@ export default function StudentSettingsPage() {
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-            <div>
+            <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+                 <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+                    {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                    <span className="sr-only">Toggle theme</span>
+                </Button>
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-                 <TabsList className="grid w-full grid-cols-5">
+                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> My Profile</TabsTrigger>
                     <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" /> Notifications</TabsTrigger>
                     <TabsTrigger value="mess-info"><Building2 className="mr-2 h-4 w-4" /> Mess Info</TabsTrigger>
-                    <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" /> Appearance</TabsTrigger>
                     <TabsTrigger value="meal-plan"><Utensils className="mr-2 h-4 w-4" /> Meal Plan</TabsTrigger>
                 </TabsList>
 
@@ -221,49 +216,6 @@ export default function StudentSettingsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-
-                <TabsContent value="appearance" className="mt-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Appearance & Theme</CardTitle>
-                            <CardDescription>Customize the look and feel of the application.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6 max-w-md">
-                            <div className="space-y-2">
-                                <Label>Theme</Label>
-                                <RadioGroup
-                                    value={theme}
-                                    onValueChange={(value: 'light' | 'dark') => setTheme(value)}
-                                    className="grid max-w-md grid-cols-2 gap-4 pt-2"
-                                >
-                                    <div>
-                                        <RadioGroupItem value="light" id="light" className="peer sr-only" />
-                                        <Label
-                                            htmlFor="light"
-                                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                                        >
-                                            <Sun className="mb-3 h-6 w-6" />
-                                            Light
-                                        </Label>
-                                    </div>
-                                    <div>
-                                        <RadioGroupItem value="dark" id="dark" className="peer sr-only" />
-                                        <Label
-                                            htmlFor="dark"
-                                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                                        >
-                                            <Moon className="mb-3 h-6 w-6" />
-                                            Dark
-                                        </Label>
-                                    </div>
-                                </RadioGroup>
-                            </div>
-                        </CardContent>
-                         <CardFooter>
-                            <Button onClick={handleSaveAppearance}>Save & Apply Theme</Button>
-                        </CardFooter>
-                    </Card>
-                </TabsContent>
                 
                  <TabsContent value="meal-plan" className="mt-6">
                     <Card>
@@ -288,34 +240,25 @@ export default function StudentSettingsPage() {
                                     <RadioGroup
                                         value={selectedPlan}
                                         onValueChange={(value) => setSelectedPlan(value as 'full_day' | 'lunch_only' | 'dinner_only')}
-                                        className="space-y-3"
+                                        className="grid grid-cols-1 md:grid-cols-3 gap-4"
                                     >
-                                        <Label htmlFor="full_day" className={cn("flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors hover:border-primary/50", selectedPlan === 'full_day' && "border-primary")}>
-                                            <RadioGroupItem value="full_day" id="full_day" className="mt-1" />
-                                            <div className="grid gap-1.5 leading-none">
-                                                <div className="font-semibold flex items-center gap-2">
-                                                    <Utensils className="h-4 w-4 text-primary" /> Full Day
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">{planDetails.full_day.description}</p>
-                                            </div>
+                                       <Label htmlFor="full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-40">
+                                            <RadioGroupItem value="full_day" id="full_day" className="peer sr-only" />
+                                            <Utensils className="mb-3 h-8 w-8 text-primary" />
+                                            <span className="font-semibold">{planDetails.full_day.name}</span>
+                                            <p className="text-xs text-muted-foreground mt-1">{planDetails.full_day.description}</p>
                                         </Label>
-                                        <Label htmlFor="lunch_only" className={cn("flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors hover:border-primary/50", selectedPlan === 'lunch_only' && "border-primary")}>
-                                            <RadioGroupItem value="lunch_only" id="lunch_only" className="mt-1" />
-                                            <div className="grid gap-1.5 leading-none">
-                                                <div className="font-semibold flex items-center gap-2">
-                                                    <Sun className="h-4 w-4 text-yellow-400" /> Lunch Only
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">{planDetails.lunch_only.description}</p>
-                                            </div>
+                                         <Label htmlFor="lunch_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-40">
+                                            <RadioGroupItem value="lunch_only" id="lunch_only" className="peer sr-only" />
+                                            <Sun className="mb-3 h-8 w-8 text-yellow-400" />
+                                            <span className="font-semibold">{planDetails.lunch_only.name}</span>
+                                            <p className="text-xs text-muted-foreground mt-1">{planDetails.lunch_only.description}</p>
                                         </Label>
-                                        <Label htmlFor="dinner_only" className={cn("flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors hover:border-primary/50", selectedPlan === 'dinner_only' && "border-primary")}>
-                                            <RadioGroupItem value="dinner_only" id="dinner_only" className="mt-1" />
-                                            <div className="grid gap-1.5 leading-none">
-                                                <div className="font-semibold flex items-center gap-2">
-                                                    <Moon className="h-4 w-4 text-purple-400" /> Dinner Only
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">{planDetails.dinner_only.description}</p>
-                                            </div>
+                                         <Label htmlFor="dinner_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-40">
+                                            <RadioGroupItem value="dinner_only" id="dinner_only" className="peer sr-only" />
+                                            <Moon className="mb-3 h-8 w-8 text-purple-400" />
+                                            <span className="font-semibold">{planDetails.dinner_only.name}</span>
+                                            <p className="text-xs text-muted-foreground mt-1">{planDetails.dinner_only.description}</p>
                                         </Label>
                                     </RadioGroup>
                                 </div>
