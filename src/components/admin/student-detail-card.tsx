@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Student, Holiday } from "@/lib/data";
 import { holidays } from "@/lib/data";
-import { User, Phone, Home, Calendar as CalendarIcon, X } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
@@ -39,6 +39,13 @@ function CustomDayContent({ date, activeModifiers }: DayContentProps) {
         </div>
     );
 }
+
+const planInfo = {
+    full_day: { icon: Utensils, text: 'Full Day', color: 'text-primary' },
+    lunch_only: { icon: Sun, text: 'Lunch Only', color: 'text-yellow-400' },
+    dinner_only: { icon: Moon, text: 'Dinner Only', color: 'text-purple-400' }
+};
+
 
 interface StudentDetailCardProps {
     student: Student;
@@ -79,46 +86,58 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         
         const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
         
-        // Filter out future days from being considered for attendance
         const pastOrTodayDays = allDays.filter(d => d <= today);
         
         const totalConsideredDays = pastOrTodayDays.length;
         const attendancePercent = parseFloat(currentData.attendance) / 100;
         
         const totalPresentDays = totalConsideredDays > 0 ? Math.round(totalConsideredDays * attendancePercent) : 0;
-        const aDaysCount = totalConsideredDays > 0 ? totalConsideredDays - totalPresentDays : 0;
         
-        // Demo logic: Assume 90% of present days are full days, rest are half days
-        const fDaysCount = Math.round(totalPresentDays * 0.9);
-        const hDaysCount = totalPresentDays - fDaysCount;
-        const tMealsCount = (fDaysCount * 2) + hDaysCount;
-
-        // Use a simple seeded random to make visualizations consistent for a given student and date
         const seededRandom = (seed: number) => {
             let x = Math.sin(seed + student.id.charCodeAt(0)) * 10000;
             return x - Math.floor(x);
         };
         const shuffledPastDays = [...pastOrTodayDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
         
-        const fdd = shuffledPastDays.slice(0, fDaysCount);
-        const hdd = shuffledPastDays.slice(fDaysCount, fDaysCount + hDaysCount);
-        const add = shuffledPastDays.slice(fDaysCount + hDaysCount);
-        
-        // Split half days into lunch only and dinner only for visuals
-        const lod = hdd.filter((_, i) => i % 2 === 0);
-        const dod = hdd.filter((_, i) => i % 2 !== 0);
+        const presentDaysArr = shuffledPastDays.slice(0, totalPresentDays);
+        const absentDaysArr = shuffledPastDays.slice(totalPresentDays);
+
+        let fdd: Date[] = [];
+        let lod: Date[] = [];
+        let dod: Date[] = [];
+        let tMealsCount = 0;
+
+        if (student.messPlan === 'lunch_only') {
+            lod = presentDaysArr;
+            tMealsCount = lod.length;
+        } else if (student.messPlan === 'dinner_only') {
+            dod = presentDaysArr;
+            tMealsCount = dod.length;
+        } else { // full_day
+            const fDaysCount = Math.round(presentDaysArr.length * 0.9);
+            fdd = presentDaysArr.slice(0, fDaysCount);
+            const hdd = presentDaysArr.slice(fDaysCount);
+            
+            lod = hdd.filter((_, i) => i % 2 === 0);
+            dod = hdd.filter((_, i) => i % 2 !== 0);
+            
+            tMealsCount = (fdd.length * 2) + hdd.length;
+        }
 
         return {
             fullDaysCount: fdd.length,
-            halfDaysCount: hdd.length,
-            absentDaysCount: add.length,
+            halfDaysCount: lod.length + dod.length,
+            absentDaysCount: absentDaysArr.length,
             totalMealsCount: tMealsCount,
             fullDayDays: fdd,
             lunchOnlyDays: lod,
             dinnerOnlyDays: dod,
-            absentDays: add,
+            absentDays: absentDaysArr,
         };
-    }, [month, student.id, currentData.attendance, today]);
+    }, [month, student.id, student.messPlan, currentData.attendance, today]);
+
+    const currentPlan = planInfo[student.messPlan];
+    const PlanIcon = currentPlan.icon;
 
     return (
         <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full relative">
@@ -132,6 +151,10 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <div className="flex-1 space-y-0.5">
                             <h2 className="text-xl font-bold">{student.name}</h2>
                             <p className="text-sm text-muted-foreground">{student.studentId}</p>
+                            <Badge variant="outline" className="font-semibold mt-2">
+                                <PlanIcon className={cn("mr-1.5 h-4 w-4", currentPlan.color)} />
+                                {currentPlan.text}
+                            </Badge>
                         </div>
                         <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
                     </CardContent>

@@ -6,7 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { studentsData, joinRequests, monthMap, Student } from "@/lib/data";
-import { Check, X, Trash2, UserX, Search } from "lucide-react";
+import { Check, X, Trash2, UserX, Search, Utensils, Sun, Moon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,10 +37,18 @@ interface StudentsTableProps {
     searchQuery: string;
 }
 
+const planInfo = {
+    full_day: { icon: Utensils, text: 'Full Day', color: 'text-primary' },
+    lunch_only: { icon: Sun, text: 'Lunch Only', color: 'text-yellow-400' },
+    dinner_only: { icon: Moon, text: 'Dinner Only', color: 'text-purple-400' }
+};
+
 const StudentRowCard = ({ student, month, initialDate, showActions }: { student: Student, month: string, initialDate: Date, showActions: boolean }) => {
     const monthDetails = student.monthlyDetails[month as keyof typeof student.monthlyDetails];
     const billAmount = monthDetails.bill.total - monthDetails.bill.paid;
     const billDisplay = billAmount > 0 ? `₹${billAmount.toLocaleString()}` : '₹0';
+    const currentPlan = planInfo[student.messPlan];
+    const PlanIcon = currentPlan.icon;
     
     return (
         <Dialog>
@@ -51,10 +59,17 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                             <Avatar className="w-12 h-12 border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors">
                                 <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-2 items-center">
-                                <div className="col-span-1">
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-5 gap-2 items-center">
+                                <div className="sm:col-span-2">
                                     <h3 className="font-semibold text-base">{student.name}</h3>
                                     <p className="text-sm text-muted-foreground">{student.studentId}</p>
+                                </div>
+                                <div className="text-center hidden sm:block">
+                                    <p className="text-xs text-muted-foreground">Plan</p>
+                                    <Badge variant="outline" className="font-semibold">
+                                        <PlanIcon className={cn("mr-1.5 h-4 w-4", currentPlan.color)} />
+                                        {currentPlan.text}
+                                    </Badge>
                                 </div>
                                 <div className="text-center hidden sm:block">
                                     <p className="text-xs text-muted-foreground">Attendance</p>

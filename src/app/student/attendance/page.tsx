@@ -71,34 +71,52 @@ export default function StudentAttendancePage() {
         const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
         const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
         
-        // Use a fixed "today" for consistent historical data view. 
-        // For a live app, you might compare against the actual `today` state.
         const pastOrTodayDays = allDays.filter(d => d <= new Date(2023, 9, 27));
         
         const totalConsideredDays = pastOrTodayDays.length;
         const attendancePercent = parseFloat(currentData.attendance) / 100;
         const totalPresentDays = totalConsideredDays > 0 ? Math.round(totalConsideredDays * attendancePercent) : 0;
-        const aDaysCount = totalConsideredDays > 0 ? totalConsideredDays - totalPresentDays : 0;
-        const fDaysCount = Math.round(totalPresentDays * 0.9);
-        const hDaysCount = totalPresentDays - fDaysCount;
-        const tMealsCount = (fDaysCount * 2) + hDaysCount;
-
+        
         const seededRandom = (seed: number) => {
             let x = Math.sin(seed + student.id.charCodeAt(0)) * 10000;
             return x - Math.floor(x);
         };
         const shuffledPastDays = [...pastOrTodayDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
         
-        const fdd = shuffledPastDays.slice(0, fDaysCount);
-        const hdd = shuffledPastDays.slice(fDaysCount, fDaysCount + hDaysCount);
-        const add = shuffledPastDays.slice(fDaysCount + hDaysCount);
-        const lod = hdd.filter((_, i) => i % 2 === 0);
-        const dod = hdd.filter((_, i) => i % 2 !== 0);
+        const presentDaysArr = shuffledPastDays.slice(0, totalPresentDays);
+        const absentDaysArr = shuffledPastDays.slice(totalPresentDays);
+        
+        let fdd: Date[] = [];
+        let lod: Date[] = [];
+        let dod: Date[] = [];
+        let tMealsCount = 0;
+
+        if (student.messPlan === 'lunch_only') {
+            lod = presentDaysArr;
+            tMealsCount = lod.length;
+        } else if (student.messPlan === 'dinner_only') {
+            dod = presentDaysArr;
+            tMealsCount = dod.length;
+        } else { // full_day
+            const fDaysCount = Math.round(presentDaysArr.length * 0.9);
+            fdd = presentDaysArr.slice(0, fDaysCount);
+            const hdd = presentDaysArr.slice(fDaysCount);
+            
+            lod = hdd.filter((_, i) => i % 2 === 0);
+            dod = hdd.filter((_, i) => i % 2 !== 0);
+            
+            tMealsCount = (fdd.length * 2) + hdd.length;
+        }
 
         return {
-            fullDaysCount: fdd.length, halfDaysCount: hdd.length, absentDaysCount: add.length,
-            totalMealsCount: tMealsCount, fullDayDays: fdd, lunchOnlyDays: lod,
-            dinnerOnlyDays: dod, absentDays: add,
+            fullDaysCount: fdd.length, 
+            halfDaysCount: lod.length + dod.length, 
+            absentDaysCount: absentDaysArr.length,
+            totalMealsCount: tMealsCount, 
+            fullDayDays: fdd, 
+            lunchOnlyDays: lod,
+            dinnerOnlyDays: dod, 
+            absentDays: absentDaysArr,
         };
     }, [month, student, currentData.attendance, today]);
 

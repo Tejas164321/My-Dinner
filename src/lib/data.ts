@@ -89,6 +89,7 @@ export interface Student {
     contact: string;
     roomNo: string;
     status: 'active' | 'suspended';
+    messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
     monthlyDetails: {
         [key: string]: {
             attendance: string;
@@ -102,6 +103,7 @@ export const studentsData: Student[] = [
     { 
         id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15', email: 'peter.jones@example.com', contact: '+91 9876543210', roomNo: 'H-101',
         status: 'active',
+        messPlan: 'full_day',
         monthlyDetails: {
             'october': { attendance: '92%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
             'september': { attendance: '95%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
@@ -112,6 +114,7 @@ export const studentsData: Student[] = [
     { 
         id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14', email: 'mary.jane@example.com', contact: '+91 9876543211', roomNo: 'H-102',
         status: 'active',
+        messPlan: 'lunch_only',
         monthlyDetails: {
             'october': { attendance: '88%', bill: { total: 3250, paid: 0 }, status: 'Due' },
             'september': { attendance: '90%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
@@ -122,6 +125,7 @@ export const studentsData: Student[] = [
     { 
         id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13', email: 'chris.lee@example.com', contact: '+91 9876543212', roomNo: 'H-201',
         status: 'active',
+        messPlan: 'full_day',
         monthlyDetails: {
             'october': { attendance: '98%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
             'september': { attendance: '96%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
@@ -132,6 +136,7 @@ export const studentsData: Student[] = [
     { 
         id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12', email: 'bryan.fury@example.com', contact: '+91 9876543213', roomNo: 'H-202',
         status: 'suspended',
+        messPlan: 'full_day',
         monthlyDetails: {
             'october': { attendance: '75%', bill: { total: 3250, paid: 0 }, status: 'Due' },
             'september': { attendance: '80%', bill: { total: 3250, paid: 0 }, status: 'Due' },
@@ -142,6 +147,7 @@ export const studentsData: Student[] = [
     { 
         id: '8', name: 'Alex Doe', studentId: 'A56789', joinDate: '2023-09-11', email: 'alex.doe@example.com', contact: '+91 9876543214', roomNo: 'H-301',
         status: 'active',
+        messPlan: 'full_day',
         monthlyDetails: {
             'october': { attendance: '92%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
             'september': { attendance: '94%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
@@ -152,6 +158,7 @@ export const studentsData: Student[] = [
     { 
         id: '9', name: 'Sara Bell', studentId: 'C12378', joinDate: '2023-09-10', email: 'sara.bell@example.com', contact: '+91 9876543215', roomNo: 'H-302',
         status: 'active',
+        messPlan: 'dinner_only',
         monthlyDetails: {
             'october': { attendance: '99%', bill: { total: 3250, paid: 0 }, status: 'Due' },
             'september': { attendance: '100%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
