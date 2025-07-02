@@ -72,8 +72,8 @@ export default function StudentSettingsPage() {
                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> My Profile</TabsTrigger>
                     <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" /> Notifications</TabsTrigger>
-                    <TabsTrigger value="mess-info"><Building2 className="mr-2 h-4 w-4" /> Mess Info</TabsTrigger>
                     <TabsTrigger value="meal-plan"><Utensils className="mr-2 h-4 w-4" /> Meal Plan</TabsTrigger>
+                    <TabsTrigger value="mess-info"><Building2 className="mr-2 h-4 w-4" /> Mess Info</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="profile" className="mt-6">
@@ -175,49 +175,7 @@ export default function StudentSettingsPage() {
                     </Card>
                 </TabsContent>
                 
-                <TabsContent value="mess-info" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Mess Information</CardTitle>
-                            <CardDescription>Details of the mess facility you are enrolled in.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6 pt-4">
-                            <div className="flex items-start gap-4">
-                                <Building2 className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
-                                <div>
-                                    <p className="font-semibold text-foreground">{messInfo.name}</p>
-                                    <p className="text-sm text-muted-foreground">Mess Name</p>
-                                </div>
-                            </div>
-                             <Separator />
-                            <div className="flex items-start gap-4">
-                                <MapPin className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
-                                <div>
-                                    <p className="text-foreground">{messInfo.address}</p>
-                                    <p className="text-sm text-muted-foreground">Address</p>
-                                </div>
-                            </div>
-                             <Separator />
-                            <div className="flex items-start gap-4">
-                                <Mail className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
-                                <div>
-                                    <p className="text-foreground">{messInfo.email}</p>
-                                    <p className="text-sm text-muted-foreground">Contact Email</p>
-                                </div>
-                            </div>
-                             <Separator />
-                            <div className="flex items-start gap-4">
-                                <Phone className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
-                                <div>
-                                    <p className="text-foreground">{messInfo.phone}</p>
-                                    <p className="text-sm text-muted-foreground">Contact Phone</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                
-                 <TabsContent value="meal-plan" className="mt-6">
+                <TabsContent value="meal-plan" className="mt-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Manage Meal Plan</CardTitle>
@@ -273,6 +231,48 @@ export default function StudentSettingsPage() {
                                 {isRequestPending ? "Request Sent" : "Submit Change Request"}
                             </Button>
                         </CardFooter>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="mess-info" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Mess Information</CardTitle>
+                            <CardDescription>Details of the mess facility you are enrolled in.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6 pt-4">
+                            <div className="flex items-start gap-4">
+                                <Building2 className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="font-semibold text-foreground">{messInfo.name}</p>
+                                    <p className="text-sm text-muted-foreground">Mess Name</p>
+                                </div>
+                            </div>
+                             <Separator />
+                            <div className="flex items-start gap-4">
+                                <MapPin className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="text-foreground">{messInfo.address}</p>
+                                    <p className="text-sm text-muted-foreground">Address</p>
+                                </div>
+                            </div>
+                             <Separator />
+                            <div className="flex items-start gap-4">
+                                <Mail className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="text-foreground">{messInfo.email}</p>
+                                    <p className="text-sm text-muted-foreground">Contact Email</p>
+                                </div>
+                            </div>
+                             <Separator />
+                            <div className="flex items-start gap-4">
+                                <Phone className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="text-foreground">{messInfo.phone}</p>
+                                    <p className="text-sm text-muted-foreground">Contact Phone</p>
+                                </div>
+                            </div>
+                        </CardContent>
                     </Card>
                 </TabsContent>
 
