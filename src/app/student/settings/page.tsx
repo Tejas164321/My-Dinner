@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -31,6 +30,8 @@ export default function StudentSettingsPage() {
     const [name, setName] = useState(studentUser.name);
     const [email, setEmail] = useState(studentUser.email);
     const [contact, setContact] = useState(studentUser.contact);
+
+    // Plan management state
     const [currentPlan, setCurrentPlan] = useState<MessPlan>(studentUser.messPlan as MessPlan);
     const [selectedPlan, setSelectedPlan] = useState<MessPlan>(studentUser.messPlan as MessPlan);
     const [pendingPlan, setPendingPlan] = useState<MessPlan | null>(null);
