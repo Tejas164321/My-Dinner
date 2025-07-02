@@ -290,25 +290,35 @@ export default function StudentSettingsPage() {
                                 className="grid grid-cols-1 sm:grid-cols-3 gap-4"
                                 disabled={!!pendingPlan}
                             >
-                                {(Object.keys(planDetails) as MessPlan[]).map((plan) => {
-                                    const planData = planDetails[plan as MessPlan];
-                                    return (
-                                        <Label 
-                                            key={plan}
-                                            htmlFor={plan} 
-                                            className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
-                                        >
-                                            <RadioGroupItem value={plan} id={plan} className="sr-only" disabled={!!pendingPlan} />
-                                            
-                                            {plan === 'full_day' && <Utensils className="mb-3 h-6 w-6" />}
-                                            {plan === 'lunch_only' && <Sun className="mb-3 h-6 w-6" />}
-                                            {plan === 'dinner_only' && <Moon className="mb-3 h-6 w-6" />}
+                                <Label 
+                                    htmlFor="full_day" 
+                                    className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
+                                >
+                                    <RadioGroupItem value="full_day" id="full_day" className="sr-only" disabled={!!pendingPlan} />
+                                    <Utensils className="mb-3 h-6 w-6" />
+                                    <span className="font-semibold text-foreground">{planDetails.full_day.name}</span>
+                                    <span className="text-xs text-muted-foreground mt-1">{planDetails.full_day.description}</span>
+                                </Label>
 
-                                            <span className="font-semibold text-foreground">{planData.name}</span>
-                                            <span className="text-xs text-muted-foreground mt-1">{planData.description}</span>
-                                        </Label>
-                                    );
-                                })}
+                                <Label 
+                                    htmlFor="lunch_only" 
+                                    className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
+                                >
+                                    <RadioGroupItem value="lunch_only" id="lunch_only" className="sr-only" disabled={!!pendingPlan} />
+                                    <Sun className="mb-3 h-6 w-6" />
+                                    <span className="font-semibold text-foreground">{planDetails.lunch_only.name}</span>
+                                    <span className="text-xs text-muted-foreground mt-1">{planDetails.lunch_only.description}</span>
+                                </Label>
+
+                                <Label 
+                                    htmlFor="dinner_only" 
+                                    className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
+                                >
+                                    <RadioGroupItem value="dinner_only" id="dinner_only" className="sr-only" disabled={!!pendingPlan} />
+                                    <Moon className="mb-3 h-6 w-6" />
+                                    <span className="font-semibold text-foreground">{planDetails.dinner_only.name}</span>
+                                    <span className="text-xs text-muted-foreground mt-1">{planDetails.dinner_only.description}</span>
+                                </Label>
                             </RadioGroup>
                         </CardContent>
                         <CardFooter>
