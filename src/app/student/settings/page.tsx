@@ -18,14 +18,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type MessPlan = 'full_day' | 'lunch_only' | 'dinner_only';
 
-const planDetails: Record<MessPlan, { name: string; icon: React.ElementType; description: string }> = {
-    full_day: { name: "Full Day", icon: Utensils, description: "Includes both lunch and dinner." },
-    lunch_only: { name: "Lunch Only", icon: Sun, description: "Includes only lunch." },
-    dinner_only: { name: "Dinner Only", icon: Moon, description: "Includes only dinner." },
-};
-
 export default function StudentSettingsPage() {
     const { toast } = useToast();
+
+    const planDetails: Record<MessPlan, { name: string; icon: React.ElementType; description: string }> = {
+        full_day: { name: "Full Day", icon: Utensils, description: "Includes both lunch and dinner." },
+        lunch_only: { name: "Lunch Only", icon: Sun, description: "Includes only lunch." },
+        dinner_only: { name: "Dinner Only", icon: Moon, description: "Includes only dinner." },
+    };
 
     // Profile Settings State
     const [name, setName] = useState(studentUser.name);
@@ -291,7 +291,8 @@ export default function StudentSettingsPage() {
                                 disabled={!!pendingPlan}
                             >
                                 {(Object.keys(planDetails) as MessPlan[]).map((plan) => {
-                                    const { name, icon: Icon, description } = planDetails[plan];
+                                    const planData = planDetails[plan as MessPlan];
+                                    const Icon = planData.icon;
                                     return (
                                         <Label 
                                             key={plan}
@@ -300,8 +301,8 @@ export default function StudentSettingsPage() {
                                         >
                                             <RadioGroupItem value={plan} id={plan} className="sr-only" disabled={!!pendingPlan} />
                                             <Icon className="mb-3 h-6 w-6" />
-                                            <span className="font-semibold text-foreground">{name}</span>
-                                            <span className="text-xs text-muted-foreground mt-1">{description}</span>
+                                            <span className="font-semibold text-foreground">{planData.name}</span>
+                                            <span className="text-xs text-muted-foreground mt-1">{planData.description}</span>
                                         </Label>
                                     );
                                 })}
