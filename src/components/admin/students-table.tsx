@@ -59,7 +59,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                             <Avatar className="w-12 h-12 border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors">
                                 <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-5 gap-2 items-center">
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-6 gap-2 items-center">
                                 <div className="sm:col-span-2">
                                     <h3 className="font-semibold text-base">{student.name}</h3>
                                     <p className="text-sm text-muted-foreground">{student.studentId}</p>
