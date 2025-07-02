@@ -26,15 +26,6 @@ export default function StudentSettingsPage() {
         lunch_only: { name: "Lunch Only", description: "Includes only lunch." },
         dinner_only: { name: "Dinner Only", description: "Includes only dinner." },
     };
-    
-    const PlanIcon = ({ plan, className }: { plan: MessPlan, className?: string }) => {
-        switch (plan) {
-            case 'full_day': return <Utensils className={className} />;
-            case 'lunch_only': return <Sun className={className} />;
-            case 'dinner_only': return <Moon className={className} />;
-            default: return null;
-        }
-    };
 
     // Profile Settings State
     const [name, setName] = useState(studentUser.name);
@@ -308,7 +299,11 @@ export default function StudentSettingsPage() {
                                             className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
                                         >
                                             <RadioGroupItem value={plan} id={plan} className="sr-only" disabled={!!pendingPlan} />
-                                            <PlanIcon plan={plan} className="mb-3 h-6 w-6" />
+                                            
+                                            {plan === 'full_day' && <Utensils className="mb-3 h-6 w-6" />}
+                                            {plan === 'lunch_only' && <Sun className="mb-3 h-6 w-6" />}
+                                            {plan === 'dinner_only' && <Moon className="mb-3 h-6 w-6" />}
+
                                             <span className="font-semibold text-foreground">{planData.name}</span>
                                             <span className="text-xs text-muted-foreground mt-1">{planData.description}</span>
                                         </Label>
