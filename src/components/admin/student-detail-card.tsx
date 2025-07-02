@@ -86,7 +86,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         
         const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
         
-        const pastOrTodayDays = allDays.filter(d => d <= today);
+        const pastOrTodayDays = allDays.filter(d => d <= new Date(2023, 9, 27));
         
         const totalConsideredDays = pastOrTodayDays.length;
         const attendancePercent = parseFloat(currentData.attendance) / 100;
