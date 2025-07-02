@@ -121,27 +121,8 @@ export default function StudentDashboard() {
         {/* Right Column */}
         <div className="lg:col-span-1 flex flex-col gap-6">
             
-            {/* Attendance */}
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>My Attendance</CardTitle>
-                        <Percent className="h-5 w-5 text-primary" />
-                    </div>
-                    <CardDescription>Current month's attendance.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                    <div className="flex justify-between items-baseline">
-                        <p className="text-3xl font-bold">92%</p>
-                        <p className="text-sm text-muted-foreground">25/27 Days</p>
-                    </div>
-                    <Progress value={92} aria-label="92% attendance" />
-                    <p className="text-xs text-muted-foreground">Keep it up! You have great attendance.</p>
-                </CardContent>
-            </Card>
-
             {/* Billing */}
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Bill for {currentMonthBill?.month || format(selectedDate || new Date(), 'MMMM')}</CardTitle>
@@ -174,6 +155,25 @@ export default function StudentDashboard() {
                         </div>
                       </div>
                    )}
+                </CardContent>
+            </Card>
+
+            {/* Attendance */}
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>My Attendance</CardTitle>
+                        <Percent className="h-5 w-5 text-primary" />
+                    </div>
+                    <CardDescription>Current month's attendance.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                    <div className="flex justify-between items-baseline">
+                        <p className="text-3xl font-bold">92%</p>
+                        <p className="text-sm text-muted-foreground">25/27 Days</p>
+                    </div>
+                    <Progress value={92} aria-label="92% attendance" />
+                    <p className="text-xs text-muted-foreground">Keep it up! You have great attendance.</p>
                 </CardContent>
             </Card>
         </div>
