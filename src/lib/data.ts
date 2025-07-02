@@ -37,7 +37,7 @@ export const studentUser = {
     studentId: 'A56789',
     joinDate: '2023-09-11',
     contact: '+91 98765 43214',
-    messPlan: 'full_day'
+    messPlan: 'full_day' as 'full_day' | 'lunch_only' | 'dinner_only',
 };
 
 export const messInfo = {
@@ -117,10 +117,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'lunch_only',
         monthlyDetails: {
-            'october': { attendance: '88%', bill: { total: 3250, paid: 0 }, status: 'Due' },
-            'september': { attendance: '90%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'august': { attendance: '85%', bill: { total: 3150, paid: 1500 }, status: 'Due' },
-            'july': { attendance: '89%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+            'october': { attendance: '88%', bill: { total: 1850, paid: 0 }, status: 'Due' },
+            'september': { attendance: '90%', bill: { total: 1850, paid: 1850 }, status: 'Paid' },
+            'august': { attendance: '85%', bill: { total: 1750, paid: 1000 }, status: 'Due' },
+            'july': { attendance: '89%', bill: { total: 1800, paid: 1800 }, status: 'Paid' },
         }
     },
     { 
@@ -161,10 +161,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'dinner_only',
         monthlyDetails: {
-            'october': { attendance: '99%', bill: { total: 3250, paid: 0 }, status: 'Due' },
-            'september': { attendance: '100%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'august': { attendance: '98%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
-            'july': { attendance: '99%', bill: { total: 3200, paid: 0 }, status: 'Due' },
+            'october': { attendance: '99%', bill: { total: 1850, paid: 0 }, status: 'Due' },
+            'september': { attendance: '100%', bill: { total: 1850, paid: 1850 }, status: 'Paid' },
+            'august': { attendance: '98%', bill: { total: 1750, paid: 1750 }, status: 'Paid' },
+            'july': { attendance: '99%', bill: { total: 1800, paid: 0 }, status: 'Due' },
         }
     },
 ];

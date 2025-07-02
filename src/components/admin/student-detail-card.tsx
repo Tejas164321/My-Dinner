@@ -181,27 +181,30 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <CardDescription>for {format(month, 'MMMM yyyy')}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow flex flex-col p-4 pt-2">
-                        <div>
-                            <div className="text-center">
-                                <p className="text-5xl font-bold text-primary">{currentData.attendance}</p>
-                                <p className="text-xs text-muted-foreground mt-1">Monthly Attendance</p>
+                        <div className="text-center">
+                            <p className="text-5xl font-bold text-primary">{currentData.attendance}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Monthly Attendance</p>
+                        </div>
+                        <Separator className="my-3" />
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <p className="font-semibold text-lg text-green-400">{presentDaysCount}</p>
+                                <p className="text-muted-foreground text-xs">Present</p>
                             </div>
-                            <Separator className="my-3" />
-                            <div className="grid grid-cols-3 gap-2 text-center">
-                                <div>
-                                    <p className="font-semibold text-lg text-green-400">{presentDaysCount}</p>
-                                    <p className="text-muted-foreground text-xs">Present</p>
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-lg text-destructive">{absentDaysCount}</p>
-                                    <p className="text-muted-foreground text-xs">Absent</p>
-                                </div>
-                                 <div>
-                                    <p className="font-semibold text-lg text-blue-400">{holidaysCount}</p>
-                                    <p className="text-muted-foreground text-xs">Holidays</p>
-                                </div>
+                            <div>
+                                <p className="font-semibold text-lg text-destructive">{absentDaysCount}</p>
+                                <p className="text-muted-foreground text-xs">Absent</p>
+                            </div>
+                             <div>
+                                <p className="font-semibold text-lg text-blue-400">{holidaysCount}</p>
+                                <p className="text-muted-foreground text-xs">Holidays</p>
                             </div>
                         </div>
+                        {student.messPlan === 'full_day' && (
+                            <p className="text-center text-xs text-muted-foreground mt-2">
+                                ({fullDayDays.length} full days & {lunchOnlyDays.length + dinnerOnlyDays.length} half days)
+                            </p>
+                        )}
                         <div className="flex justify-between items-center pt-4 mt-auto">
                             <span className="font-semibold text-foreground">Total Meals Taken</span>
                             <span className="text-2xl font-bold text-primary">{totalMealsCount}</span>
