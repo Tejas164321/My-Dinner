@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { studentUser, messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Palette, Moon, Sun, Camera, Building2, Mail, Phone, MapPin, Utensils, AlertCircle } from 'lucide-react';
+import { User, Bell, Palette, Moon, Sun, Camera, Building2, Mail, Phone, MapPin, Utensils, AlertCircle, UtensilsCross } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -71,11 +71,12 @@ export default function StudentSettingsPage() {
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-                 <TabsList className="grid w-full grid-cols-4">
+                 <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> My Profile</TabsTrigger>
                     <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" /> Notifications</TabsTrigger>
                     <TabsTrigger value="mess-info"><Building2 className="mr-2 h-4 w-4" /> Mess Info</TabsTrigger>
                     <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" /> Appearance</TabsTrigger>
+                    <TabsTrigger value="plan"><UtensilsCross className="mr-2 h-4 w-4" /> Meal Plan</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="profile" className="mt-6">
@@ -147,54 +148,6 @@ export default function StudentSettingsPage() {
                                         <Label htmlFor="confirm-password">Confirm New Password</Label>
                                         <Input id="confirm-password" type="password" placeholder="••••••••" />
                                     </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 pt-6 border-t">
-                                <h3 className="font-semibold text-foreground/90">Manage Mess Plan</h3>
-                                {pendingPlan ? (
-                                    <Alert variant="default" className="border-accent text-accent-foreground">
-                                        <AlertCircle className="h-4 w-4 !text-accent" />
-                                        <AlertTitle>Request Pending Approval</AlertTitle>
-                                        <AlertDescription>
-                                            Your request to switch to the <span className="font-semibold">{planDetails[pendingPlan].name}</span> plan is being reviewed by the admin.
-                                        </AlertDescription>
-                                    </Alert>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">
-                                        Your current plan is <span className="font-semibold text-primary">{planDetails[currentPlan].name}</span>. Select a new plan below to request a change.
-                                    </p>
-                                )}
-                                
-                                <RadioGroup
-                                    value={selectedPlan}
-                                    onValueChange={(value: MessPlan) => setSelectedPlan(value)}
-                                    className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-                                    disabled={!!pendingPlan}
-                                >
-                                    {(Object.keys(planDetails) as MessPlan[]).map((plan) => {
-                                        const { name, icon: Icon, description } = planDetails[plan];
-                                        return (
-                                            <Label 
-                                                key={plan}
-                                                htmlFor={plan} 
-                                                className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
-                                            >
-                                                <RadioGroupItem value={plan} id={plan} className="sr-only" disabled={!!pendingPlan} />
-                                                <Icon className="mb-3 h-6 w-6" />
-                                                <span className="font-semibold text-foreground">{name}</span>
-                                                <span className="text-xs text-muted-foreground mt-1">{description}</span>
-                                            </Label>
-                                        );
-                                    })}
-                                </RadioGroup>
-                                 <div className="flex justify-end pt-2">
-                                    <Button
-                                        onClick={handleRequestPlanChange}
-                                        disabled={!!pendingPlan || selectedPlan === currentPlan}
-                                    >
-                                        Request Plan Change
-                                    </Button>
                                 </div>
                             </div>
                         </CardContent>
@@ -306,6 +259,62 @@ export default function StudentSettingsPage() {
                         </CardContent>
                          <CardFooter>
                             <Button onClick={handleSaveAppearance}>Save & Apply Theme</Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="plan" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Manage Your Meal Plan</CardTitle>
+                            <CardDescription>Request to change your subscription. Changes will apply from the next billing cycle upon approval.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-6">
+                            {pendingPlan ? (
+                                <Alert variant="default" className="border-accent text-accent-foreground">
+                                    <AlertCircle className="h-4 w-4 !text-accent" />
+                                    <AlertTitle>Request Pending Approval</AlertTitle>
+                                    <AlertDescription>
+                                        Your request to switch to the <span className="font-semibold">{planDetails[pendingPlan].name}</span> plan is being reviewed by the admin.
+                                    </AlertDescription>
+                                </Alert>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Your current plan is <span className="font-semibold text-primary">{planDetails[currentPlan].name}</span>. Select a new plan below to request a change.
+                                </p>
+                            )}
+                            
+                            <RadioGroup
+                                value={selectedPlan}
+                                onValueChange={(value: MessPlan) => setSelectedPlan(value)}
+                                className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                                disabled={!!pendingPlan}
+                            >
+                                {(Object.keys(planDetails) as MessPlan[]).map((plan) => {
+                                    const { name, icon: Icon, description } = planDetails[plan];
+                                    return (
+                                        <Label 
+                                            key={plan}
+                                            htmlFor={plan} 
+                                            className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
+                                        >
+                                            <RadioGroupItem value={plan} id={plan} className="sr-only" disabled={!!pendingPlan} />
+                                            <Icon className="mb-3 h-6 w-6" />
+                                            <span className="font-semibold text-foreground">{name}</span>
+                                            <span className="text-xs text-muted-foreground mt-1">{description}</span>
+                                        </Label>
+                                    );
+                                })}
+                            </RadioGroup>
+                        </CardContent>
+                        <CardFooter>
+                            <Button
+                                onClick={handleRequestPlanChange}
+                                disabled={!!pendingPlan || selectedPlan === currentPlan}
+                                className="ml-auto"
+                            >
+                                Request Plan Change
+                            </Button>
                         </CardFooter>
                     </Card>
                 </TabsContent>
