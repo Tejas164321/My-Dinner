@@ -21,10 +21,19 @@ type MessPlan = 'full_day' | 'lunch_only' | 'dinner_only';
 export default function StudentSettingsPage() {
     const { toast } = useToast();
 
-    const planDetails: Record<MessPlan, { name: string; icon: React.ElementType; description: string }> = {
-        full_day: { name: "Full Day", icon: Utensils, description: "Includes both lunch and dinner." },
-        lunch_only: { name: "Lunch Only", icon: Sun, description: "Includes only lunch." },
-        dinner_only: { name: "Dinner Only", icon: Moon, description: "Includes only dinner." },
+    const planDetails: Record<MessPlan, { name: string; description: string }> = {
+        full_day: { name: "Full Day", description: "Includes both lunch and dinner." },
+        lunch_only: { name: "Lunch Only", description: "Includes only lunch." },
+        dinner_only: { name: "Dinner Only", description: "Includes only dinner." },
+    };
+    
+    const PlanIcon = ({ plan, className }: { plan: MessPlan, className?: string }) => {
+        switch (plan) {
+            case 'full_day': return <Utensils className={className} />;
+            case 'lunch_only': return <Sun className={className} />;
+            case 'dinner_only': return <Moon className={className} />;
+            default: return null;
+        }
     };
 
     // Profile Settings State
@@ -292,7 +301,6 @@ export default function StudentSettingsPage() {
                             >
                                 {(Object.keys(planDetails) as MessPlan[]).map((plan) => {
                                     const planData = planDetails[plan as MessPlan];
-                                    const Icon = planData.icon;
                                     return (
                                         <Label 
                                             key={plan}
@@ -300,7 +308,7 @@ export default function StudentSettingsPage() {
                                             className="flex flex-col items-start justify-start text-left rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-60"
                                         >
                                             <RadioGroupItem value={plan} id={plan} className="sr-only" disabled={!!pendingPlan} />
-                                            <Icon className="mb-3 h-6 w-6" />
+                                            <PlanIcon plan={plan} className="mb-3 h-6 w-6" />
                                             <span className="font-semibold text-foreground">{planData.name}</span>
                                             <span className="text-xs text-muted-foreground mt-1">{planData.description}</span>
                                         </Label>
