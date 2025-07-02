@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,11 +9,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { studentUser, messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Palette, Moon, Sun, Camera, Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { User, Bell, Palette, Moon, Sun, Camera, Building2, Mail, Phone, MapPin, Utensils, Send } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 export default function StudentSettingsPage() {
     const { toast } = useToast();
@@ -28,6 +31,11 @@ export default function StudentSettingsPage() {
     // Appearance Settings
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
+    // Meal Plan Settings
+    const [currentPlan, setCurrentPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>(studentUser.messPlan);
+    const [selectedPlan, setSelectedPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>(studentUser.messPlan);
+    const [isRequestPending, setIsRequestPending] = useState(false);
+
 
     const handleSaveChanges = () => {
         toast({
@@ -41,7 +49,22 @@ export default function StudentSettingsPage() {
             title: "Theme Updated",
             description: `The theme has been set to ${theme}.`,
         });
-    }
+    };
+
+    const handlePlanChangeRequest = () => {
+        setIsRequestPending(true);
+        toast({
+            title: "Request Submitted",
+            description: `Your request to change to the "${selectedPlan.replace('_', ' ')}" plan is pending admin approval.`,
+        });
+    };
+    
+    const planDetails = {
+        full_day: { name: 'Full Day', description: 'Includes both lunch and dinner.' },
+        lunch_only: { name: 'Lunch Only', description: 'Includes only lunch every day.' },
+        dinner_only: { name: 'Dinner Only', description: 'Includes only dinner every day.' }
+    };
+
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -50,11 +73,12 @@ export default function StudentSettingsPage() {
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-                 <TabsList className="grid w-full grid-cols-4">
+                 <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> My Profile</TabsTrigger>
                     <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" /> Notifications</TabsTrigger>
                     <TabsTrigger value="mess-info"><Building2 className="mr-2 h-4 w-4" /> Mess Info</TabsTrigger>
                     <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" /> Appearance</TabsTrigger>
+                    <TabsTrigger value="meal-plan"><Utensils className="mr-2 h-4 w-4" /> Meal Plan</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="profile" className="mt-6">
@@ -237,6 +261,74 @@ export default function StudentSettingsPage() {
                         </CardContent>
                          <CardFooter>
                             <Button onClick={handleSaveAppearance}>Save & Apply Theme</Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+                
+                 <TabsContent value="meal-plan" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Manage Meal Plan</CardTitle>
+                            <CardDescription>Request a change to your subscription. Changes require admin approval.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6 pt-4">
+                            {isRequestPending ? (
+                                <Alert>
+                                    <Bell className="h-4 w-4" />
+                                    <AlertTitle>Request Pending Approval</AlertTitle>
+                                    <AlertDescription>
+                                        Your request to switch to the <span className="font-semibold capitalize">{selectedPlan.replace('_', ' ')}</span> plan has been submitted. You will be notified once the admin approves it.
+                                    </AlertDescription>
+                                </Alert>
+                            ) : (
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        Your current plan is: <span className="font-bold text-primary capitalize">{currentPlan.replace('_', ' ')}</span>. Select a new plan below to request a change.
+                                    </p>
+                                    <RadioGroup
+                                        value={selectedPlan}
+                                        onValueChange={(value) => setSelectedPlan(value as 'full_day' | 'lunch_only' | 'dinner_only')}
+                                        className="space-y-3"
+                                    >
+                                        <Label htmlFor="full_day" className={cn("flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors hover:border-primary/50", selectedPlan === 'full_day' && "border-primary")}>
+                                            <RadioGroupItem value="full_day" id="full_day" className="mt-1" />
+                                            <div className="grid gap-1.5 leading-none">
+                                                <div className="font-semibold flex items-center gap-2">
+                                                    <Utensils className="h-4 w-4 text-primary" /> Full Day
+                                                </div>
+                                                <p className="text-sm text-muted-foreground">{planDetails.full_day.description}</p>
+                                            </div>
+                                        </Label>
+                                        <Label htmlFor="lunch_only" className={cn("flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors hover:border-primary/50", selectedPlan === 'lunch_only' && "border-primary")}>
+                                            <RadioGroupItem value="lunch_only" id="lunch_only" className="mt-1" />
+                                            <div className="grid gap-1.5 leading-none">
+                                                <div className="font-semibold flex items-center gap-2">
+                                                    <Sun className="h-4 w-4 text-yellow-400" /> Lunch Only
+                                                </div>
+                                                <p className="text-sm text-muted-foreground">{planDetails.lunch_only.description}</p>
+                                            </div>
+                                        </Label>
+                                        <Label htmlFor="dinner_only" className={cn("flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors hover:border-primary/50", selectedPlan === 'dinner_only' && "border-primary")}>
+                                            <RadioGroupItem value="dinner_only" id="dinner_only" className="mt-1" />
+                                            <div className="grid gap-1.5 leading-none">
+                                                <div className="font-semibold flex items-center gap-2">
+                                                    <Moon className="h-4 w-4 text-purple-400" /> Dinner Only
+                                                </div>
+                                                <p className="text-sm text-muted-foreground">{planDetails.dinner_only.description}</p>
+                                            </div>
+                                        </Label>
+                                    </RadioGroup>
+                                </div>
+                            )}
+                        </CardContent>
+                         <CardFooter>
+                            <Button 
+                                onClick={handlePlanChangeRequest}
+                                disabled={isRequestPending || currentPlan === selectedPlan}
+                            >
+                                <Send className="mr-2 h-4 w-4" />
+                                {isRequestPending ? "Request Sent" : "Submit Change Request"}
+                            </Button>
                         </CardFooter>
                     </Card>
                 </TabsContent>
