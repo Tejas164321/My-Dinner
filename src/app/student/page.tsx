@@ -10,11 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, Calendar, Sun, Moon, Wallet, Percent } from 'lucide-react';
-import { dailyMenus, billHistory } from "@/lib/data";
-import { format, startOfDay } from 'date-fns';
+import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX } from 'lucide-react';
+import { dailyMenus, billHistory, studentsData, holidays } from "@/lib/data";
+import { format, startOfDay, getDaysInMonth, isSameMonth } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
@@ -29,6 +28,42 @@ export default function StudentDashboard() {
     // Set a fixed date to ensure mock data consistency
     setSelectedDate(startOfDay(new Date(2023, 9, 27)));
   }, []);
+
+  const student = useMemo(() => studentsData.find(s => s.id === '8'), []); // Alex Doe
+
+  const currentMonthStats = useMemo(() => {
+    if (!selectedDate || !student) {
+        return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0 };
+    }
+    
+    const monthName = format(selectedDate, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
+    const monthData = student.monthlyDetails[monthName];
+
+    if (!monthData) {
+        return { attendance: 'N/A', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0 };
+    }
+    
+    const today = startOfDay(selectedDate);
+    const daysPassed = today.getDate();
+    const pastHolidaysThisMonth = holidays.filter(h => isSameMonth(h.date, today) && h.date <= today).length;
+    const billableDaysPassed = daysPassed - pastHolidaysThisMonth;
+    const attendancePercent = parseFloat(monthData.attendance) / 100;
+    const presentDays = Math.round(billableDaysPassed * attendancePercent);
+    const absentDays = billableDaysPassed - presentDays;
+    
+    const fullDays = Math.round(presentDays * 0.9);
+    const halfDays = presentDays - fullDays;
+    const totalMeals = (fullDays * 2) + halfDays;
+
+    return {
+        attendance: monthData.attendance,
+        totalMeals: totalMeals,
+        presentDays: presentDays,
+        absentDays: absentDays,
+        fullDays,
+        halfDays,
+    };
+  }, [selectedDate, student]);
 
   const displayedMenu = useMemo(() => {
     if (!selectedDate) return { lunch: ['Loading...'], dinner: ['Loading...'] };
@@ -59,6 +94,50 @@ export default function StudentDashboard() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Welcome back, Alex!</h1>
       </div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">This Month's Attendance</CardTitle>
+                  <Percent className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                  <div className="text-2xl font-bold">{currentMonthStats.attendance}</div>
+                  <p className="text-xs text-muted-foreground">Based on attended days</p>
+              </CardContent>
+          </Card>
+          <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Meals Taken</CardTitle>
+                  <Utensils className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                  <div className="text-2xl font-bold">{currentMonthStats.totalMeals}</div>
+                  <p className="text-xs text-muted-foreground">Lunch & Dinner this month</p>
+              </CardContent>
+          </Card>
+          <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Present</CardTitle>
+                  <CalendarCheck className="h-5 w-5 text-green-400" />
+              </CardHeader>
+              <CardContent>
+                  <div className="text-2xl font-bold">{currentMonthStats.presentDays} Days</div>
+                  <p className="text-xs text-muted-foreground">{currentMonthStats.fullDays} full & {currentMonthStats.halfDays} half days</p>
+              </CardContent>
+          </Card>
+          <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Absent</CardTitle>
+                  <UserX className="h-5 w-5 text-destructive" />
+              </CardHeader>
+              <CardContent>
+                  <div className="text-2xl font-bold">{currentMonthStats.absentDays} Days</div>
+                  <p className="text-xs text-muted-foreground">Days on leave or absent</p>
+              </CardContent>
+          </Card>
+      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
@@ -158,24 +237,6 @@ export default function StudentDashboard() {
                 </CardContent>
             </Card>
 
-            {/* Attendance */}
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>My Attendance</CardTitle>
-                        <Percent className="h-5 w-5 text-primary" />
-                    </div>
-                    <CardDescription>Current month's attendance.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                    <div className="flex justify-between items-baseline">
-                        <p className="text-3xl font-bold">92%</p>
-                        <p className="text-sm text-muted-foreground">25/27 Days</p>
-                    </div>
-                    <Progress value={92} aria-label="92% attendance" />
-                    <p className="text-xs text-muted-foreground">Keep it up! You have great attendance.</p>
-                </CardContent>
-            </Card>
         </div>
       </div>
     </div>
