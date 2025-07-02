@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX } from 'lucide-react';
-import { dailyMenus, billHistory, studentsData, holidays, studentUser as mainStudentUser } from "@/lib/data";
-import { format, startOfDay, getDaysInMonth, isSameMonth } from 'date-fns';
+import { dailyMenus, billHistory, studentsData, holidays, studentUser as mainStudentUser, leaveHistory } from "@/lib/data";
+import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
@@ -75,11 +75,18 @@ export default function StudentDashboard() {
     };
   }, [selectedDate, student]);
 
-  const displayedMenu = useMemo(() => {
-    if (!selectedDate) return { lunch: ['Loading...'], dinner: ['Loading...'] };
+  const { displayedMenu, onLeave } = useMemo(() => {
+    if (!selectedDate) return { 
+        displayedMenu: { lunch: ['Loading...'], dinner: ['Loading...'] },
+        onLeave: null 
+    };
     const dateKey = formatDateKey(selectedDate);
-    return dailyMenus.get(dateKey) || { lunch: ['Not set'], dinner: ['Not set'] };
-  }, [selectedDate]);
+    const menu = dailyMenus.get(dateKey) || { lunch: ['Not set'], dinner: ['Not set'] };
+    
+    const todaysLeave = leaveHistory.find(l => l.studentId === student.id && isSameDay(l.date, selectedDate));
+
+    return { displayedMenu: menu, onLeave: todaysLeave };
+  }, [selectedDate, student.id]);
   
   const menuTitle = useMemo(() => {
       if (!selectedDate) return "Today's Menu";
@@ -98,6 +105,9 @@ export default function StudentDashboard() {
       : 0;
   
   const isPaid = dueAmount <= 0;
+
+  const isLunchOff = onLeave?.type === 'full_day' || onLeave?.type === 'lunch_only';
+  const isDinnerOff = onLeave?.type === 'full_day' || onLeave?.type === 'dinner_only';
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -188,7 +198,8 @@ export default function StudentDashboard() {
               <CardDescription>Select a date to view the menu for that day.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6 md:grid-cols-2">
-              <div className="flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+              <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+                  {isLunchOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
                   <div className="bg-secondary/50 p-3 rounded-lg">
                       <Sun className="h-6 w-6 text-yellow-400"/>
                   </div>
@@ -197,7 +208,8 @@ export default function StudentDashboard() {
                       <p className="text-muted-foreground">{displayedMenu.lunch.join(', ')}</p>
                   </div>
               </div>
-              <div className="flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+              <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+                  {isDinnerOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
                   <div className="bg-secondary/50 p-3 rounded-lg">
                       <Moon className="h-6 w-6 text-purple-400"/>
                   </div>

@@ -35,6 +35,7 @@ interface StudentsTableProps {
     filterMonth: string;
     filterStatus: string;
     searchQuery: string;
+    filterPlan: string;
 }
 
 const planInfo = {
@@ -145,7 +146,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
 };
 
 
-export function StudentsTable({ filterMonth, filterStatus, searchQuery }: StudentsTableProps) {
+export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPlan }: StudentsTableProps) {
     const { activeStudents, suspendedStudents } = useMemo(() => {
         const active: Student[] = [];
         const suspended: Student[] = [];
@@ -162,6 +163,10 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery }: Studen
                 const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
                 return monthDetails?.status === filterStatus;
             })
+             .filter(student => {
+                if (filterPlan === 'all') return true;
+                return student.messPlan === filterPlan;
+            })
             .filter(student => {
                 if (!searchQuery) return true;
                 const searchLower = searchQuery.toLowerCase();
@@ -169,7 +174,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery }: Studen
                 const idMatch = student.studentId.toLowerCase().includes(searchLower);
                 return nameMatch || idMatch;
             });
-    }, [activeStudents, filterMonth, filterStatus, searchQuery]);
+    }, [activeStudents, filterMonth, filterStatus, searchQuery, filterPlan]);
     
     const initialDate = useMemo(() => monthMap[filterMonth], [filterMonth]);
 
@@ -193,8 +198,8 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery }: Studen
                                 <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
                                     <Search className="h-10 w-10 mb-4" />
                                     <h3 className="text-lg font-semibold text-foreground">No Students Found</h3>
-                                    <p>Your search for "{searchQuery}" did not match any students.</p>
-                                    <p>Try searching by a different name or ID, or clear the search.</p>
+                                    <p>Your search and filter combination did not match any students.</p>
+                                    <p>Try adjusting your filters.</p>
                                 </div>
                             )}
                         </div>

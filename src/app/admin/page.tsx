@@ -10,21 +10,22 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserCheck, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays } from 'lucide-react';
+import { Users, UserX, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays, Moon, Sun } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { holidays } from '@/lib/data';
-import { isSameMonth } from 'date-fns';
+import { holidays, leaveHistory } from '@/lib/data';
+import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
 
 export default function AdminDashboard() {
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
   const [today, setToday] = useState<Date>();
 
   useEffect(() => {
-    const now = new Date();
+    // Use fixed date for consistent mock data
+    const now = startOfDay(new Date(2023, 9, 27));
     setToday(now);
 
-    const currentHour = now.getHours();
+    const currentHour = new Date().getHours();
     // Assuming lunch is over after 3 PM (15:00)
     if (currentHour >= 15) {
       setMealInfo({ title: "Today's Dinner Count", count: 105 });
@@ -47,6 +48,27 @@ export default function AdminDashboard() {
 
     return { holidaysThisMonth: totalHolidays, mealBreaksThisMonth: totalMealBreaks };
   }, [today]);
+  
+  const onLeaveToday = useMemo(() => {
+    if (!today) return { lunch: 0, dinner: 0 };
+    
+    const fixedToday = startOfDay(new Date(2023, 9, 27));
+    const leaves = leaveHistory.filter(l => format(l.date, 'yyyy-MM-dd') === format(fixedToday, 'yyyy-MM-dd'));
+
+    let lunchOff = 0;
+    let dinnerOff = 0;
+
+    leaves.forEach(leave => {
+        if (leave.type === 'full_day' || leave.type === 'lunch_only') {
+            lunchOff++;
+        }
+        if (leave.type === 'full_day' || leave.type === 'dinner_only') {
+            dinnerOff++;
+        }
+    });
+
+    return { lunch: lunchOff, dinner: dinnerOff };
+  }, [today]);
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -67,12 +89,18 @@ export default function AdminDashboard() {
         </Card>
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100 hover:-translate-y-1 hover:border-primary/50 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Attendance Today</CardTitle>
-            <UserCheck className="h-5 w-5 text-primary" />
+            <CardTitle className="text-sm font-medium">Students on Leave Today</CardTitle>
+            <UserX className="h-5 w-5 text-destructive" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">92%</div>
-            <p className="text-xs text-muted-foreground">Up from 88% yesterday</p>
+          <CardContent className="flex items-center justify-around pt-2">
+             <div className="text-center">
+                 <p className="text-2xl font-bold">{onLeaveToday.lunch}</p>
+                 <p className="text-xs text-muted-foreground flex items-center gap-1"><Sun className="h-3 w-3" /> Lunch</p>
+             </div>
+             <div className="text-center">
+                 <p className="text-2xl font-bold">{onLeaveToday.dinner}</p>
+                 <p className="text-xs text-muted-foreground flex items-center gap-1"><Moon className="h-3 w-3" /> Dinner</p>
+             </div>
           </CardContent>
         </Card>
         <Link href="/admin/students" className="block transition-transform duration-300 hover:-translate-y-1">
@@ -122,7 +150,7 @@ export default function AdminDashboard() {
                             <p><span className="font-semibold text-foreground">Alex Doe</span> paid their monthly bill of ₹3,250.</p>
                         </li>
                         <li className="flex items-start gap-3">
-                            <UserCheck className="h-4 w-4 mt-1 flex-shrink-0 text-green-400"/>
+                            <Users className="h-4 w-4 mt-1 flex-shrink-0 text-green-400"/>
                             <p>New student <span className="font-semibold text-foreground">Jane Smith</span> was approved.</p>
                         </li>
                         <li className="flex items-start gap-3">

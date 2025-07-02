@@ -11,15 +11,16 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { leaveHistory as initialLeaves, Holiday as Leave } from '@/lib/data';
+import { leaveHistory as initialLeaves, Leave, holidays, studentUser } from '@/lib/data';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
 type LeaveType = 'one_day' | 'long_leave';
 
 export default function StudentLeavePage() {
-  const [leaves, setLeaves] = useState<Leave[]>(initialLeaves.sort((a, b) => a.date.getTime() - b.date.getTime()));
+  const [leaves, setLeaves] = useState<Leave[]>(initialLeaves.filter(l => l.studentId === studentUser.id).sort((a, b) => a.date.getTime() - b.date.getTime()));
   
   // Form State
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
@@ -42,31 +43,36 @@ export default function StudentLeavePage() {
     if (!today) return [];
     return leaves.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'));
   }, [leaves, today]);
+  
+  const upcomingHolidays = useMemo(() => {
+    if (!today) return [];
+    return holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')).slice(0, 5);
+  }, [today]);
 
   const handleApplyForLeave = () => {
     let newLeaves: Leave[] = [];
     const reason = "Student Leave";
     
     if (leaveType === 'one_day' && oneDayDate) {
-      newLeaves.push({ name: reason, date: oneDayDate, type: oneDayType });
+      newLeaves.push({ studentId: studentUser.id, name: reason, date: oneDayDate, type: oneDayType });
     } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
       const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
       
       if (dates.length === 1) {
          if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') {
-             newLeaves.push({ name: reason, date: dates[0], type: 'full_day' });
+             newLeaves.push({ studentId: studentUser.id, name: reason, date: dates[0], type: 'full_day' });
          } else if (longLeaveFromType === 'dinner_only') {
-             newLeaves.push({ name: reason, date: dates[0], type: 'dinner_only' });
+             newLeaves.push({ studentId: studentUser.id, name: reason, date: dates[0], type: 'dinner_only' });
          } else if (longLeaveToType === 'lunch_only') {
-            newLeaves.push({ name: reason, date: dates[0], type: 'lunch_only' });
+            newLeaves.push({ studentId: studentUser.id, name: reason, date: dates[0], type: 'lunch_only' });
          } else {
-             newLeaves.push({ name: reason, date: dates[0], type: 'full_day' });
+             newLeaves.push({ studentId: studentUser.id, name: reason, date: dates[0], type: 'full_day' });
          }
       } else {
         newLeaves = dates.map((date, index) => {
-          if (index === 0) return { name: reason, date, type: longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day' };
-          if (index === dates.length - 1) return { name: reason, date, type: longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day' };
-          return { name: reason, date, type: 'full_day' };
+          if (index === 0) return { studentId: studentUser.id, name: reason, date, type: longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day' };
+          if (index === dates.length - 1) return { studentId: studentUser.id, name: reason, date, type: longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day' };
+          return { studentId: studentUser.id, name: reason, date, type: 'full_day' };
         });
       }
     } else {
@@ -230,6 +236,45 @@ export default function StudentLeavePage() {
               <Button onClick={handleApplyForLeave} className="w-full !mt-8">
                 <Plus className="mr-2 h-4 w-4" /> Apply for Leave
               </Button>
+            </CardContent>
+          </Card>
+           <Card className="flex flex-col">
+            <CardHeader>
+              <CardTitle>Upcoming Mess Holidays</CardTitle>
+              <CardDescription>The mess will be closed on these days.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow p-2 pt-0">
+              <ScrollArea className="h-48">
+                <div className="p-4 pt-0 space-y-2">
+                  {!today ? (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                      <p>Loading...</p>
+                    </div>
+                  ) : upcomingHolidays.length > 0 ? (
+                    upcomingHolidays.map((holiday) => (
+                      <div
+                        key={holiday.date.toISOString()}
+                        className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50"
+                      >
+                         <div className="flex items-center gap-3">
+                            {holiday.type === 'full_day' && <Utensils className="h-5 w-5 text-destructive flex-shrink-0" />}
+                            {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
+                            {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-3 flex-shrink-0" />}
+                            <div>
+                                <p className="font-semibold text-sm">{holiday.name}</p>
+                                <p className="text-xs text-muted-foreground">{format(holiday.date, 'MMMM do, yyyy')}</p>
+                            </div>
+                         </div>
+                         <Badge variant="outline" className={cn("capitalize border-dashed", holiday.type === 'full_day' && 'border-destructive text-destructive', holiday.type !== 'full_day' && 'border-chart-3 text-chart-3')}>{getLeaveTypeText(holiday.type)}</Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                      <p>No upcoming holidays.</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>

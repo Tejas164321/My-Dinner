@@ -1,7 +1,7 @@
-import { format, subDays, addDays } from 'date-fns';
+import { format, subDays, addDays, startOfDay } from 'date-fns';
 
 export const studentNavItems = [
-    { href: '/student', label: 'Dashboard', icon: 'LayoutDashboard' },
+    { href: '/student/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
     { href: '/student/leave', label: 'Apply for Leave', icon: 'CalendarDays' },
     { href: '/student/attendance', label: 'My Attendance', icon: 'UserCheck' },
     { href: '/student/bills', label: 'My Bills', icon: 'CircleDollarSign' },
@@ -117,10 +117,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'lunch_only',
         monthlyDetails: {
-            'october': { attendance: '88%', bill: { total: 1850, paid: 0 }, status: 'Due' },
-            'september': { attendance: '90%', bill: { total: 1850, paid: 1850 }, status: 'Paid' },
-            'august': { attendance: '85%', bill: { total: 1750, paid: 1000 }, status: 'Due' },
-            'july': { attendance: '89%', bill: { total: 1800, paid: 1800 }, status: 'Paid' },
+            'october': { attendance: '88%', bill: { total: 1625, paid: 0 }, status: 'Due' },
+            'september': { attendance: '90%', bill: { total: 1625, paid: 1625 }, status: 'Paid' },
+            'august': { attendance: '85%', bill: { total: 1550, paid: 1000 }, status: 'Due' },
+            'july': { attendance: '89%', bill: { total: 1600, paid: 1600 }, status: 'Paid' },
         }
     },
     { 
@@ -161,10 +161,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'dinner_only',
         monthlyDetails: {
-            'october': { attendance: '99%', bill: { total: 1850, paid: 0 }, status: 'Due' },
-            'september': { attendance: '100%', bill: { total: 1850, paid: 1850 }, status: 'Paid' },
-            'august': { attendance: '98%', bill: { total: 1750, paid: 1750 }, status: 'Paid' },
-            'july': { attendance: '99%', bill: { total: 1800, paid: 0 }, status: 'Due' },
+            'october': { attendance: '99%', bill: { total: 1625, paid: 0 }, status: 'Due' },
+            'september': { attendance: '100%', bill: { total: 1625, paid: 1625 }, status: 'Paid' },
+            'august': { attendance: '98%', bill: { total: 1550, paid: 1550 }, status: 'Paid' },
+            'july': { attendance: '99%', bill: { total: 1600, paid: 0 }, status: 'Due' },
         }
     },
 ];
@@ -177,7 +177,7 @@ export interface DailyMenu {
 }
 
 // Use a fixed date to ensure consistent mock data and prevent hydration errors.
-const today = new Date(2023, 9, 27, 12, 0, 0); // Set a fixed time to avoid date shifts
+const today = startOfDay(new Date(2023, 9, 27));
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 const pastMenus: [string, DailyMenu][] = [
@@ -204,6 +204,13 @@ export interface Holiday {
     type: 'full_day' | 'lunch_only' | 'dinner_only';
 }
 
+export interface Leave {
+    studentId: string;
+    date: Date;
+    name: string;
+    type: 'full_day' | 'lunch_only' | 'dinner_only';
+}
+
 export const holidays: Holiday[] = [
     { date: new Date(2023, 9, 2), name: 'Gandhi Jayanti', type: 'full_day' },
     { date: new Date(2023, 9, 24), name: 'Dussehra', type: 'full_day' },
@@ -211,9 +218,12 @@ export const holidays: Holiday[] = [
     { date: new Date(2023, 11, 25), name: 'Christmas', type: 'full_day' },
 ];
 
-export const leaveHistory: Holiday[] = [
-    { date: new Date(2023, 9, 15), name: 'Student Leave', type: 'full_day' },
-    { date: new Date(2023, 9, 16), name: 'Student Leave', type: 'full_day' },
+export const leaveHistory: Leave[] = [
+    { studentId: '5', date: new Date(2023, 9, 15), name: 'Student Leave', type: 'lunch_only' },
+    { studentId: '6', date: new Date(2023, 9, 16), name: 'Student Leave', type: 'full_day' },
+    // Add leaves for today (2023-10-27) to demonstrate new features
+    { studentId: '8', date: new Date(2023, 9, 27), name: 'Student Leave', type: 'full_day' },
+    { studentId: '4', date: new Date(2023, 9, 27), name: 'Student Leave', type: 'lunch_only' },
 ];
 
 export interface Bill {

@@ -16,6 +16,7 @@ export default function AdminStudentsPage() {
   const [month, setMonth] = useState('october');
   const [status, setStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [plan, setPlan] = useState('all');
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -32,7 +33,7 @@ export default function AdminStudentsPage() {
             />
           </div>
           <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>
@@ -43,7 +44,7 @@ export default function AdminStudentsPage() {
             </SelectContent>
           </Select>
            <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
@@ -52,9 +53,20 @@ export default function AdminStudentsPage() {
               <SelectItem value="Due">Due</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={plan} onValueChange={setPlan}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select plan" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Plans</SelectItem>
+              <SelectItem value="full_day">Full Day</SelectItem>
+              <SelectItem value="lunch_only">Lunch Only</SelectItem>
+              <SelectItem value="dinner_only">Dinner Only</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-      <StudentsTable filterMonth={month} filterStatus={status} searchQuery={searchQuery} />
+      <StudentsTable filterMonth={month} filterStatus={status} searchQuery={searchQuery} filterPlan={plan} />
     </div>
   );
 }
