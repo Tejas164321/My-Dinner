@@ -1,51 +1,24 @@
 
 'use client';
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, type ComponentProps } from "react";
 import type { DayContentProps } from "react-day-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Student, Holiday } from "@/lib/data";
 import { holidays } from "@/lib/data";
-import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
-import { DialogClose } from "@/components/ui/dialog";
-
-function CustomDayContent({ date, activeModifiers }: DayContentProps) {
-    let dots = null;
-
-    if (activeModifiers.fullDay) {
-        dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white" /></>;
-    } else if (activeModifiers.lunchOnly) {
-        dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
-    } else if (activeModifiers.dinnerOnly) {
-        dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white" /></>;
-    } else if (activeModifiers.absent) {
-        dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
-    }
-
-    return (
-        <div className="relative h-full w-full flex items-center justify-center">
-            {date.getDate()}
-            {dots && (
-                <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
-                    {dots}
-                </div>
-            )}
-        </div>
-    );
-}
 
 const planInfo = {
     full_day: { icon: Utensils, text: 'Full Day', color: 'text-primary' },
     lunch_only: { icon: Sun, text: 'Lunch Only', color: 'text-yellow-400' },
     dinner_only: { icon: Moon, text: 'Dinner Only', color: 'text-purple-400' }
 };
-
 
 interface StudentDetailCardProps {
     student: Student;
@@ -66,17 +39,14 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const currentData = student.monthlyDetails[monthName] || { attendance: '0%', bill: { total: 0, paid: 0 }, status: 'Paid' };
     const remainingBill = currentData.bill.total - currentData.bill.paid;
     
-    const { fullDaysCount, halfDaysCount, absentDaysCount, totalMealsCount, fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays } = useMemo(() => {
+    const { 
+        presentDaysCount, absentDaysCount, holidaysCount, totalMealsCount,
+        fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays, presentDays
+    } = useMemo(() => {
         if (!today) {
             return {
-                fullDaysCount: 0,
-                halfDaysCount: 0,
-                absentDaysCount: 0,
-                totalMealsCount: 0,
-                fullDayDays: [],
-                lunchOnlyDays: [],
-                dinnerOnlyDays: [],
-                absentDays: [],
+                presentDaysCount: 0, absentDaysCount: 0, holidaysCount: 0, totalMealsCount: 0,
+                fullDayDays: [], lunchOnlyDays: [], dinnerOnlyDays: [], absentDays: [], presentDays: []
             };
         }
 
@@ -87,8 +57,14 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
         
         const pastOrTodayDays = allDays.filter(d => d <= new Date(2023, 9, 27));
+
+        const holidaysThisMonth = allDays.filter(day => 
+            holidays.some(h => format(h.date, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
+        );
         
-        const totalConsideredDays = pastOrTodayDays.length;
+        const workingDays = pastOrTodayDays.filter(day => !holidaysThisMonth.some(h => h.getTime() === day.getTime()));
+
+        const totalConsideredDays = workingDays.length;
         const attendancePercent = parseFloat(currentData.attendance) / 100;
         
         const totalPresentDays = totalConsideredDays > 0 ? Math.round(totalConsideredDays * attendancePercent) : 0;
@@ -97,23 +73,17 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             let x = Math.sin(seed + student.id.charCodeAt(0)) * 10000;
             return x - Math.floor(x);
         };
-        const shuffledPastDays = [...pastOrTodayDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
+        const shuffledWorkingDays = [...workingDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
         
-        const presentDaysArr = shuffledPastDays.slice(0, totalPresentDays);
-        const absentDaysArr = shuffledPastDays.slice(totalPresentDays);
-
+        const presentDaysArr = shuffledWorkingDays.slice(0, totalPresentDays);
+        const absentDaysArr = shuffledWorkingDays.slice(totalPresentDays);
+        
         let fdd: Date[] = [];
         let lod: Date[] = [];
         let dod: Date[] = [];
         let tMealsCount = 0;
 
-        if (student.messPlan === 'lunch_only') {
-            lod = presentDaysArr;
-            tMealsCount = lod.length;
-        } else if (student.messPlan === 'dinner_only') {
-            dod = presentDaysArr;
-            tMealsCount = dod.length;
-        } else { // full_day
+        if (student.messPlan === 'full_day') {
             const fDaysCount = Math.round(presentDaysArr.length * 0.9);
             fdd = presentDaysArr.slice(0, fDaysCount);
             const hdd = presentDaysArr.slice(fDaysCount);
@@ -122,19 +92,64 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             dod = hdd.filter((_, i) => i % 2 !== 0);
             
             tMealsCount = (fdd.length * 2) + hdd.length;
+        } else {
+            tMealsCount = presentDaysArr.length;
         }
 
         return {
-            fullDaysCount: fdd.length,
-            halfDaysCount: lod.length + dod.length,
+            presentDaysCount: presentDaysArr.length, 
             absentDaysCount: absentDaysArr.length,
+            holidaysCount: holidaysThisMonth.length,
             totalMealsCount: tMealsCount,
-            fullDayDays: fdd,
+            fullDayDays: fdd, 
             lunchOnlyDays: lod,
-            dinnerOnlyDays: dod,
+            dinnerOnlyDays: dod, 
             absentDays: absentDaysArr,
+            presentDays: student.messPlan !== 'full_day' ? presentDaysArr : []
         };
     }, [month, student.id, student.messPlan, currentData.attendance, today]);
+
+    const CustomDayContentForPlan = ({ date, activeModifiers }: DayContentProps) => {
+        if (student.messPlan !== 'full_day') {
+            return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
+        }
+
+        let dots = null;
+
+        if (activeModifiers.fullDay) {
+            dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white" /></>;
+        } else if (activeModifiers.lunchOnly || activeModifiers.dinnerOnly) {
+            dots = <><div className="h-1 w-1 rounded-full bg-white" /></>;
+        }
+
+        return (
+            <div className="relative h-full w-full flex items-center justify-center">
+                {date.getDate()}
+                {dots && (
+                    <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
+                        {dots}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const calendarModifiers = useMemo(() => {
+        const baseModifiers = {
+            absent: absentDays,
+            holiday: holidays.map(h => h.date),
+        };
+
+        if (student.messPlan === 'full_day') {
+            return {
+                ...baseModifiers,
+                fullDay: fullDayDays,
+                lunchOnly: lunchOnlyDays,
+                dinnerOnly: dinnerOnlyDays,
+            }
+        }
+        return { ...baseModifiers, present: presentDays };
+    }, [student.messPlan, fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays, presentDays]);
 
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
@@ -163,6 +178,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                 <Card className="flex-grow flex flex-col">
                     <CardHeader className="p-4 pb-2">
                         <CardTitle className="text-lg">Attendance Summary</CardTitle>
+                        <CardDescription>for {format(month, 'MMMM yyyy')}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow flex flex-col p-4 pt-2">
                         <div>
@@ -173,16 +189,16 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                             <Separator className="my-3" />
                             <div className="grid grid-cols-3 gap-2 text-center">
                                 <div>
-                                    <p className="text-muted-foreground text-xs">Full Days</p>
-                                    <p className="font-semibold text-lg text-green-400">{fullDaysCount}</p>
+                                    <p className="font-semibold text-lg text-green-400">{presentDaysCount}</p>
+                                    <p className="text-muted-foreground text-xs">Present</p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground text-xs">Half Days</p>
-                                    <p className="font-semibold text-lg text-yellow-400">{halfDaysCount}</p>
-                                </div>
-                                <div>
+                                    <p className="font-semibold text-lg text-destructive">{absentDaysCount}</p>
                                     <p className="text-muted-foreground text-xs">Absent</p>
-                                    <p className="font-semibold text-lg text-red-400">{absentDaysCount}</p>
+                                </div>
+                                 <div>
+                                    <p className="font-semibold text-lg text-blue-400">{holidaysCount}</p>
+                                    <p className="text-muted-foreground text-xs">Holidays</p>
                                 </div>
                             </div>
                         </div>
@@ -248,18 +264,13 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <Calendar
                             month={month}
                             onMonthChange={setMonth}
-                            modifiers={{
-                                fullDay: fullDayDays,
-                                lunchOnly: lunchOnlyDays,
-                                dinnerOnly: dinnerOnlyDays,
-                                absent: absentDays,
-                                holiday: holidays.map(h => h.date),
-                            }}
-                            components={{ DayContent: CustomDayContent }}
+                            modifiers={calendarModifiers}
+                            components={{ DayContent: CustomDayContentForPlan }}
                             modifiersClassNames={{
                                 fullDay: "bg-chart-2 text-primary-foreground",
                                 lunchOnly: "bg-chart-3 text-primary-foreground",
                                 dinnerOnly: "bg-chart-3 text-primary-foreground",
+                                present: "bg-chart-2 text-primary-foreground",
                                 absent: "bg-destructive text-destructive-foreground",
                                 holiday: "bg-primary/40 text-primary-foreground",
                             }}
@@ -279,22 +290,16 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                     </CardContent>
                     <CardContent className="p-4 pt-2 mt-auto">
                         <div className="flex w-full items-center justify-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />
-                                <span>Full Day</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />
-                                <span>Half Day</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />
-                                <span>Absent</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />
-                                <span>Holiday</span>
-                            </div>
+                             {student.messPlan === 'full_day' ? (
+                                <>
+                                    <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Full Day</div>
+                                    <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
+                                </>
+                            ) : (
+                                <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Present</div>
+                            )}
+                            <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Absent</div>
+                            <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
                         </div>
                     </CardContent>
                 </Card>
