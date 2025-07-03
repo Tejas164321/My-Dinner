@@ -224,6 +224,10 @@ export const leaveHistory: Leave[] = [
     // Add leaves for today (2023-10-27) to demonstrate new features
     { studentId: '8', date: new Date(2023, 9, 27), name: 'Student Leave', type: 'full_day' },
     { studentId: '4', date: new Date(2023, 9, 27), name: 'Student Leave', type: 'lunch_only' },
+    // Add upcoming leaves for student '8'
+    { studentId: '8', date: new Date(2023, 9, 30), name: 'Student Leave', type: 'lunch_only' },
+    { studentId: '8', date: new Date(2023, 10, 5), name: 'Student Leave', type: 'full_day' },
+    { studentId: '8', date: new Date(2023, 10, 6), name: 'Student Leave', type: 'dinner_only' },
 ];
 
 export interface Bill {

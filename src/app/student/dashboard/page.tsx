@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -116,6 +117,14 @@ export default function StudentDashboard() {
       .sort((a, b) => a.date.getTime() - b.date.getTime())
       .slice(0, 4);
   }, []);
+
+  const upcomingLeaves = useMemo(() => {
+    const today = startOfDay(new Date(2023, 9, 27)); // Use the fixed date for consistency
+    return leaveHistory
+      .filter(l => l.studentId === student.id && l.date >= today)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(0, 4);
+  }, [student.id]);
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -229,6 +238,44 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
+          {/* Upcoming Leaves */}
+          <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
+              <CardHeader>
+                  <div className="flex items-center justify-between">
+                      <CardTitle>My Upcoming Leaves</CardTitle>
+                      <UserX className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardDescription>Your next scheduled meal skips.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {upcomingLeaves.length > 0 ? (
+                      <ul className="space-y-4">
+                          {upcomingLeaves.map((leave) => (
+                              <li key={leave.date.toISOString()} className="flex items-start gap-3">
+                                  {leave.type === 'full_day' && <Utensils className="h-5 w-5 mt-1 text-destructive flex-shrink-0" />}
+                                  {leave.type === 'lunch_only' && <Sun className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
+                                  {leave.type === 'dinner_only' && <Moon className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
+                                  <div>
+                                      <p className="font-semibold text-sm capitalize">{leave.type.replace('_', ' ')}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                          {format(leave.date, 'EEEE, MMM do')}
+                                      </p>
+                                  </div>
+                              </li>
+                          ))}
+                      </ul>
+                  ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">You have no upcoming leaves scheduled.</p>
+                  )}
+              </CardContent>
+              <CardFooter>
+                  <Button asChild className="w-full" variant="outline">
+                      <Link href="/student/leave">
+                          Manage Leaves
+                      </Link>
+                  </Button>
+              </CardFooter>
+          </Card>
         </div>
 
         {/* Right Column */}
