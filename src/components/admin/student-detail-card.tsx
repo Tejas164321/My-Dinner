@@ -216,9 +216,20 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         <CardTitle className="text-lg flex items-center gap-2"><Wallet className="h-5 w-5" />Billing</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm p-4 pt-2">
-                        <div className="flex justify-between items-center font-semibold text-base">
-                            <span>Total Bill:</span>
-                            <span>₹{currentData.bill.total.toLocaleString()}</span>
+                        <div className="space-y-2">
+                             {currentData.bill.details && (
+                                <div className="flex justify-between items-center">
+                                    <p className="text-muted-foreground flex items-center gap-2">
+                                        <Utensils className="h-4 w-4" /> Billable Meals
+                                    </p>
+                                    <p>{currentData.bill.details.totalMeals} meals x ₹{currentData.bill.details.chargePerMeal.toLocaleString()}</p>
+                                </div>
+                             )}
+                            <Separator />
+                            <div className="flex justify-between items-center font-semibold text-base">
+                                <p>Total Bill Amount</p>
+                                <p>₹{currentData.bill.total.toLocaleString()}</p>
+                            </div>
                         </div>
                         
                         {currentData.bill.payments.length > 0 && (
