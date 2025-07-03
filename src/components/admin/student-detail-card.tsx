@@ -38,7 +38,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
     const currentData = student.monthlyDetails[monthName] || { 
         attendance: '0%', 
-        bill: { total: 0, payments: [] }, 
+        bill: { total: 0, payments: [], details: { totalMeals: 0, chargePerMeal: 65 } }, 
         status: 'Paid' 
     };
     
@@ -182,34 +182,47 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                     </CardContent>
                 </Card>
                 
-                <Card>
-                    <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-lg">Attendance Summary</CardTitle>
-                        <CardDescription>for {format(month, 'MMMM yyyy')}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow p-4 pt-2 space-y-2 text-sm">
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground flex items-center gap-2"><Percent className="h-4 w-4" /> Monthly Attendance</span>
-                            <span className="font-bold text-primary">{currentData.attendance}</span>
-                        </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground flex items-center gap-2"><Utensils className="h-4 w-4" /> Total Meals Taken</span>
-                            <span className="font-bold">{totalMealsCount}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground flex items-center gap-2"><UserCheck className="h-4 w-4 text-green-400" /> Present Days</span>
-                            <span className="font-bold">{presentDaysCount}</span>
-                        </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground flex items-center gap-2"><UserX className="h-4 w-4 text-destructive" /> Absent Days</span>
-                            <span className="font-bold">{absentDaysCount}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground flex items-center gap-2"><CalendarDays className="h-4 w-4 text-blue-400" /> Mess Holidays</span>
-                            <span className="font-bold">{holidaysCount}</span>
-                        </div>
-                    </CardContent>
-                </Card>
+                 <div className="space-y-3">
+                    <h3 className="font-semibold text-lg px-1">Attendance Summary</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2.5">
+                                <CardTitle className="text-sm font-medium">Present</CardTitle>
+                                <UserCheck className="h-4 w-4 text-green-400" />
+                            </CardHeader>
+                            <CardContent className="p-2.5 pt-0">
+                                <div className="text-2xl font-bold">{presentDaysCount}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2.5">
+                                <CardTitle className="text-sm font-medium">Absent</CardTitle>
+                                <UserX className="h-4 w-4 text-destructive" />
+                            </CardHeader>
+                            <CardContent className="p-2.5 pt-0">
+                                <div className="text-2xl font-bold">{absentDaysCount}</div>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2.5">
+                                <CardTitle className="text-sm font-medium">Holidays</CardTitle>
+                                <CalendarDays className="h-4 w-4 text-blue-400" />
+                            </CardHeader>
+                            <CardContent className="p-2.5 pt-0">
+                                <div className="text-2xl font-bold">{holidaysCount}</div>
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2.5">
+                                <CardTitle className="text-sm font-medium">Attendance</CardTitle>
+                                <Percent className="h-4 w-4 text-primary" />
+                            </CardHeader>
+                            <CardContent className="p-2.5 pt-0">
+                                <div className="text-2xl font-bold">{currentData.attendance}</div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
 
                 <Card className="flex-grow">
                     <CardHeader className="p-4 pb-2">
