@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -14,7 +13,8 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import type { Bill } from '@/lib/data';
-import { holidays, studentUser, leaveHistory } from '@/lib/data';
+import { holidays, leaveHistory } from '@/lib/data';
+import { useAuth } from '@/contexts/auth-context';
 import {
   Utensils,
   FileDown,
@@ -49,7 +49,7 @@ const monthMap: { [key: string]: number } = {
 const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
 
 export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
-  const student = studentUser;
+  const { user: student } = useAuth();
   const monthIndex = monthMap[bill.month];
   const monthDate = new Date(bill.year, monthIndex, 1);
   const paidAmount = getPaidAmount(bill);
@@ -65,7 +65,7 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
   } = useMemo(() => {
     const year = bill.year;
     const monthIndex = monthMap[bill.month];
-    if (monthIndex === undefined) {
+    if (monthIndex === undefined || !student) {
       return { holidayDays: [], fullLeaveDays: [], halfPresentDays: [], fullPresentDays: [], leaveTypeMap: new Map(), holidayTypeMap: new Map() };
     }
 
@@ -77,7 +77,7 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
     const hpDays: Date[] = [];
     const fpDays: Date[] = [];
 
-    const studentLeaves = leaveHistory.filter(l => l.studentId === student.id);
+    const studentLeaves = leaveHistory.filter(l => l.studentId === student.uid);
     const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
     const htm = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
 
@@ -111,9 +111,10 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
         leaveTypeMap: ltm,
         holidayTypeMap: htm,
     };
-  }, [bill, student.id, student.messPlan]);
+  }, [bill, student]);
 
   function CustomDayContent({ date }: DayContentProps) {
+    if (!student) return <div>{date.getDate()}</div>
     const dateKey = format(date, 'yyyy-MM-dd');
     const leaveType = leaveTypeMap.get(dateKey);
     const holidayType = holidayTypeMap.get(dateKey);

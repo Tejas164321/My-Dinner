@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -11,7 +10,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { leaveHistory as initialLeaves, Leave, holidays, studentUser } from '@/lib/data';
+import { leaveHistory as initialLeaves, Leave, holidays } from '@/lib/data';
+import { useAuth } from '@/contexts/auth-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,8 @@ type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
 type LeaveType = 'one_day' | 'long_leave';
 
 export default function StudentLeavePage() {
-  const [leaves, setLeaves] = useState<Leave[]>(initialLeaves.filter(l => l.studentId === studentUser.id).sort((a, b) => a.date.getTime() - b.date.getTime()));
+  const { user } = useAuth();
+  const [leaves, setLeaves] = useState<Leave[]>([]);
   
   // Form State
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
@@ -37,7 +38,10 @@ export default function StudentLeavePage() {
     const now = new Date();
     setToday(now);
     setOneDayDate(now);
-  }, []);
+    if(user) {
+        setLeaves(initialLeaves.filter(l => l.studentId === user.uid).sort((a, b) => a.date.getTime() - b.date.getTime()))
+    }
+  }, [user]);
 
   const upcomingLeaves = useMemo(() => {
     if (!today) return [];
@@ -50,29 +54,30 @@ export default function StudentLeavePage() {
   }, [today]);
 
   const handleApplyForLeave = () => {
+    if(!user) return;
     let newLeaves: Leave[] = [];
     const reason = "Student Leave";
     
     if (leaveType === 'one_day' && oneDayDate) {
-      newLeaves.push({ studentId: studentUser.id, name: reason, date: oneDayDate, type: oneDayType });
+      newLeaves.push({ studentId: user.uid, name: reason, date: oneDayDate, type: oneDayType });
     } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
       const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
       
       if (dates.length === 1) {
          if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') {
-             newLeaves.push({ studentId: studentUser.id, name: reason, date: dates[0], type: 'full_day' });
+             newLeaves.push({ studentId: user.uid, name: reason, date: dates[0], type: 'full_day' });
          } else if (longLeaveFromType === 'dinner_only') {
-             newLeaves.push({ studentId: studentUser.id, name: reason, date: dates[0], type: 'dinner_only' });
+             newLeaves.push({ studentId: user.uid, name: reason, date: dates[0], type: 'dinner_only' });
          } else if (longLeaveToType === 'lunch_only') {
-            newLeaves.push({ studentId: studentUser.id, name: reason, date: dates[0], type: 'lunch_only' });
+            newLeaves.push({ studentId: user.uid, name: reason, date: dates[0], type: 'lunch_only' });
          } else {
-             newLeaves.push({ studentId: studentUser.id, name: reason, date: dates[0], type: 'full_day' });
+             newLeaves.push({ studentId: user.uid, name: reason, date: dates[0], type: 'full_day' });
          }
       } else {
         newLeaves = dates.map((date, index) => {
-          if (index === 0) return { studentId: studentUser.id, name: reason, date, type: longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day' };
-          if (index === dates.length - 1) return { studentId: studentUser.id, name: reason, date, type: longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day' };
-          return { studentId: studentUser.id, name: reason, date, type: 'full_day' };
+          if (index === 0) return { studentId: user.uid, name: reason, date, type: longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day' };
+          if (index === dates.length - 1) return { studentId: user.uid, name: reason, date, type: longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day' };
+          return { studentId: user.uid, name: reason, date, type: 'full_day' };
         });
       }
     } else {

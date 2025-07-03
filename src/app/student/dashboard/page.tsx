@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2 } from 'lucide-react';
-import { dailyMenus, billHistory, studentsData, holidays, studentUser as mainStudentUser, leaveHistory as initialLeaveHistory, Leave } from "@/lib/data";
+import { dailyMenus, billHistory, studentsData, holidays, leaveHistory as initialLeaveHistory, Leave } from "@/lib/data";
+import { useAuth } from '@/contexts/auth-context';
 import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -35,11 +35,10 @@ import {
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export default function StudentDashboard() {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [today, setToday] = useState<Date | undefined>();
-
-  const student = mainStudentUser;
 
   useEffect(() => {
     // Set a fixed date to ensure mock data consistency
@@ -47,15 +46,17 @@ export default function StudentDashboard() {
     setSelectedDate(now);
     setToday(now);
     // Filter leaves for the current student and sort them
-    const studentLeaves = initialLeaveHistory
-      .filter(l => l.studentId === student.id)
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-    setLeaves(studentLeaves);
-  }, [student.id]);
+    if (user) {
+      const studentLeaves = initialLeaveHistory
+        .filter(l => l.studentId === user.uid) // MOCK: should use user.uid
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+      setLeaves(studentLeaves);
+    }
+  }, [user]);
 
   const currentMonthStats = useMemo(() => {
-    if (!today || !student) {
-      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0, messPlan: student.messPlan };
+    if (!today || !user) {
+      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0, messPlan: 'full_day' };
     }
     
     const year = today.getFullYear();
@@ -84,7 +85,8 @@ export default function StudentDashboard() {
         }
     });
 
-    const studentData = studentsData.find(s => s.id === student.id);
+    // MOCK: Still using static data for billing details
+    const studentData = studentsData.find(s => s.id === '8');
     const monthName = format(today, 'MMMM').toLowerCase() as keyof typeof studentData.monthlyDetails;
     const billDetails = studentData?.monthlyDetails[monthName]?.bill?.details;
 
@@ -104,9 +106,9 @@ export default function StudentDashboard() {
         absentDays,
         fullDays,
         halfDays,
-        messPlan: student.messPlan
+        messPlan: user.messPlan
     };
-  }, [today, student, leaves]);
+  }, [today, user, leaves]);
 
   const { displayedMenu, onLeave } = useMemo(() => {
     if (!selectedDate) return { 
@@ -164,7 +166,7 @@ export default function StudentDashboard() {
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Welcome back, {student.name.split(' ')[0]}!</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user?.name?.split(' ')[0]}!</h1>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

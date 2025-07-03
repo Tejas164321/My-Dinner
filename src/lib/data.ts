@@ -21,25 +21,6 @@ export const adminNavItems = [
     { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
 ];
 
-export const adminUser = {
-  name: 'Admin Staff',
-  role: 'Mess Manager',
-  email: 'admin@messo.com',
-  avatarUrl: '',
-};
-
-export const studentUser = {
-    id: '8',
-    name: 'Alex Doe',
-    role: 'Student',
-    email: 'alex.doe@example.com',
-    avatarUrl: '',
-    studentId: 'A56789',
-    joinDate: '2023-09-11',
-    contact: '+91 98765 43214',
-    messPlan: 'full_day' as 'full_day' | 'lunch_only' | 'dinner_only',
-};
-
 export const messInfo = {
   name: 'Messo Central Kitchen',
   address: '123 College Road, University Campus, New Delhi - 110001',
@@ -456,3 +437,15 @@ export const paymentReminders: PaymentReminder[] = [
         date: '2023-6-10',
     },
 ];
+
+export interface AppUser {
+    uid: string;
+    email: string;
+    name: string;
+    role: 'admin' | 'student';
+    studentId?: string;
+    contact?: string;
+    joinDate?: string;
+    messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
+    avatarUrl?: string;
+}

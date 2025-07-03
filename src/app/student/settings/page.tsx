@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
-import { studentUser, messInfo } from '@/lib/data';
+import { useAuth } from '@/contexts/auth-context';
+import { messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun, HelpCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,11 +19,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function StudentSettingsPage() {
     const { toast } = useToast();
+    const { user } = useAuth();
 
     // Profile Settings State
-    const [name, setName] = useState(studentUser.name);
-    const [email, setEmail] = useState(studentUser.email);
-    const [contact, setContact] = useState(studentUser.contact);
+    const [name, setName] = useState(user?.name || '');
+    const [email, setEmail] = useState(user?.email || '');
+    const [contact, setContact] = useState(user?.contact || '');
 
     // Notification Settings
     const [inAppNotifications, setInAppNotifications] = useState(true);
@@ -32,8 +33,8 @@ export default function StudentSettingsPage() {
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
     // Meal Plan Settings
-    const [currentPlan, setCurrentPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>(studentUser.messPlan);
-    const [selectedPlan, setSelectedPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>(studentUser.messPlan);
+    const [currentPlan, setCurrentPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>(user?.messPlan || 'full_day');
+    const [selectedPlan, setSelectedPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>(user?.messPlan || 'full_day');
     const [isRequestPending, setIsRequestPending] = useState(false);
 
 
@@ -57,6 +58,10 @@ export default function StudentSettingsPage() {
         lunch_only: { name: 'Lunch Only', description: 'Includes only lunch every day.' },
         dinner_only: { name: 'Dinner Only', description: 'Includes only dinner every day.' }
     };
+
+    if (!user) {
+        return null; // or a loading spinner
+    }
 
 
     return (
@@ -93,8 +98,8 @@ export default function StudentSettingsPage() {
                             <div className="flex items-center gap-8">
                                 <div className="relative flex-shrink-0">
                                     <Avatar className="w-24 h-24 border-4 border-primary/20">
-                                        <AvatarImage src={studentUser.avatarUrl} alt={name} />
-                                        <AvatarFallback>{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                        <AvatarImage src={user.avatarUrl} alt={name} />
+                                        <AvatarFallback>{name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                     </Avatar>
                                     <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 z-10 rounded-full h-9 w-9 border-2 bg-background hover:bg-accent border-background">
                                         <Camera className="h-4 w-4" />
@@ -103,15 +108,15 @@ export default function StudentSettingsPage() {
                                 </div>
                                 <div className="space-y-1.5">
                                     <h3 className="text-2xl font-semibold">{name}</h3>
-                                    <p className="text-muted-foreground">{studentUser.role}</p>
+                                    <p className="text-muted-foreground">Student</p>
                                     <div className="space-y-1 pt-2 text-sm text-muted-foreground">
                                         <div className="flex items-center gap-2">
                                             <span className="font-semibold text-foreground">Student ID:</span>
-                                            <span>{studentUser.studentId}</span>
+                                            <span>{user.studentId}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-semibold text-foreground">Joined:</span>
-                                            <span>{studentUser.joinDate}</span>
+                                            <span>{user.joinDate}</span>
                                         </div>
                                     </div>
                                 </div>

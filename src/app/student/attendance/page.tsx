@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from "react";
@@ -6,6 +5,7 @@ import type { DayContentProps } from "react-day-picker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { studentsData, holidays, leaveHistory, Holiday, Leave } from "@/lib/data";
+import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +13,10 @@ import { CalendarCheck, Utensils, Percent, UserX, CalendarDays, Sun, Moon } from
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function StudentAttendancePage() {
+    const { user } = useAuth();
     const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
     const [today, setToday] = useState<Date | undefined>();
-    const student = studentsData.find(s => s.id === '8'); // Alex Doe
-
+    
     useEffect(() => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
@@ -31,7 +31,7 @@ export default function StudentAttendancePage() {
     ];
 
     const monthlyStats = useMemo(() => {
-        if (!student || !today) {
+        if (!user || !today) {
             return {
                 attendancePercent: '0%',
                 totalMeals: 0,
@@ -44,7 +44,7 @@ export default function StudentAttendancePage() {
         const monthIndex = month.getMonth();
         const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
         
-        const studentLeaves = leaveHistory.filter(l => l.studentId === student.id && isSameMonth(l.date, month));
+        const studentLeaves = leaveHistory.filter(l => l.studentId === user.uid && isSameMonth(l.date, month));
         const monthHolidays = holidays.filter(h => isSameMonth(h.date, month));
 
         let presentDaysCount = 0;
@@ -63,7 +63,7 @@ export default function StudentAttendancePage() {
                 absentDaysCount++;
             } else {
                 presentDaysCount++;
-                if (student.messPlan === 'full_day') {
+                if (user.messPlan === 'full_day') {
                     totalMealsCount += 2;
                 } else {
                     totalMealsCount += 1;
@@ -80,7 +80,7 @@ export default function StudentAttendancePage() {
             presentDays: presentDaysCount,
             absentDays: absentDaysCount,
         };
-    }, [month, student, today]);
+    }, [month, user, today]);
 
     const {
         holidayDays,
@@ -90,7 +90,7 @@ export default function StudentAttendancePage() {
         halfPresentDays,
         dayTypeMap,
     } = useMemo(() => {
-        if (!student) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], dayTypeMap: new Map() };
+        if (!user) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], dayTypeMap: new Map() };
         
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
@@ -104,7 +104,7 @@ export default function StudentAttendancePage() {
         const hpDays: Date[] = [];
         const dtMap = new Map();
 
-        const studentLeaves = leaveHistory.filter(l => l.studentId === student.id);
+        const studentLeaves = leaveHistory.filter(l => l.studentId === user.uid);
         const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
         const htm = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
 
@@ -124,7 +124,7 @@ export default function StudentAttendancePage() {
                 }
                 dtMap.set(dateKey, { type: 'leave', leaveType });
             } else {
-                 if (student.messPlan === 'full_day') {
+                 if (user.messPlan === 'full_day') {
                     fpDays.push(day);
                 } else {
                     hpDays.push(day);
@@ -141,10 +141,10 @@ export default function StudentAttendancePage() {
             halfPresentDays: hpDays,
             dayTypeMap: dtMap,
         };
-    }, [month, student]);
+    }, [month, user]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
-        if (!student || !today || date > today) {
+        if (!user || !today || date > today) {
             return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
         }
 
@@ -157,12 +157,12 @@ export default function StudentAttendancePage() {
         const isLunchAttended = !(
             (holidayType === 'full_day' || holidayType === 'lunch_only') ||
             (leaveType === 'full_day' || leaveType === 'lunch_only')
-        ) && (student.messPlan === 'full_day' || student.messPlan === 'lunch_only');
+        ) && (user.messPlan === 'full_day' || user.messPlan === 'lunch_only');
     
         const isDinnerAttended = !(
             (holidayType === 'full_day' || holidayType === 'dinner_only') ||
             (leaveType === 'full_day' || leaveType === 'dinner_only')
-        ) && (student.messPlan === 'full_day' || student.messPlan === 'dinner_only');
+        ) && (user.messPlan === 'full_day' || user.messPlan === 'dinner_only');
 
         const lunchDot = <div className={cn("h-1 w-1 rounded-full", isLunchAttended ? 'bg-white' : 'bg-white/30')} />;
         const dinnerDot = <div className={cn("h-1 w-1 rounded-full", isDinnerAttended ? 'bg-white' : 'bg-white/30')} />;
@@ -178,7 +178,7 @@ export default function StudentAttendancePage() {
         );
     };
 
-    if (!student) {
+    if (!user) {
         return <div>Loading student data...</div>
     }
 

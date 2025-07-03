@@ -3,7 +3,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +35,8 @@ import {
   MessageSquare,
   LayoutDashboard
 } from 'lucide-react';
+import { logout } from '@/app/auth/actions';
+
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   LayoutDashboard,
@@ -70,7 +72,7 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
       <nav className="flex flex-col items-start gap-3 px-2 py-4">
         {navItems.map((item) => {
           const Icon = iconMap[item.icon];
-          const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/student' && pathname.startsWith(item.href));
+          const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/student/dashboard' && pathname.startsWith(item.href));
           return (
             <Tooltip key={item.href}>
               <TooltipTrigger asChild>
@@ -113,7 +115,7 @@ function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLa
                     >
                         <Avatar className="h-9 w-9 shrink-0">
                             <AvatarImage src={user.avatarUrl} alt={user.name} />
-                            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            <AvatarFallback>{user.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className={cn("flex flex-col w-full min-w-0 transition-all duration-200 overflow-hidden", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
                             <p className="font-semibold text-sm truncate whitespace-nowrap">{user.name}</p>
@@ -132,12 +134,12 @@ function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onL
         <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button asChild variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
-                        <Link href="/">
+                    <form action={logout} className="w-full">
+                        <Button type="submit" variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
                             <LogOut className="h-5 w-5 shrink-0" />
                             <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Log Out</span>
-                        </Link>
-                    </Button>
+                        </Button>
+                    </form>
                 </TooltipTrigger>
                 {isCollapsed && (
                     <TooltipContent side="right" sideOffset={5}>
@@ -152,11 +154,12 @@ function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onL
 export function DashboardLayout({ children, navItems, user }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const router = useRouter();
   
   const handleToggle = () => setIsCollapsed(!isCollapsed);
   const handleMobileNavClose = () => setIsMobileNavOpen(false);
 
-  const dashboardPath = user.role === 'Mess Manager' ? '/admin' : '/student';
+  const dashboardPath = user.role === 'Mess Manager' ? '/admin' : '/student/dashboard';
 
   return (
     <div className="flex h-screen w-full bg-background">

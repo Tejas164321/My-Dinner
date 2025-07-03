@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -13,6 +12,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { billHistory as initialBillHistory, Bill, paymentReminders } from '@/lib/data';
+import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
 import {
   Receipt,
@@ -52,6 +52,7 @@ import { format } from 'date-fns';
 const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
 
 export default function StudentBillsPage() {
+  const { user } = useAuth();
   const [bills, setBills] = useState<Bill[]>(initialBillHistory);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
@@ -127,6 +128,10 @@ export default function StudentBillsPage() {
       setAmountToConfirm(amount);
       setIsConfirmingPayment(true);
   };
+  
+  if (!user) {
+    return null; // or loading
+  }
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
