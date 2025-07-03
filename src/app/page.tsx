@@ -2,12 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ChefHat, UserPlus, LogIn } from 'lucide-react';
-import { useAuth } from '@/contexts/auth-context';
+import { ChefHat, UserCog, User } from 'lucide-react';
 
 export default function Home() {
-  const { user } = useAuth();
-
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
       <div className="absolute inset-0 grid-bg [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
@@ -24,20 +21,12 @@ export default function Home() {
           The seamless, modern, and smart way to manage your canteen and mess facility.
         </p>
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-          {user ? (
-             <Button asChild size="lg" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href={user.role === 'admin' ? '/admin' : '/student'}>Go to Dashboard</Link>
+            <Button asChild size="lg" className="text-lg px-8 py-6 transition-transform hover:scale-105">
+              <Link href="/admin"><UserCog /> Admin Dashboard</Link>
             </Button>
-          ) : (
-            <>
-              <Button asChild size="lg" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-                <Link href="/login"><LogIn /> Login</Link>
-              </Button>
-              <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-                <Link href="/signup"><UserPlus /> Student Signup</Link>
-              </Button>
-            </>
-          )}
+            <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6 transition-transform hover:scale-105">
+              <Link href="/student"><User /> Student Dashboard</Link>
+            </Button>
         </div>
       </div>
     </main>

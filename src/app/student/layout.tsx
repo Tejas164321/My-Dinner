@@ -1,8 +1,6 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { studentNavItems } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
@@ -10,15 +8,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function StudentDashboardLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && (!user || user.role !== 'student')) {
-      router.replace('/login');
-    }
-  }, [user, loading, router]);
+  // The redirection logic is temporarily disabled for testing.
+  // The useAuth() hook will provide a mock user if not logged in.
 
-  if (loading || !user || user.role !== 'student') {
+  if (loading || !user) {
      return (
        <div className="flex h-screen w-full items-center justify-center">
             <div className="flex items-center space-x-4">

@@ -5,6 +5,7 @@ import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { AppUser } from '@/lib/data';
+import { usePathname } from 'next/navigation';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -18,6 +19,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // This effect can be commented out to fully disable Firebase auth,
+    // and rely solely on the mock data in the useAuth hook below.
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         // User is signed in, see docs for a list of available properties
@@ -53,4 +56,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+
+// --- Temporary Mocking for Testing ---
+const mockStudentUser: AppUser = {
+    uid: '8',
+    email: 'alex.doe@example.com',
+    name: 'Alex Doe',
+    role: 'student',
+    studentId: 'A56789',
+    contact: '+91 9876543214',
+    joinDate: '2023-09-11',
+    messPlan: 'full_day',
+    avatarUrl: `https://i.pravatar.cc/150?u=8`,
+};
+
+const mockAdminUser: AppUser = {
+    uid: 'admin01',
+    email: 'admin@messo.com',
+    name: 'Admin User',
+    role: 'admin',
+    avatarUrl: 'https://i.pravatar.cc/150?u=admin01',
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  const pathname = usePathname();
+
+  // TEMPORARY OVERRIDE: For easy testing without logging in.
+  // If not loading and no user is found, provide a mock user based on the current path.
+  if (!context.loading && !context.user) {
+    if (pathname.startsWith('/admin')) {
+      return { user: mockAdminUser, loading: false };
+    }
+    if (pathname.startsWith('/student')) {
+      return { user: mockStudentUser, loading: false };
+    }
+  }
+
+  return context;
+};
