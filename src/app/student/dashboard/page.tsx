@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX } from 'lucide-react';
+import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays } from 'lucide-react';
 import { dailyMenus, billHistory, studentsData, holidays, studentUser as mainStudentUser, leaveHistory } from "@/lib/data";
 import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay } from 'date-fns';
 import Link from 'next/link';
@@ -108,6 +108,14 @@ export default function StudentDashboard() {
 
   const isLunchOff = onLeave?.type === 'full_day' || onLeave?.type === 'lunch_only';
   const isDinnerOff = onLeave?.type === 'full_day' || onLeave?.type === 'dinner_only';
+  
+  const upcomingHolidays = useMemo(() => {
+    const today = startOfDay(new Date(2023, 9, 27)); // Use the fixed date for consistency
+    return holidays
+      .filter(h => h.date >= today)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(0, 4);
+  }, []);
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -143,7 +151,7 @@ export default function StudentDashboard() {
               </CardHeader>
               <CardContent>
                   <div className="text-2xl font-bold">{currentMonthStats.presentDays} Days</div>
-                  {currentMonthStats.messPlan === 'full_day' ? (
+                   {currentMonthStats.messPlan === 'full_day' ? (
                      <p className="text-xs text-muted-foreground">{currentMonthStats.fullDays} full & {currentMonthStats.halfDays} half days</p>
                   ) : (
                       <p className="text-xs text-muted-foreground">Days attended this month</p>
@@ -260,6 +268,38 @@ export default function StudentDashboard() {
                         </div>
                       </div>
                    )}
+                </CardContent>
+            </Card>
+
+            {/* Upcoming Holidays */}
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Upcoming Holidays</CardTitle>
+                        <CalendarDays className="h-5 w-5 text-primary" />
+                    </div>
+                    <CardDescription>The mess will be closed on these days.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {upcomingHolidays.length > 0 ? (
+                        <ul className="space-y-4">
+                            {upcomingHolidays.map((holiday) => (
+                                <li key={holiday.date.toISOString()} className="flex items-start gap-3">
+                                    {holiday.type === 'full_day' && <Utensils className="h-5 w-5 mt-1 text-destructive flex-shrink-0" />}
+                                    {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
+                                    {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
+                                    <div>
+                                        <p className="font-semibold text-sm">{holiday.name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {format(holiday.date, 'EEEE, MMM do')}
+                                        </p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No upcoming holidays scheduled.</p>
+                    )}
                 </CardContent>
             </Card>
 
