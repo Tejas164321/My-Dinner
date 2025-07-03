@@ -112,8 +112,12 @@ export default function StudentAttendancePage() {
 
         if (activeModifiers.fullDay) {
             dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white" /></>;
-        } else if (activeModifiers.lunchOnly || activeModifiers.dinnerOnly) {
-            dots = <><div className="h-1 w-1 rounded-full bg-white" /></>;
+        } else if (activeModifiers.lunchOnly) {
+            dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
+        } else if (activeModifiers.dinnerOnly) {
+            dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white" /></>;
+        } else if (activeModifiers.absent) {
+            dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
         }
 
         return (
@@ -263,3 +267,5 @@ export default function StudentAttendancePage() {
         </div>
     );
 }
+
+    

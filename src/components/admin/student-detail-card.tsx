@@ -144,8 +144,12 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
 
         if (activeModifiers.fullDay) {
             dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white" /></>;
-        } else if (activeModifiers.lunchOnly || activeModifiers.dinnerOnly) {
-            dots = <><div className="h-1 w-1 rounded-full bg-white" /></>;
+        } else if (activeModifiers.lunchOnly) {
+            dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
+        } else if (activeModifiers.dinnerOnly) {
+            dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white" /></>;
+        } else if (activeModifiers.absent) {
+            dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
         }
 
         return (
@@ -204,7 +208,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                 
                  <div className="space-y-3">
                     <h3 className="font-semibold text-lg px-1">Monthly Meal Summary</h3>
-                    <div className="grid grid-cols-3 gap-3">
+                     <div className="grid grid-cols-3 gap-3">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1">
                                 <CardTitle className="text-sm font-medium">Present</CardTitle>
@@ -359,3 +363,5 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         </Card>
     );
 }
+
+    
