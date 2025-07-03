@@ -105,36 +105,35 @@ export default function AdminDashboard() {
                     <ScrollArea className="h-96">
                         <div className="p-2 space-y-2">
                             {combinedNotifications.length > 0 ? combinedNotifications.map((notif, index) => (
-                                <div key={`${notif.type}-${notif.id}`} className="p-2 rounded-lg hover:bg-secondary/50">
+                                <Link
+                                  key={`${notif.type}-${notif.id}`}
+                                  href={notif.type === 'join_request' ? '/admin/students?tab=requests' : '/admin/students?tab=plan_requests'}
+                                  className="block p-2 rounded-lg hover:bg-secondary/50"
+                                >
                                     <div className="flex items-start gap-3">
                                         <div className="bg-secondary p-2 rounded-full mt-1">
                                             {notif.type === 'join_request' ? <UserPlus className="h-4 w-4 text-primary" /> : <GitCompareArrows className="h-4 w-4 text-primary" />}
                                         </div>
-                                        <div className="flex-1 space-y-2">
+                                        <div className="flex-1 space-y-1">
                                             <p className="text-sm text-muted-foreground leading-snug">
                                                 <span className="font-semibold text-foreground">{notif.studentName}</span>
                                                 {notif.type === 'join_request' ? ` has requested to join your mess.` : ` has requested to change plan from `}
                                                 {notif.type === 'plan_change' && <><span className="font-semibold capitalize">{notif.fromPlan.replace('_', ' ')}</span> to <span className="font-semibold capitalize">{notif.toPlan.replace('_', ' ')}</span>.</>}
                                             </p>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700 text-white">
-                                                    <Check className="h-3 w-3 mr-1" /> Approve
-                                                </Button>
-                                                <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
-                                                    <X className="h-3 w-3 mr-1" /> Decline
-                                                </Button>
-                                            </div>
+                                             <p className="text-xs text-primary">Tap to review request</p>
                                         </div>
                                     </div>
                                     {index < combinedNotifications.length - 1 && <Separator className="mt-3" />}
-                                </div>
+                                </Link>
                             )) : (
                                 <p className="text-sm text-muted-foreground text-center p-8">No new notifications.</p>
                             )}
                         </div>
                     </ScrollArea>
                     <div className="p-2 border-t text-center">
-                        <Button variant="link" size="sm" className="w-full">View all notifications</Button>
+                        <Button asChild variant="link" size="sm" className="w-full">
+                           <Link href="/admin/students">View all requests</Link>
+                        </Button>
                     </div>
                 </div>
             </PopoverContent>

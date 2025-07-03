@@ -1,11 +1,13 @@
+
 'use client';
 
 import { useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { studentsData, joinRequests, monthMap, Student } from "@/lib/data";
+import { studentsData, joinRequests, monthMap, Student, planChangeRequests } from "@/lib/data";
 import { Check, X, Trash2, UserX, Search, Utensils, Sun, Moon } from "lucide-react";
 import {
   AlertDialog,
@@ -147,6 +149,9 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
 
 
 export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPlan }: StudentsTableProps) {
+    const searchParams = useSearchParams();
+    const tab = searchParams.get('tab');
+
     const { activeStudents, suspendedStudents } = useMemo(() => {
         const active: Student[] = [];
         const suspended: Student[] = [];
@@ -178,13 +183,18 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     
     const initialDate = useMemo(() => monthMap[filterMonth], [filterMonth]);
 
+    const formatPlanName = (plan: string) => {
+        return plan.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
     return (
         <Card>
             <CardContent className="pt-6">
-                <Tabs defaultValue="joined" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                <Tabs defaultValue={tab || "joined"} className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="joined">All Students</TabsTrigger>
                         <TabsTrigger value="requests">Join Requests <Badge variant="secondary" className="ml-2">{joinRequests.length}</Badge></TabsTrigger>
+                        <TabsTrigger value="plan_requests">Plan Requests <Badge variant="secondary" className="ml-2">{planChangeRequests.length}</Badge></TabsTrigger>
                         <TabsTrigger value="suspended">Suspended <Badge variant="secondary" className="ml-2">{suspendedStudents.length}</Badge></TabsTrigger>
                     </TabsList>
                     
@@ -244,6 +254,45 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             </Table>
                         </div>
                     </TabsContent>
+
+                    <TabsContent value="plan_requests" className="mt-4">
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Student</TableHead>
+                                        <TableHead>Current Plan</TableHead>
+                                        <TableHead>Requested Plan</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {planChangeRequests.map((req) => (
+                                        <TableRow key={req.id}>
+                                            <TableCell className="font-medium">{req.studentName}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline">{formatPlanName(req.fromPlan)}</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge>{formatPlanName(req.toPlan)}</Badge>
+                                            </TableCell>
+                                            <TableCell>{req.date}</TableCell>
+                                            <TableCell className="text-right space-x-2">
+                                                <Button variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
+                                                    <Check className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </TabsContent>
+
                 </Tabs>
             </CardContent>
         </Card>
