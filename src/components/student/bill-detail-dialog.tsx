@@ -14,7 +14,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import type { Bill } from '@/lib/data';
-import { holidays, studentUser } from '@/lib/data';
+import { holidays, studentUser, leaveHistory } from '@/lib/data';
 import {
   Utensils,
   FileDown,
@@ -22,55 +22,9 @@ import {
   CalendarCheck2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-
-function CustomDayContent({ date, activeModifiers }: DayContentProps) {
-  // Re-using the same day content logic for consistency
-  let dots = null;
-
-  if (activeModifiers.fullDay) {
-    dots = (
-      <>
-        <div className="h-1 w-1 rounded-full bg-white" />
-        <div className="h-1 w-1 rounded-full bg-white" />
-      </>
-    );
-  } else if (activeModifiers.lunchOnly) {
-    dots = (
-      <>
-        <div className="h-1 w-1 rounded-full bg-white" />
-        <div className="h-1 w-1 rounded-full bg-white/30" />
-      </>
-    );
-  } else if (activeModifiers.dinnerOnly) {
-    dots = (
-      <>
-        <div className="h-1 w-1 rounded-full bg-white/30" />
-        <div className="h-1 w-1 rounded-full bg-white" />
-      </>
-    );
-  } else if (activeModifiers.absent) {
-    dots = (
-      <>
-        <div className="h-1 w-1 rounded-full bg-white/30" />
-        <div className="h-1 w-1 rounded-full bg-white/30" />
-      </>
-    );
-  }
-
-  return (
-    <div className="relative h-full w-full flex items-center justify-center">
-      {date.getDate()}
-      {dots && (
-        <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
-          {dots}
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface BillDetailDialogProps {
   bill: Bill;
@@ -94,7 +48,6 @@ const monthMap: { [key: string]: number } = {
 
 const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
 
-
 export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
   const student = studentUser;
   const monthIndex = monthMap[bill.month];
@@ -102,55 +55,92 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
   const paidAmount = getPaidAmount(bill);
   const dueAmount = bill.totalAmount - paidAmount;
 
-  const { fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays } =
-    useMemo(() => {
-      const year = bill.year;
-      const monthIndex = monthMap[bill.month];
-      if (monthIndex === undefined)
-        return {
-          fullDayDays: [],
-          lunchOnlyDays: [],
-          dinnerOnlyDays: [],
-          absentDays: [],
-        };
+  const {
+    holidayDays,
+    fullLeaveDays,
+    halfPresentDays,
+    fullPresentDays,
+    leaveTypeMap,
+    holidayTypeMap,
+  } = useMemo(() => {
+    const year = bill.year;
+    const monthIndex = monthMap[bill.month];
+    if (monthIndex === undefined) {
+      return { holidayDays: [], fullLeaveDays: [], halfPresentDays: [], fullPresentDays: [], leaveTypeMap: new Map(), holidayTypeMap: new Map() };
+    }
 
-      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-      const allDays = Array.from({ length: daysInMonth }, (_, i) =>
-        new Date(year, monthIndex, i + 1)
-      );
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
 
-      const seededRandom = (seed: number) => {
-        let x = Math.sin(seed + student.id.charCodeAt(0)) * 10000;
-        return x - Math.floor(x);
-      };
+    const hDays: Date[] = [];
+    const flDays: Date[] = [];
+    const hpDays: Date[] = [];
+    const fpDays: Date[] = [];
 
-      const billableDays = allDays.filter(
-        (d) =>
-          !holidays.some(
-            (h) => format(h.date, 'yyyy-MM-dd') === format(d, 'yyyy-MM-dd')
-          )
-      );
-      const shuffledDays = [...billableDays].sort(
-        (a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate())
-      );
+    const studentLeaves = leaveHistory.filter(l => l.studentId === student.id);
+    const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
+    const htm = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
 
-      const fDaysCount = bill.details.fullDays;
-      const hDaysCount = bill.details.halfDays;
+    allDays.forEach(day => {
+      const dateKey = format(day, 'yyyy-MM-dd');
+      const holidayType = htm.get(dateKey);
+      const leaveType = ltm.get(dateKey);
 
-      const fdd = shuffledDays.slice(0, fDaysCount);
-      const hdd = shuffledDays.slice(fDaysCount, fDaysCount + hDaysCount);
-      const add = shuffledDays.slice(fDaysCount + hDaysCount);
+      if (holidayType) {
+        hDays.push(day);
+      } else if (leaveType) {
+        if (leaveType === 'full_day') {
+          flDays.push(day);
+        } else {
+          hpDays.push(day);
+        }
+      } else {
+        if (student.messPlan === 'full_day') {
+          fpDays.push(day);
+        } else {
+          hpDays.push(day); // Half-day plan users are always 'half_present'
+        }
+      }
+    });
 
-      const lod = hdd.filter((_, i) => i % 2 === 0);
-      const dod = hdd.filter((_, i) => i % 2 !== 0);
+    return { 
+        holidayDays: hDays,
+        fullLeaveDays: flDays,
+        halfPresentDays: hpDays,
+        fullPresentDays: fpDays,
+        leaveTypeMap: ltm,
+        holidayTypeMap: htm,
+    };
+  }, [bill, student.id, student.messPlan]);
 
-      return {
-        fullDayDays: fdd,
-        lunchOnlyDays: lod,
-        dinnerOnlyDays: dod,
-        absentDays: add,
-      };
-    }, [bill, student.id]);
+  function CustomDayContent({ date }: DayContentProps) {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const leaveType = leaveTypeMap.get(dateKey);
+    const holidayType = holidayTypeMap.get(dateKey);
+
+    const isLunchAttended = !(
+        (holidayType === 'full_day' || holidayType === 'lunch_only') ||
+        (leaveType === 'full_day' || leaveType === 'lunch_only')
+    ) && (student.messPlan === 'full_day' || student.messPlan === 'lunch_only');
+
+    const isDinnerAttended = !(
+        (holidayType === 'full_day' || holidayType === 'dinner_only') ||
+        (leaveType === 'full_day' || leaveType === 'dinner_only')
+    ) && (student.messPlan === 'full_day' || student.messPlan === 'dinner_only');
+
+    const lunchDot = <div className={cn("h-1 w-1 rounded-full", isLunchAttended ? 'bg-white' : 'bg-white/30')} />;
+    const dinnerDot = <div className={cn("h-1 w-1 rounded-full", isDinnerAttended ? 'bg-white' : 'bg-white/30')} />;
+
+    return (
+      <div className="relative h-full w-full flex items-center justify-center">
+        {date.getDate()}
+        <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
+            {lunchDot}
+            {dinnerDot}
+        </div>
+      </div>
+    );
+  }
     
   const getStatusInfo = (status: Bill['status']) => {
     switch (status) {
@@ -292,19 +282,17 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
                     <Calendar
                         month={monthDate}
                         modifiers={{
-                            fullDay: fullDayDays,
-                            lunchOnly: lunchOnlyDays,
-                            dinnerOnly: dinnerOnlyDays,
-                            absent: absentDays,
-                            holiday: holidays.map((h) => h.date),
+                            holiday: holidayDays,
+                            full_leave: fullLeaveDays,
+                            half_present: halfPresentDays,
+                            full_present: fullPresentDays,
                         }}
                         components={{ DayContent: CustomDayContent }}
                         modifiersClassNames={{
-                            fullDay: 'bg-chart-2 text-primary-foreground',
-                            lunchOnly: 'bg-chart-3 text-primary-foreground',
-                            dinnerOnly: 'bg-chart-3 text-primary-foreground',
-                            absent: 'bg-destructive text-destructive-foreground',
                             holiday: 'bg-primary/40 text-primary-foreground',
+                            full_leave: 'bg-destructive text-destructive-foreground',
+                            half_present: 'bg-chart-3 text-primary-foreground',
+                            full_present: 'bg-chart-2 text-primary-foreground',
                         }}
                         classNames={{
                             months: 'w-full',
@@ -325,16 +313,10 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
                 
                 {/* Legend */}
                 <div className="p-0 pt-4 mt-auto">
-                    <div className="flex w-full items-center justify-center gap-4 text-xs text-muted-foreground">
-                        {student.messPlan === 'full_day' ? (
-                            <>
-                                <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Full Day</div>
-                                <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
-                            </>
-                        ) : (
-                             <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Present</div>
-                        )}
-                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Absent</div>
+                    <div className="flex w-full items-center justify-center gap-4 text-xs text-muted-foreground flex-wrap">
+                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Present</div>
+                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
+                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
                         <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
                     </div>
                 </div>
