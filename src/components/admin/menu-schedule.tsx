@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Pencil, Save, History, Plus, X, Calendar as CalendarIcon, Utensils } from "lucide-react";
 import { getMenuForDate, saveMenuForDate } from '@/lib/actions/menu';
 import { commonMenuItems } from "@/lib/data";
-import { format, startOfDay } from 'date-fns';
+import { format, startOfDay, subDays } from 'date-fns';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
@@ -33,9 +33,35 @@ export function MenuSchedule() {
 
     const [newLunchItem, setNewLunchItem] = useState('');
     const [newDinnerItem, setNewDinnerItem] = useState('');
+    
+    const [history, setHistory] = useState<{ date: string; menu: DailyMenu }[]>([]);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
     useEffect(() => {
         setSelectedDate(startOfDay(new Date()));
+        
+        const fetchHistory = async () => {
+            setIsHistoryLoading(true);
+            const today = startOfDay(new Date());
+            const pastDates = [
+                subDays(today, 1),
+                subDays(today, 2),
+                subDays(today, 3),
+            ];
+            const historyPromises = pastDates.map(async (date) => {
+                const dateKey = formatDateKey(date);
+                const menu = await getMenuForDate(dateKey);
+                if (menu && (menu.lunch.length > 0 || menu.dinner.length > 0)) {
+                   return { date: format(date, 'PPP'), menu };
+                }
+                return null;
+            });
+            const resolvedHistory = (await Promise.all(historyPromises)).filter(Boolean) as { date: string; menu: DailyMenu }[];
+            setHistory(resolvedHistory);
+            setIsHistoryLoading(false);
+        };
+
+        fetchHistory();
     }, []);
 
     useEffect(() => {
@@ -286,6 +312,41 @@ export function MenuSchedule() {
                     </CardContent>
                 </Card>
             </div>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <History className="h-5 w-5 text-primary" /> Menu History
+                    </CardTitle>
+                    <CardDescription>Recently set menus from the past 3 days.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {isHistoryLoading ? (
+                        <div className="space-y-4">
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
+                        </div>
+                    ) : history.length > 0 ? (
+                        history.map(item => (
+                            <div key={item.date} className="rounded-lg border p-4 bg-secondary/30">
+                                <h4 className="font-semibold">{item.date}</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-2 text-sm">
+                                    <div>
+                                        <p className="font-medium text-muted-foreground">Lunch</p>
+                                        <p>{item.menu.lunch.join(', ') || 'Not set'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-muted-foreground">Dinner</p>
+                                        <p>{item.menu.dinner.join(', ') || 'Not set'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No recent menu history found.</p>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }
