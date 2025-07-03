@@ -1,15 +1,18 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { DollarSign, Palette, Bell, Info, Moon, Sun, RefreshCw, Copy, User, CalendarClock } from 'lucide-react';
+import { DollarSign, Bell, Info, Moon, Sun, RefreshCw, Copy, User, CalendarClock, LifeBuoy } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from "@/hooks/use-toast";
 import { adminUser, messInfo } from '@/lib/data';
@@ -24,6 +27,7 @@ function SettingsPageContent() {
     const { toast } = useToast();
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
+     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
     useEffect(() => {
         const currentTab = searchParams.get('tab') || 'profile';
@@ -79,9 +83,6 @@ function SettingsPageContent() {
     // Billing Settings State
     const [perMealCharge, setPerMealCharge] = useState('65.00');
 
-    // Appearance Settings State
-    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-
     const lunchTimeOptions = [
         { value: '09:00', label: '09:00 AM' },
         { value: '09:30', label: '09:30 AM' },
@@ -126,17 +127,26 @@ function SettingsPageContent() {
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-            <div>
+            <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+                        {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                        <span className="sr-only">Toggle theme</span>
+                    </Button>
+                    <Link href="/admin/support" className={cn(buttonVariants({ variant: 'outline', size: 'icon' }))}>
+                        <LifeBuoy className="h-5 w-5" />
+                        <span className="sr-only">Support</span>
+                    </Link>
+                </div>
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> Profile</TabsTrigger>
                     <TabsTrigger value="general"><Info className="mr-2 h-4 w-4" /> General</TabsTrigger>
                     <TabsTrigger value="billing"><DollarSign className="mr-2 h-4 w-4" /> Billing</TabsTrigger>
                     <TabsTrigger value="leave"><CalendarClock className="mr-2 h-4 w-4" /> Leave</TabsTrigger>
-                    <TabsTrigger value="appearance"><Palette className="mr-2 h-4 w-4" /> Appearance</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="profile" className="mt-6">
@@ -429,49 +439,6 @@ function SettingsPageContent() {
                         </CardContent>
                          <CardFooter>
                             <Button>Save Changes</Button>
-                        </CardFooter>
-                    </Card>
-                </TabsContent>
-
-                 <TabsContent value="appearance" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Appearance & Theme</CardTitle>
-                            <CardDescription>Customize the look and feel of the application.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6 max-w-md">
-                            <div className="space-y-2">
-                                <Label>Theme</Label>
-                                <RadioGroup
-                                    value={theme}
-                                    onValueChange={(value: 'light' | 'dark') => setTheme(value)}
-                                    className="grid max-w-md grid-cols-2 gap-4 pt-2"
-                                >
-                                    <div>
-                                        <RadioGroupItem value="light" id="light" className="peer sr-only" />
-                                        <Label
-                                            htmlFor="light"
-                                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                                        >
-                                            <Sun className="mb-3 h-6 w-6" />
-                                            Light
-                                        </Label>
-                                    </div>
-                                    <div>
-                                        <RadioGroupItem value="dark" id="dark" className="peer sr-only" />
-                                        <Label
-                                            htmlFor="dark"
-                                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                                        >
-                                            <Moon className="mb-3 h-6 w-6" />
-                                            Dark
-                                        </Label>
-                                    </div>
-                                </RadioGroup>
-                            </div>
-                        </CardContent>
-                         <CardFooter>
-                            <Button>Save & Apply Theme</Button>
                         </CardFooter>
                     </Card>
                 </TabsContent>

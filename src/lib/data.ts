@@ -19,7 +19,6 @@ export const adminNavItems = [
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
     { href: '/admin/announcements', label: 'Announcements', icon: 'Bell' },
     { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
-    { href: '/admin/support', label: 'Support', icon: 'LifeBuoy' },
 ];
 
 export const adminUser = {

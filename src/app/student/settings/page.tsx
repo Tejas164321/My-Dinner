@@ -2,17 +2,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { studentUser, messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun } from 'lucide-react';
+import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun, LifeBuoy } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -62,10 +63,16 @@ export default function StudentSettingsPage() {
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-                 <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-                    {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                    <span className="sr-only">Toggle theme</span>
-                </Button>
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+                        {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                        <span className="sr-only">Toggle theme</span>
+                    </Button>
+                    <Link href="/student/feedback" className={cn(buttonVariants({ variant: 'outline', size: 'icon' }))}>
+                        <LifeBuoy className="h-5 w-5" />
+                        <span className="sr-only">Support</span>
+                    </Link>
+                </div>
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
@@ -195,30 +202,23 @@ export default function StudentSettingsPage() {
                                     <p className="text-sm text-muted-foreground mb-4">
                                         Your current plan is: <span className="font-bold text-primary capitalize">{currentPlan.replace('_', ' ')}</span>. Select a new plan below to request a change.
                                     </p>
-                                    <RadioGroup
-                                        value={selectedPlan}
-                                        onValueChange={(value) => setSelectedPlan(value as 'full_day' | 'lunch_only' | 'dinner_only')}
-                                        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-                                    >
-                                       <Label htmlFor="full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-40">
-                                            <RadioGroupItem value="full_day" id="full_day" className="peer sr-only" />
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                       <button onClick={() => setSelectedPlan('full_day')} className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-40", selectedPlan === 'full_day' ? 'border-primary' : 'border-muted bg-popover')}>
                                             <Utensils className="mb-3 h-8 w-8 text-primary" />
                                             <span className="font-semibold">{planDetails.full_day.name}</span>
                                             <p className="text-xs text-muted-foreground mt-1">{planDetails.full_day.description}</p>
-                                        </Label>
-                                         <Label htmlFor="lunch_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-40">
-                                            <RadioGroupItem value="lunch_only" id="lunch_only" className="peer sr-only" />
+                                        </button>
+                                         <button onClick={() => setSelectedPlan('lunch_only')} className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-40", selectedPlan === 'lunch_only' ? 'border-primary' : 'border-muted bg-popover')}>
                                             <Sun className="mb-3 h-8 w-8 text-yellow-400" />
                                             <span className="font-semibold">{planDetails.lunch_only.name}</span>
                                             <p className="text-xs text-muted-foreground mt-1">{planDetails.lunch_only.description}</p>
-                                        </Label>
-                                         <Label htmlFor="dinner_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all h-40">
-                                            <RadioGroupItem value="dinner_only" id="dinner_only" className="peer sr-only" />
+                                        </button>
+                                         <button onClick={() => setSelectedPlan('dinner_only')} className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-40", selectedPlan === 'dinner_only' ? 'border-primary' : 'border-muted bg-popover')}>
                                             <Moon className="mb-3 h-8 w-8 text-purple-400" />
                                             <span className="font-semibold">{planDetails.dinner_only.name}</span>
                                             <p className="text-xs text-muted-foreground mt-1">{planDetails.dinner_only.description}</p>
-                                        </Label>
-                                    </RadioGroup>
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </CardContent>
