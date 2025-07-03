@@ -2,24 +2,28 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Pencil, Save, History, Plus, X, Calendar as CalendarIcon, Utensils } from "lucide-react";
-import { dailyMenus, commonMenuItems } from "@/lib/data";
-import { format, subDays, startOfDay } from 'date-fns';
+import { getMenuForDate, saveMenuForDate } from '@/lib/actions/menu';
+import { commonMenuItems } from "@/lib/data";
+import { format, startOfDay } from 'date-fns';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
+import type { DailyMenu } from '@/lib/actions/menu';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export function MenuSchedule() {
-    const [menus, setMenus] = useState(dailyMenus);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [isEditing, setIsEditing] = useState<false | 'lunch' | 'dinner'>(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
 
     const [lunchItems, setLunchItems] = useState<string[]>([]);
     const [dinnerItems, setDinnerItems] = useState<string[]>([]);
@@ -36,55 +40,54 @@ export function MenuSchedule() {
 
     useEffect(() => {
         if (!selectedDate) return;
-        const dateKey = formatDateKey(selectedDate);
-        const menuForDay = menus.get(dateKey) || { lunch: [], dinner: [] };
-        setLunchItems(menuForDay.lunch);
-        setDinnerItems(menuForDay.dinner);
-        setTempLunchItems(menuForDay.lunch);
-        setTempDinnerItems(menuForDay.dinner);
-        setIsEditing(false); 
-    }, [selectedDate, menus]);
-    
-    const menuHistory = useMemo(() => {
-        if (!selectedDate) return [];
-        return Array.from({ length: 7 }).map((_, i) => {
-            const date = subDays(selectedDate, i + 1);
-            const dateKey = formatDateKey(date);
-            const menu = menus.get(dateKey);
-            return {
-                date: date,
-                day: format(date, 'EEEE'),
-                lunch: menu?.lunch.join(', ') || 'Not Set',
-                dinner: menu?.dinner.join(', ') || 'Not Set',
-            };
-        });
-    }, [selectedDate, menus]);
+        
+        const fetchMenu = async () => {
+            setIsLoading(true);
+            const dateKey = formatDateKey(selectedDate);
+            const menuForDay = await getMenuForDate(dateKey);
+            
+            const lunch = menuForDay?.lunch || [];
+            const dinner = menuForDay?.dinner || [];
 
+            setLunchItems(lunch);
+            setDinnerItems(dinner);
+            setTempLunchItems(lunch);
+            setTempDinnerItems(dinner);
+            setIsEditing(false); 
+            setIsLoading(false);
+        };
+
+        fetchMenu();
+    }, [selectedDate]);
+    
     const handleEdit = (meal: 'lunch' | 'dinner') => {
         setTempLunchItems([...lunchItems]);
         setTempDinnerItems([...dinnerItems]);
         setIsEditing(meal);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedDate) return;
         const dateKey = formatDateKey(selectedDate);
-        const newMenus = new Map(menus);
+        
+        let menuData: DailyMenu = { lunch: lunchItems, dinner: dinnerItems };
 
         if (isEditing === 'lunch') {
-            newMenus.set(dateKey, { 
-                lunch: tempLunchItems, 
-                dinner: dinnerItems
-            });
+            menuData = { lunch: tempLunchItems, dinner: dinnerItems };
         } else if (isEditing === 'dinner') {
-            newMenus.set(dateKey, { 
-                lunch: lunchItems,
-                dinner: tempDinnerItems
-            });
+            menuData = { lunch: lunchItems, dinner: tempDinnerItems };
         }
         
-        setMenus(newMenus);
+        await saveMenuForDate(dateKey, menuData);
+        
+        setLunchItems(menuData.lunch);
+        setDinnerItems(menuData.dinner);
         setIsEditing(false);
+
+        toast({
+            title: "Menu Saved!",
+            description: `The menu for ${format(selectedDate, 'PPP')} has been updated.`,
+        });
     };
 
     const handleCancel = () => {
@@ -123,17 +126,27 @@ export function MenuSchedule() {
 
     const renderMenuTags = (items: string[], meal: 'lunch' | 'dinner') => (
         <div className="flex flex-wrap gap-2 rounded-lg border bg-background/50 p-3 min-h-[120px]">
-            {items.map((item, index) => (
-                <Badge key={`${meal}-${index}`} variant="secondary" className="text-sm py-1 px-2 flex items-center gap-1.5">
-                    {item}
-                    {isEditing === meal && (
-                        <button onClick={() => handleRemoveItem(meal, index)} className="rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
-                            <X className="h-3.5 w-3.5" />
-                        </button>
-                    )}
-                </Badge>
-            ))}
-            {items.length === 0 && <span className="text-sm text-muted-foreground p-2">No items set.</span>}
+             {isLoading ? (
+                <div className="w-full space-y-2">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-6 w-2/3" />
+                </div>
+            ) : (
+                <>
+                    {items.map((item, index) => (
+                        <Badge key={`${meal}-${index}`} variant="secondary" className="text-sm py-1 px-2 flex items-center gap-1.5">
+                            {item}
+                            {isEditing === meal && (
+                                <button onClick={() => handleRemoveItem(meal, index)} className="rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors">
+                                    <X className="h-3.5 w-3.5" />
+                                </button>
+                            )}
+                        </Badge>
+                    ))}
+                    {items.length === 0 && <span className="text-sm text-muted-foreground p-2">No items set. Click 'Edit' to add.</span>}
+                </>
+            )}
         </div>
     );
     
@@ -273,40 +286,6 @@ export function MenuSchedule() {
                     </CardContent>
                 </Card>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <History className="h-6 w-6 text-primary"/>
-                        <div>
-                            <CardTitle>Menu History</CardTitle>
-                            <CardDescription>Previous 7 days from selected date.</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Day</TableHead>
-                                    <TableHead>Lunch</TableHead>
-                                    <TableHead>Dinner</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {menuHistory.map((item, index) => (
-                                    <TableRow key={index} className="text-muted-foreground">
-                                        <TableCell className="font-medium text-foreground">{format(item.date, 'EEE, MMM do')}</TableCell>
-                                        <TableCell>{item.lunch}</TableCell>
-                                        <TableCell>{item.dinner}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     );
 }

@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2 } from 'lucide-react';
-import { dailyMenus, billHistory, studentsData, holidays, leaveHistory as initialLeaveHistory, Leave } from "@/lib/data";
+import { billHistory, studentsData, holidays, leaveHistory as initialLeaveHistory, Leave } from "@/lib/data";
 import { useAuth } from '@/contexts/auth-context';
 import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay } from 'date-fns';
 import Link from 'next/link';
@@ -31,6 +31,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { getMenuForDate } from '@/lib/actions/menu';
+import type { DailyMenu } from '@/lib/actions/menu';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
@@ -39,6 +42,9 @@ export default function StudentDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [today, setToday] = useState<Date | undefined>();
+  
+  const [displayedMenu, setDisplayedMenu] = useState<DailyMenu>({ lunch: [], dinner: [] });
+  const [isMenuLoading, setIsMenuLoading] = useState(false);
 
   useEffect(() => {
     // Set a fixed date to ensure mock data consistency
@@ -53,6 +59,24 @@ export default function StudentDashboard() {
       setLeaves(studentLeaves);
     }
   }, [user]);
+
+  useEffect(() => {
+      if (!selectedDate) return;
+
+      const fetchMenu = async () => {
+          setIsMenuLoading(true);
+          const dateKey = formatDateKey(selectedDate);
+          const menu = await getMenuForDate(dateKey);
+          setDisplayedMenu({
+              lunch: menu?.lunch || ['Not set'],
+              dinner: menu?.dinner || ['Not set'],
+          });
+          setIsMenuLoading(false);
+      };
+
+      fetchMenu();
+  }, [selectedDate]);
+
 
   const currentMonthStats = useMemo(() => {
     if (!today || !user) {
@@ -110,17 +134,10 @@ export default function StudentDashboard() {
     };
   }, [today, user, leaves]);
 
-  const { displayedMenu, onLeave } = useMemo(() => {
-    if (!selectedDate) return { 
-        displayedMenu: { lunch: ['Loading...'], dinner: ['Loading...'] },
-        onLeave: null 
-    };
-    const dateKey = formatDateKey(selectedDate);
-    const menu = dailyMenus.get(dateKey) || { lunch: ['Not set'], dinner: ['Not set'] };
-    
+  const { onLeave } = useMemo(() => {
+    if (!selectedDate) return { onLeave: null };
     const todaysLeave = leaves.find(l => isSameDay(l.date, selectedDate));
-
-    return { displayedMenu: menu, onLeave: todaysLeave };
+    return { onLeave: todaysLeave };
   }, [selectedDate, leaves]);
   
   const menuTitle = useMemo(() => {
@@ -161,6 +178,13 @@ export default function StudentDashboard() {
 
   const handleDeleteLeave = (dateToDelete: Date) => {
     setLeaves(currentLeaves => currentLeaves.filter(l => l.date.getTime() !== dateToDelete.getTime()));
+  };
+
+  const renderMenuContent = (items: string[]) => {
+    if (isMenuLoading) {
+      return <Skeleton className="h-5 w-4/5" />;
+    }
+    return <p className="text-muted-foreground">{items.join(', ')}</p>;
   };
 
   return (
@@ -259,7 +283,7 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                       <h3 className="font-semibold text-lg">Lunch</h3>
-                      <p className="text-muted-foreground">{displayedMenu.lunch.join(', ')}</p>
+                      {renderMenuContent(displayedMenu.lunch)}
                   </div>
               </div>
               <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
@@ -269,7 +293,7 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                       <h3 className="font-semibold text-lg">Dinner</h3>
-                      <p className="text-muted-foreground">{displayedMenu.dinner.join(', ')}</p>
+                      {renderMenuContent(displayedMenu.dinner)}
                   </div>
               </div>
             </CardContent>

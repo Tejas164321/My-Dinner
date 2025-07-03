@@ -183,33 +183,6 @@ export const studentsData: Student[] = [
 
 export const commonMenuItems = ['Dal', 'Rice', 'Chapatti', 'Salad', 'Raita', 'Pulav'];
 
-export interface DailyMenu {
-  lunch: string[];
-  dinner: string[];
-}
-
-// Use a fixed date to ensure consistent mock data and prevent hydration errors.
-const today = startOfDay(new Date(2023, 9, 27));
-const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
-
-const pastMenus: [string, DailyMenu][] = [
-    [formatDateKey(subDays(today, 7)), { lunch: ['Dal Makhani', 'Jeera Rice', 'Naan', 'Salad'], dinner: ['Mix Veg', 'Roti', 'Dal Tadka'] }],
-    [formatDateKey(subDays(today, 6)), { lunch: ['Idli Sambar', 'Coconut Chutney'], dinner: ['Masala Dosa', 'Tomato Chutney'] }],
-    [formatDateKey(subDays(today, 5)), { lunch: ['Special Thali (Paneer, Dal, Roti, Rice)'], dinner: ['Pasta Arrabiata', 'Garlic Bread'] }],
-    [formatDateKey(subDays(today, 4)), { lunch: ['Puri Sabji', 'Suji Halwa'], dinner: ['Veg Manchurian', 'Fried Rice'] }],
-    [formatDateKey(subDays(today, 3)), { lunch: ['Veg Biryani', 'Boondi Raita'], dinner: ['Kadhi Pakora', 'Steamed Rice'] }],
-    [formatDateKey(subDays(today, 2)), { lunch: ['Aloo Gobi', 'Roti', 'Dal Fry'], dinner: ['Paneer Butter Masala', 'Jeera Rice', 'Chapatti'] }],
-    [formatDateKey(subDays(today, 1)), { lunch: ['Rajma', 'Steamed Rice', 'Salad'], dinner: ['Chole Bhature', 'Onion Salad'] }],
-    [formatDateKey(today), { lunch: ['Rajma Chawal', 'Boondi Raita', 'Green Salad'], dinner: ['Chole Bhature', 'Lassi', 'Pickle'] }],
-    [formatDateKey(addDays(today, 1)), { lunch: ['Aloo Gobi', 'Dal Tadka', 'Chapatti'], dinner: ['Paneer Butter Masala', 'Jeera Rice', 'Naan'] }],
-    [formatDateKey(addDays(today, 2)), { lunch: ["Dal Fry", "Rice", "Salad"], dinner: ["Paneer Do Pyaza", "Roti"] }],
-    [formatDateKey(addDays(today, 3)), { lunch: ["Kadhi Chawal", "Papad"], dinner: ["Mix Veg", "Paratha"] }],
-    [formatDateKey(addDays(today, 4)), { lunch: ["Masoor Dal", "Rice", "Bhindi Fry"], dinner: ["Aloo Matar", "Roti"] }],
-];
-
-// Key: 'YYYY-MM-DD'
-export const dailyMenus: Map<string, DailyMenu> = new Map(pastMenus);
-
 export interface Holiday {
     date: Date;
     name: string;
