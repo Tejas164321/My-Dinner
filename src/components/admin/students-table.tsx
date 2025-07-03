@@ -48,10 +48,15 @@ const planInfo = {
 
 const StudentRowCard = ({ student, month, initialDate, showActions }: { student: Student, month: string, initialDate: Date, showActions: boolean }) => {
     const monthDetails = student.monthlyDetails[month as keyof typeof student.monthlyDetails];
-    const billAmount = monthDetails.bill.total - monthDetails.bill.paid;
-    const billDisplay = billAmount > 0 ? `₹${billAmount.toLocaleString()}` : '₹0';
+    if (!monthDetails) {
+        return null;
+    }
+    const paidAmount = monthDetails.bill.payments.reduce((sum, p) => sum + p.amount, 0);
+    const dueAmount = monthDetails.bill.total - paidAmount;
+    const billDisplay = dueAmount > 0 ? `₹${dueAmount.toLocaleString()}` : '₹0';
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
+    const status = dueAmount <= 0 ? 'Paid' : 'Due';
     
     return (
         <Dialog>
@@ -80,7 +85,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                                 </div>
                                 <div className="text-center hidden sm:block">
                                     <p className="text-xs text-muted-foreground">Bill</p>
-                                    <Badge variant={monthDetails.status === 'Paid' ? 'secondary' : 'destructive'} className={cn(monthDetails.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{billDisplay}</Badge>
+                                    <Badge variant={status === 'Paid' ? 'secondary' : 'destructive'} className={cn(status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{billDisplay}</Badge>
                                 </div>
                                 <div className="text-center hidden sm:block">
                                     <p className="text-xs text-muted-foreground">Joined</p>
@@ -164,9 +169,14 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     const filteredActiveStudents = useMemo(() => {
         return activeStudents
             .filter(student => {
-                if (filterStatus === 'all') return true;
                 const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
-                return monthDetails?.status === filterStatus;
+                if (!monthDetails || filterStatus === 'all') return true;
+                
+                const paidAmount = monthDetails.bill.payments.reduce((sum, p) => sum + p.amount, 0);
+                const dueAmount = monthDetails.bill.total - paidAmount;
+                const status = dueAmount <= 0 ? 'Paid' : 'Due';
+
+                return status === filterStatus;
             })
              .filter(student => {
                 if (filterPlan === 'all') return true;

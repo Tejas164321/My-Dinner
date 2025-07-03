@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -14,10 +15,12 @@ interface BillingTableProps {
 
 const BillRow = ({ student, month }: { student: Student, month: string }) => {
     const monthDetails = student.monthlyDetails[month as keyof typeof student.monthlyDetails];
-    if (!monthDetails || monthDetails.status !== 'Due') {
-        return null;
-    }
-    const dueAmount = monthDetails.bill.total - monthDetails.bill.paid;
+    if (!monthDetails) return null;
+
+    const paidAmount = monthDetails.bill.payments.reduce((sum, p) => sum + p.amount, 0);
+    const dueAmount = monthDetails.bill.total - paidAmount;
+
+    if (dueAmount <= 0) return null;
 
     return (
         <div className="flex items-center gap-4 p-3 hover:bg-secondary/50 rounded-lg transition-colors">
@@ -37,7 +40,10 @@ export function BillingTable({ filterMonth }: BillingTableProps) {
     const dueStudents = useMemo(() => {
         return studentsData.filter(student => {
             const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
-            return monthDetails?.status === 'Due';
+            if (!monthDetails) return false;
+            const paidAmount = monthDetails.bill.payments.reduce((sum, p) => sum + p.amount, 0);
+            const dueAmount = monthDetails.bill.total - paidAmount;
+            return dueAmount > 0;
         });
     }, [filterMonth]);
 

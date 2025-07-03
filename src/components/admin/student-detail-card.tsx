@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Student, Holiday } from "@/lib/data";
 import { holidays } from "@/lib/data";
-import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
@@ -36,8 +36,14 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     }, []);
 
     const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
-    const currentData = student.monthlyDetails[monthName] || { attendance: '0%', bill: { total: 0, paid: 0 }, status: 'Paid' };
-    const remainingBill = currentData.bill.total - currentData.bill.paid;
+    const currentData = student.monthlyDetails[monthName] || { 
+        attendance: '0%', 
+        bill: { total: 0, payments: [] }, 
+        status: 'Paid' 
+    };
+    
+    const paidAmount = currentData.bill.payments.reduce((sum, p) => sum + p.amount, 0);
+    const remainingBill = currentData.bill.total - paidAmount;
     
     const { 
         presentDaysCount, absentDaysCount, holidaysCount, totalMealsCount,
@@ -153,6 +159,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
 
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
+    const status = remainingBill <= 0 ? 'Paid' : 'Due';
 
     return (
         <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full relative">
@@ -171,65 +178,67 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                                 {currentPlan.text}
                             </Badge>
                         </div>
-                        <Badge variant={currentData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", currentData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{currentData.status}</Badge>
+                        <Badge variant={status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{status}</Badge>
                     </CardContent>
                 </Card>
                 
-                <Card className="flex-grow flex flex-col">
+                <Card>
                     <CardHeader className="p-4 pb-2">
                         <CardTitle className="text-lg">Attendance Summary</CardTitle>
                         <CardDescription>for {format(month, 'MMMM yyyy')}</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex-grow p-4 pt-2">
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center">
-                                <p className="text-muted-foreground">Monthly Attendance</p>
-                                <p className="font-bold text-2xl text-primary">{currentData.attendance}</p>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <p className="text-muted-foreground">Total Meals Taken</p>
-                                <p className="font-bold text-2xl text-primary">{totalMealsCount}</p>
-                            </div>
-                            <Separator />
-                            <div className="flex justify-around text-center">
-                                <div>
-                                    <p className="font-bold text-lg text-green-400">{presentDaysCount}</p>
-                                    <p className="text-xs text-muted-foreground">Present</p>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-lg text-destructive">{absentDaysCount}</p>
-                                    <p className="text-xs text-muted-foreground">Absent</p>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-lg text-blue-400">{holidaysCount}</p>
-                                    <p className="text-xs text-muted-foreground">Holidays</p>
-                                </div>
-                            </div>
-                            {student.messPlan === 'full_day' && (
-                            <p className="text-center text-xs text-muted-foreground">
-                                ({fullDayDays.length} full days & {lunchOnlyDays.length + dinnerOnlyDays.length} half days)
-                            </p>
-                            )}
+                    <CardContent className="flex-grow p-4 pt-2 space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground flex items-center gap-2"><Percent className="h-4 w-4" /> Monthly Attendance</span>
+                            <span className="font-bold text-primary">{currentData.attendance}</span>
+                        </div>
+                         <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground flex items-center gap-2"><Utensils className="h-4 w-4" /> Total Meals Taken</span>
+                            <span className="font-bold">{totalMealsCount}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground flex items-center gap-2"><UserCheck className="h-4 w-4 text-green-400" /> Present Days</span>
+                            <span className="font-bold">{presentDaysCount}</span>
+                        </div>
+                         <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground flex items-center gap-2"><UserX className="h-4 w-4 text-destructive" /> Absent Days</span>
+                            <span className="font-bold">{absentDaysCount}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground flex items-center gap-2"><CalendarDays className="h-4 w-4 text-blue-400" /> Mess Holidays</span>
+                            <span className="font-bold">{holidaysCount}</span>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="flex-grow">
                     <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-lg">Billing</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2"><Wallet className="h-5 w-5" />Billing</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2 text-sm p-4 pt-2">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Total:</span>
+                    <CardContent className="space-y-3 text-sm p-4 pt-2">
+                        <div className="flex justify-between items-center font-semibold text-base">
+                            <span>Total Bill:</span>
                             <span>₹{currentData.bill.total.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Paid:</span>
-                            <span className="text-green-400">₹{currentData.bill.paid.toLocaleString()}</span>
-                        </div>
+                        
+                        {currentData.bill.payments.length > 0 && (
+                            <div className="pt-1">
+                                <p className="font-medium text-foreground/80 mb-1.5">Payments Received:</p>
+                                <div className="space-y-1 pl-2 border-l-2 border-dashed">
+                                {currentData.bill.payments.map((payment, index) => (
+                                    <div key={index} className="flex justify-between items-center text-green-400">
+                                        <p className="text-muted-foreground text-xs">
+                                            ✔ Payment on {format(new Date(payment.date), 'MMM do, yyyy')}
+                                        </p>
+                                        <p className="font-mono text-sm">- ₹{payment.amount.toLocaleString()}</p>
+                                    </div>
+                                ))}
+                                </div>
+                            </div>
+                        )}
                         <Separator/>
-                        <div className="flex justify-between font-semibold">
-                            <span className="text-foreground">Remaining:</span>
+                        <div className="flex justify-between items-center font-semibold text-base">
+                            <span className="text-foreground">Remaining Due:</span>
                             <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
                         </div>
                     </CardContent>

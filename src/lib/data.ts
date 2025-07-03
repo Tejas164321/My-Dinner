@@ -7,7 +7,6 @@ export const studentNavItems = [
     { href: '/student/attendance', label: 'My Attendance', icon: 'UserCheck' },
     { href: '/student/bills', label: 'My Bills', icon: 'CircleDollarSign' },
     { href: '/student/notifications', label: 'Notifications', icon: 'Bell' },
-    { href: '/student/feedback', label: 'Feedback', icon: 'MessageSquare' },
     { href: '/student/settings', label: 'Settings', icon: 'Settings' },
 ];
 
@@ -108,7 +107,7 @@ export interface Student {
     monthlyDetails: {
         [key: string]: {
             attendance: string;
-            bill: { total: number; paid: number };
+            bill: { total: number; payments: { amount: number; date: string }[] };
             status: 'Paid' | 'Due';
         }
     }
@@ -120,10 +119,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'full_day',
         monthlyDetails: {
-            'october': { attendance: '92%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'september': { attendance: '95%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'august': { attendance: '91%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
-            'july': { attendance: '90%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+            'october': { attendance: '92%', bill: { total: 3250, payments: [{ amount: 3250, date: '2023-10-05' }] }, status: 'Paid' },
+            'september': { attendance: '95%', bill: { total: 3250, payments: [{ amount: 3250, date: '2023-09-05' }] }, status: 'Paid' },
+            'august': { attendance: '91%', bill: { total: 3150, payments: [{ amount: 3150, date: '2023-08-05' }] }, status: 'Paid' },
+            'july': { attendance: '90%', bill: { total: 3200, payments: [{ amount: 3200, date: '2023-07-05' }] }, status: 'Paid' },
         }
     },
     { 
@@ -131,10 +130,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'lunch_only',
         monthlyDetails: {
-            'october': { attendance: '88%', bill: { total: 1625, paid: 0 }, status: 'Due' },
-            'september': { attendance: '90%', bill: { total: 1625, paid: 1625 }, status: 'Paid' },
-            'august': { attendance: '85%', bill: { total: 1550, paid: 1000 }, status: 'Due' },
-            'july': { attendance: '89%', bill: { total: 1600, paid: 1600 }, status: 'Paid' },
+            'october': { attendance: '88%', bill: { total: 1625, payments: [] }, status: 'Due' },
+            'september': { attendance: '90%', bill: { total: 1625, payments: [{ amount: 1625, date: '2023-09-08' }] }, status: 'Paid' },
+            'august': { attendance: '85%', bill: { total: 1550, payments: [{ amount: 1000, date: '2023-08-10' }] }, status: 'Due' },
+            'july': { attendance: '89%', bill: { total: 1600, payments: [{ amount: 1600, date: '2023-07-06' }] }, status: 'Paid' },
         }
     },
     { 
@@ -142,10 +141,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'full_day',
         monthlyDetails: {
-            'october': { attendance: '98%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'september': { attendance: '96%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'august': { attendance: '99%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
-            'july': { attendance: '97%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+            'october': { attendance: '98%', bill: { total: 3250, payments: [{ amount: 3250, date: '2023-10-03' }] }, status: 'Paid' },
+            'september': { attendance: '96%', bill: { total: 3250, payments: [{ amount: 3250, date: '2023-09-04' }] }, status: 'Paid' },
+            'august': { attendance: '99%', bill: { total: 3150, payments: [{ amount: 3150, date: '2023-08-02' }] }, status: 'Paid' },
+            'july': { attendance: '97%', bill: { total: 3200, payments: [{ amount: 3200, date: '2023-07-02' }] }, status: 'Paid' },
         }
     },
     { 
@@ -153,10 +152,10 @@ export const studentsData: Student[] = [
         status: 'suspended',
         messPlan: 'full_day',
         monthlyDetails: {
-            'october': { attendance: '75%', bill: { total: 3250, paid: 0 }, status: 'Due' },
-            'september': { attendance: '80%', bill: { total: 3250, paid: 0 }, status: 'Due' },
-            'august': { attendance: '78%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
-            'july': { attendance: '82%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+            'october': { attendance: '75%', bill: { total: 3250, payments: [] }, status: 'Due' },
+            'september': { attendance: '80%', bill: { total: 3250, payments: [] }, status: 'Due' },
+            'august': { attendance: '78%', bill: { total: 3150, payments: [{ amount: 3150, date: '2023-08-20' }] }, status: 'Paid' },
+            'july': { attendance: '82%', bill: { total: 3200, payments: [{ amount: 3200, date: '2023-07-21' }] }, status: 'Paid' },
         }
     },
     { 
@@ -164,10 +163,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'full_day',
         monthlyDetails: {
-            'october': { attendance: '92%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'september': { attendance: '94%', bill: { total: 3250, paid: 3250 }, status: 'Paid' },
-            'august': { attendance: '93%', bill: { total: 3150, paid: 3150 }, status: 'Paid' },
-            'july': { attendance: '95%', bill: { total: 3200, paid: 3200 }, status: 'Paid' },
+            'october': { attendance: '92%', bill: { total: 3250, payments: [{ amount: 3250, date: '2023-10-06' }] }, status: 'Paid' },
+            'september': { attendance: '94%', bill: { total: 3250, payments: [{ amount: 3250, date: '2023-09-06' }] }, status: 'Paid' },
+            'august': { attendance: '93%', bill: { total: 3150, payments: [{ amount: 3150, date: '2023-08-07' }] }, status: 'Paid' },
+            'july': { attendance: '95%', bill: { total: 3200, payments: [{ amount: 3200, date: '2023-07-07' }] }, status: 'Paid' },
         }
     },
     { 
@@ -175,10 +174,10 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'dinner_only',
         monthlyDetails: {
-            'october': { attendance: '99%', bill: { total: 1625, paid: 0 }, status: 'Due' },
-            'september': { attendance: '100%', bill: { total: 1625, paid: 1625 }, status: 'Paid' },
-            'august': { attendance: '98%', bill: { total: 1550, paid: 1550 }, status: 'Paid' },
-            'july': { attendance: '99%', bill: { total: 1600, paid: 0 }, status: 'Due' },
+            'october': { attendance: '99%', bill: { total: 1625, payments: [] }, status: 'Due' },
+            'september': { attendance: '100%', bill: { total: 1625, payments: [{ amount: 1625, date: '2023-09-01' }] }, status: 'Paid' },
+            'august': { attendance: '98%', bill: { total: 1550, payments: [{ amount: 1550, date: '2023-08-01' }] }, status: 'Paid' },
+            'july': { attendance: '99%', bill: { total: 1600, payments: [] }, status: 'Due' },
         }
     },
 ];

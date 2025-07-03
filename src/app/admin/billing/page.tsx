@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -25,16 +26,25 @@ export default function AdminBillingPage() {
   const [month, setMonth] = useState('october');
 
   const stats = useMemo(() => {
-    const currentMonthData = studentsData.map(s => s.monthlyDetails[month as keyof typeof s.monthlyDetails]).filter(Boolean);
+    const currentMonthData = studentsData.map(s => {
+        const details = s.monthlyDetails[month as keyof typeof s.monthlyDetails];
+        if (!details) return null;
+
+        const paid = details.bill.payments.reduce((sum, p) => sum + p.amount, 0);
+        const due = details.bill.total - paid;
+        const status = due <= 0 ? 'Paid' : 'Due';
+        
+        return {
+            ...details,
+            paid,
+            due,
+            status
+        };
+    }).filter(Boolean);
     
-    const totalRevenue = currentMonthData.reduce((sum, data) => sum + data.bill.paid, 0);
-    const pendingDues = currentMonthData.reduce((sum, data) => {
-        if (data.status === 'Due') {
-            return sum + (data.bill.total - data.bill.paid);
-        }
-        return sum;
-    }, 0);
-    const defaulters = currentMonthData.filter(data => data.status === 'Due').length;
+    const totalRevenue = currentMonthData.reduce((sum, data) => sum + data!.paid, 0);
+    const pendingDues = currentMonthData.reduce((sum, data) => sum + data!.due, 0);
+    const defaulters = currentMonthData.filter(data => data!.status === 'Due').length;
 
     return {
         totalRevenue,
