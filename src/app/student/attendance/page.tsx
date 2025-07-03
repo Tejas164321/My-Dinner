@@ -5,11 +5,11 @@ import { useState, useMemo, useEffect } from "react";
 import type { DayContentProps } from "react-day-picker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { studentsData, holidays, leaveHistory } from "@/lib/data";
+import { studentsData, holidays, leaveHistory, Holiday, Leave } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { format, isSameMonth, isSameDay } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
-import { CalendarCheck, Utensils, Percent, UserX, CalendarDays } from "lucide-react";
+import { CalendarCheck, Utensils, Percent, UserX, CalendarDays, Sun, Moon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function StudentAttendancePage() {
@@ -30,74 +30,79 @@ export default function StudentAttendancePage() {
         { value: '2023-07', label: 'July 2023' },
     ];
 
-    const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
-    const currentData = student?.monthlyDetails[monthName] || { attendance: '0%', bill: { total: 0, paid: 0 }, status: 'Paid' };
-    
-     const { 
-        presentDaysCount, absentDaysCount, holidaysCount, totalMealsCount,
-    } = useMemo(() => {
-        if (!today || !student) {
+    const monthlyStats = useMemo(() => {
+        if (!student || !today) {
             return {
-                presentDaysCount: 0, absentDaysCount: 0, holidaysCount: 0, totalMealsCount: 0,
+                attendancePercent: '0%',
+                totalMeals: 0,
+                presentDays: 0,
+                absentDays: 0,
             };
         }
 
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
-        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+        const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
         
-        const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
-        
-        const pastOrTodayDays = allDays.filter(d => d <= today);
+        const studentLeaves = leaveHistory.filter(l => l.studentId === student.id && isSameMonth(l.date, month));
+        const monthHolidays = holidays.filter(h => isSameMonth(h.date, month));
 
-        const holidaysThisMonth = allDays.filter(day => 
-            holidays.some(h => format(h.date, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
-        );
+        let presentDaysCount = 0;
+        let absentDaysCount = 0;
+        let totalMealsCount = 0;
         
-        const workingDays = pastOrTodayDays.filter(day => !holidaysThisMonth.some(h => h.getTime() === day.getTime()));
-        
-        const totalConsideredDays = workingDays.length;
-        const attendancePercent = parseFloat(currentData.attendance) / 100;
-        
-        const totalPresentDays = totalConsideredDays > 0 ? Math.round(totalConsideredDays * attendancePercent) : 0;
-        const totalAbsentDays = totalConsideredDays - totalPresentDays;
-        
-        let tMealsCount = 0;
-        if (student.messPlan === 'full_day') {
-            const fDaysCount = Math.round(totalPresentDays * 0.9);
-            const hdd = totalPresentDays - fDaysCount;
-            tMealsCount = (fDaysCount * 2) + hdd;
-        } else {
-            tMealsCount = totalPresentDays;
-        }
+        const consideredDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1)).filter(d => d <= today);
 
+        consideredDays.forEach(day => {
+            const holiday = monthHolidays.find(h => isSameDay(h.date, day));
+            if (holiday) return; // Skip holidays for attendance % calculation
+
+            const leave = studentLeaves.find(l => isSameDay(l.date, day));
+
+            if (leave) {
+                absentDaysCount++;
+            } else {
+                presentDaysCount++;
+                if (student.messPlan === 'full_day') {
+                    totalMealsCount += 2;
+                } else {
+                    totalMealsCount += 1;
+                }
+            }
+        });
+        
+        const totalCountedDays = presentDaysCount + absentDaysCount;
+        const attendance = totalCountedDays > 0 ? ((presentDaysCount / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
+        
         return {
-            presentDaysCount: totalPresentDays, 
-            absentDaysCount: totalAbsentDays,
-            holidaysCount: holidaysThisMonth.length,
-            totalMealsCount: tMealsCount,
+            attendancePercent: attendance,
+            totalMeals: totalMealsCount,
+            presentDays: presentDaysCount,
+            absentDays: absentDaysCount,
         };
-    }, [month, student, currentData.attendance, today]);
+    }, [month, student, today]);
 
     const {
         holidayDays,
         fullLeaveDays,
-        halfPresentDays,
+        halfLeaveDays,
         fullPresentDays,
-        leaveTypeMap,
-        holidayTypeMap,
+        halfPresentDays,
+        dayTypeMap,
     } = useMemo(() => {
-        if (!student) return { holidayDays: [], fullLeaveDays: [], halfPresentDays: [], fullPresentDays: [], leaveTypeMap: new Map(), holidayTypeMap: new Map() };
+        if (!student) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], dayTypeMap: new Map() };
         
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
-        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+        const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
         const allDaysInMonth = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
         
         const hDays: Date[] = [];
         const flDays: Date[] = [];
-        const hpDays: Date[] = [];
+        const hlDays: Date[] = [];
         const fpDays: Date[] = [];
+        const hpDays: Date[] = [];
+        const dtMap = new Map();
 
         const studentLeaves = leaveHistory.filter(l => l.studentId === student.id);
         const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
@@ -110,28 +115,31 @@ export default function StudentAttendancePage() {
 
             if (holidayType) {
                 hDays.push(day);
+                dtMap.set(dateKey, { type: 'holiday', holidayType });
             } else if (leaveType) {
                 if (leaveType === 'full_day') {
                     flDays.push(day);
                 } else {
-                    hpDays.push(day);
+                    hlDays.push(day);
                 }
+                dtMap.set(dateKey, { type: 'leave', leaveType });
             } else {
                  if (student.messPlan === 'full_day') {
                     fpDays.push(day);
                 } else {
                     hpDays.push(day);
                 }
+                dtMap.set(dateKey, { type: 'present' });
             }
         });
 
         return { 
             holidayDays: hDays,
             fullLeaveDays: flDays,
-            halfPresentDays: hpDays,
+            halfLeaveDays: hlDays,
             fullPresentDays: fpDays,
-            leaveTypeMap: ltm,
-            holidayTypeMap: htm,
+            halfPresentDays: hpDays,
+            dayTypeMap: dtMap,
         };
     }, [month, student]);
 
@@ -141,8 +149,10 @@ export default function StudentAttendancePage() {
         }
 
         const dateKey = format(date, 'yyyy-MM-dd');
-        const leaveType = leaveTypeMap.get(dateKey);
-        const holidayType = holidayTypeMap.get(dateKey);
+        const dayInfo = dayTypeMap.get(dateKey);
+        
+        const holidayType = dayInfo?.type === 'holiday' ? dayInfo.holidayType : null;
+        const leaveType = dayInfo?.type === 'leave' ? dayInfo.leaveType : null;
         
         const isLunchAttended = !(
             (holidayType === 'full_day' || holidayType === 'lunch_only') ||
@@ -200,7 +210,7 @@ export default function StudentAttendancePage() {
                         <Percent className="h-5 w-5 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{currentData.attendance}</div>
+                        <div className="text-2xl font-bold">{monthlyStats.attendancePercent}</div>
                         <p className="text-xs text-muted-foreground">Based on days attended this month</p>
                     </CardContent>
                 </Card>
@@ -210,7 +220,7 @@ export default function StudentAttendancePage() {
                         <Utensils className="h-5 w-5 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totalMealsCount}</div>
+                        <div className="text-2xl font-bold">{monthlyStats.totalMeals}</div>
                         <p className="text-xs text-muted-foreground">Meals attended this month</p>
                     </CardContent>
                 </Card>
@@ -220,7 +230,7 @@ export default function StudentAttendancePage() {
                         <CalendarCheck className="h-5 w-5 text-green-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{presentDaysCount} Days</div>
+                        <div className="text-2xl font-bold">{monthlyStats.presentDays} Days</div>
                         <p className="text-xs text-muted-foreground">Days you were marked present</p>
                     </CardContent>
                 </Card>
@@ -230,7 +240,7 @@ export default function StudentAttendancePage() {
                         <UserX className="h-5 w-5 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{absentDaysCount}</div>
+                        <div className="text-2xl font-bold">{monthlyStats.absentDays}</div>
                         <p className="text-xs text-muted-foreground">Days you were on leave</p>
                     </CardContent>
                 </Card>
@@ -247,15 +257,17 @@ export default function StudentAttendancePage() {
                         modifiers={{
                             holiday: holidayDays,
                             full_leave: fullLeaveDays,
-                            half_present: halfPresentDays,
+                            half_leave: halfLeaveDays,
                             full_present: fullPresentDays,
+                            half_present: halfPresentDays,
                         }}
                         components={{ DayContent: CustomDayContent }}
                         modifiersClassNames={{
                             holiday: 'bg-primary/40 text-primary-foreground',
                             full_leave: 'bg-destructive text-destructive-foreground',
-                            half_present: 'bg-chart-3 text-primary-foreground',
+                            half_leave: 'bg-chart-3 text-primary-foreground',
                             full_present: 'bg-chart-2 text-primary-foreground',
+                            half_present: 'bg-chart-3 text-primary-foreground',
                         }}
                         classNames={{
                             months: "w-full",
@@ -271,7 +283,7 @@ export default function StudentAttendancePage() {
                     />
                     <div className="flex flex-wrap lg:flex-col gap-x-6 gap-y-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-chart-2" />Full Day Present</div>
-                        <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-chart-3" />Half Day Present</div>
+                        <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-chart-3" />Half Day Present / Leave</div>
                         <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-destructive" />Full Day Leave</div>
                         <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-primary/40" />Holiday</div>
                         <div className="flex items-center gap-2"><Badge variant="outline" className="border-accent text-accent">Today</Badge><span>Current Date</span></div>

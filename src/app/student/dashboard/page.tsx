@@ -36,50 +36,69 @@ const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export default function StudentDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [leaves, setLeaves] = useState<Leave[]>(initialLeaveHistory);
-
-  useEffect(() => {
-    // Set a fixed date to ensure mock data consistency
-    setSelectedDate(startOfDay(new Date(2023, 9, 27)));
-  }, []);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [today, setToday] = useState<Date | undefined>();
 
   const student = mainStudentUser;
 
-  const currentMonthStats = useMemo(() => {
-    if (!selectedDate || !student) {
-        return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0, messPlan: student.messPlan };
-    }
-    
-    const monthName = format(selectedDate, 'MMMM').toLowerCase() as keyof typeof studentsData[0]['monthlyDetails'];
-    const studentData = studentsData.find(s => s.id === student.id);
-    const monthData = studentData?.monthlyDetails[monthName];
+  useEffect(() => {
+    // Set a fixed date to ensure mock data consistency
+    const now = startOfDay(new Date(2023, 9, 27));
+    setSelectedDate(now);
+    setToday(now);
+    // Filter leaves for the current student and sort them
+    const studentLeaves = initialLeaveHistory
+      .filter(l => l.studentId === student.id)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    setLeaves(studentLeaves);
+  }, [student.id]);
 
-    if (!monthData) {
-        return { attendance: 'N/A', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0, messPlan: student.messPlan };
+  const currentMonthStats = useMemo(() => {
+    if (!today || !student) {
+      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0, messPlan: student.messPlan };
     }
     
-    const today = startOfDay(selectedDate);
-    const daysPassed = today.getDate();
-    const pastHolidaysThisMonth = holidays.filter(h => isSameMonth(h.date, today) && h.date <= today).length;
-    const billableDaysPassed = daysPassed - pastHolidaysThisMonth;
-    const attendancePercent = parseFloat(monthData.attendance) / 100;
-    const presentDays = Math.round(billableDaysPassed * attendancePercent);
-    const absentDays = billableDaysPassed - presentDays;
+    const year = today.getFullYear();
+    const monthIndex = today.getMonth();
     
+    const studentLeaves = leaves.filter(l => isSameMonth(l.date, today));
+    const monthHolidays = holidays.filter(h => isSameMonth(h.date, today));
+
+    let presentDays = 0;
+    let absentDays = 0;
+    let totalMeals = 0;
     let fullDays = 0;
     let halfDays = 0;
-    let totalMeals = 0;
 
-    if (student.messPlan === 'full_day') {
-        fullDays = Math.round(presentDays * 0.9); // mock logic
-        halfDays = presentDays - fullDays;
-        totalMeals = (fullDays * 2) + halfDays;
-    } else {
-        totalMeals = presentDays;
+    const daysSoFar = Array.from({ length: today.getDate() }, (_, i) => new Date(year, monthIndex, i + 1));
+    
+    daysSoFar.forEach(day => {
+        const isHoliday = monthHolidays.some(h => isSameDay(h.date, day));
+        if (isHoliday) return; // Don't count holidays in present/absent day stats
+
+        const leave = studentLeaves.find(l => isSameDay(l.date, day));
+        if (leave) {
+            absentDays++;
+        } else {
+            presentDays++;
+        }
+    });
+
+    const studentData = studentsData.find(s => s.id === student.id);
+    const monthName = format(today, 'MMMM').toLowerCase() as keyof typeof studentData.monthlyDetails;
+    const billDetails = studentData?.monthlyDetails[monthName]?.bill?.details;
+
+    if(billDetails) {
+        totalMeals = billDetails.totalMeals;
+        fullDays = billDetails.fullDays;
+        halfDays = billDetails.halfDays;
     }
+    
+    const totalCountedDays = presentDays + absentDays;
+    const attendance = totalCountedDays > 0 ? ((presentDays / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
 
     return {
-        attendance: monthData.attendance,
+        attendance,
         totalMeals,
         presentDays,
         absentDays,
@@ -87,7 +106,7 @@ export default function StudentDashboard() {
         halfDays,
         messPlan: student.messPlan
     };
-  }, [selectedDate, student]);
+  }, [today, student, leaves]);
 
   const { displayedMenu, onLeave } = useMemo(() => {
     if (!selectedDate) return { 
@@ -97,10 +116,10 @@ export default function StudentDashboard() {
     const dateKey = formatDateKey(selectedDate);
     const menu = dailyMenus.get(dateKey) || { lunch: ['Not set'], dinner: ['Not set'] };
     
-    const todaysLeave = leaves.find(l => l.studentId === student.id && isSameDay(l.date, selectedDate));
+    const todaysLeave = leaves.find(l => isSameDay(l.date, selectedDate));
 
     return { displayedMenu: menu, onLeave: todaysLeave };
-  }, [selectedDate, student.id, leaves]);
+  }, [selectedDate, leaves]);
   
   const menuTitle = useMemo(() => {
       if (!selectedDate) return "Today's Menu";
@@ -124,22 +143,22 @@ export default function StudentDashboard() {
   const isDinnerOff = onLeave?.type === 'full_day' || onLeave?.type === 'dinner_only';
   
   const upcomingHolidays = useMemo(() => {
-    const today = startOfDay(new Date(2023, 9, 27)); // Use the fixed date for consistency
+    if (!today) return [];
     return holidays
       .filter(h => h.date >= today)
       .sort((a, b) => a.date.getTime() - b.date.getTime())
       .slice(0, 4);
-  }, []);
+  }, [today]);
 
   const upcomingLeaves = useMemo(() => {
-    const today = startOfDay(new Date(2023, 9, 27)); // Use the fixed date for consistency
+    if (!today) return [];
     return leaves
-      .filter(l => l.studentId === student.id && l.date >= today)
+      .filter(l => l.date >= today)
       .sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [student.id, leaves]);
+  }, [leaves, today]);
 
   const handleDeleteLeave = (dateToDelete: Date) => {
-    setLeaves(leaves.filter(h => h.date.getTime() !== dateToDelete.getTime()));
+    setLeaves(currentLeaves => currentLeaves.filter(l => l.date.getTime() !== dateToDelete.getTime()));
   };
 
   return (
