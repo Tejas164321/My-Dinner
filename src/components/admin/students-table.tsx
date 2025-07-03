@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -67,7 +66,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                             <Avatar className="w-12 h-12 border-2 border-muted-foreground/20 group-hover:border-primary/40 transition-colors">
                                 <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-6 gap-2 items-center">
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-5 gap-2 items-center">
                                 <div className="sm:col-span-2">
                                     <h3 className="font-semibold text-base">{student.name}</h3>
                                     <p className="text-sm text-muted-foreground">{student.studentId}</p>
@@ -86,10 +85,6 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                                 <div className="text-center hidden sm:block">
                                     <p className="text-xs text-muted-foreground">Bill</p>
                                     <Badge variant={status === 'Paid' ? 'secondary' : 'destructive'} className={cn(status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{billDisplay}</Badge>
-                                </div>
-                                <div className="text-center hidden sm:block">
-                                    <p className="text-xs text-muted-foreground">Joined</p>
-                                    <p className="font-semibold">{student.joinDate}</p>
                                 </div>
                             </div>
                         </div>
