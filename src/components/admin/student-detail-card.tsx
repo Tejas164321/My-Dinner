@@ -11,7 +11,7 @@ import type { Student, Holiday } from "@/lib/data";
 import { holidays, leaveHistory } from "@/lib/data";
 import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from 'date-fns';
+import { format, isSameMonth } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
 
 const planInfo = {
@@ -32,7 +32,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
     useEffect(() => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-        setToday(now);
+        setToday(new Date(2023, 9, 27)); // Fixed date for consistency
     }, []);
 
     const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
@@ -49,10 +49,8 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
 
-        // 1. Present Meals from bill details
         const pMeals = currentData.bill.details?.totalMeals || 0;
 
-        // 2. Absent Meals from personal leaves
         const aMeals = leaveHistory
             .filter(leave => 
                 leave.studentId === student.id &&
@@ -61,13 +59,16 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             )
             .reduce((sum, leave) => sum + (leave.type === 'full_day' ? 2 : 1), 0);
 
-        // 3. Holiday Meals
         const hMeals = holidays
             .filter(holiday => 
                 new Date(holiday.date).getFullYear() === year &&
                 new Date(holiday.date).getMonth() === monthIndex
             )
-            .reduce((sum, holiday) => sum + (holiday.type === 'full_day' ? 2 : 1), 0);
+            .reduce((sum, holiday) => {
+                const leaveOnSameDay = leaveHistory.some(l => l.studentId === student.id && format(l.date, 'yyyy-MM-dd') === format(holiday.date, 'yyyy-MM-dd'));
+                if (leaveOnSameDay) return sum; // Avoid double counting if student took leave on holiday
+                return sum + (holiday.type === 'full_day' ? 2 : 1);
+            }, 0);
         
         return {
             presentMeals: pMeals,
@@ -76,110 +77,73 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         };
     }, [month, student.id, currentData.bill.details]);
     
-    const { 
-        fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays
-    } = useMemo(() => {
-        if (!today) {
-            return {
-                fullDayDays: [], lunchOnlyDays: [], dinnerOnlyDays: [], absentDays: [], presentDays: []
-            };
-        }
+    const studentLeaves = useMemo(() => {
+        return leaveHistory.filter(l => l.studentId === student.id);
+    }, [student.id]);
 
-        const year = month.getFullYear();
-        const monthIndex = month.getMonth();
-        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const { calendarModifiers, leaveTypeMap, holidayTypeMap } = useMemo(() => {
+        const studentLeavesThisMonth = studentLeaves.filter(l => isSameMonth(l.date, month));
+        const holidaysThisMonth = holidays.filter(h => isSameMonth(h.date, month));
         
-        const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
-        
-        const pastOrTodayDays = allDays.filter(d => d <= new Date(2023, 9, 27));
+        const leaveDates = studentLeavesThisMonth.map(l => l.date);
+        const leaveDatesSet = new Set(leaveDates.map(d => d.getTime()));
 
-        const holidaysThisMonth = allDays.filter(day => 
-            holidays.some(h => format(h.date, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
-        );
-        
-        const workingDays = pastOrTodayDays.filter(day => !holidaysThisMonth.some(h => h.getTime() === day.getTime()));
+        const fullDayLeaves = studentLeavesThisMonth.filter(l => l.type === 'full_day').map(l => l.date);
+        const halfDayLeaves = studentLeavesThisMonth.filter(l => l.type !== 'full_day').map(l => l.date);
 
-        const totalConsideredDays = workingDays.length;
-        const attendancePercent = parseFloat(currentData.attendance) / 100;
+        const fullDayHolidays = holidaysThisMonth.filter(h => h.type === 'full_day' && !leaveDatesSet.has(h.date.getTime())).map(h => h.date);
+        const halfDayHolidays = holidaysThisMonth.filter(h => h.type !== 'full_day' && !leaveDatesSet.has(h.date.getTime())).map(h => h.date);
         
-        const totalPresentDays = totalConsideredDays > 0 ? Math.round(totalConsideredDays * attendancePercent) : 0;
-        
-        const seededRandom = (seed: number) => {
-            let x = Math.sin(seed + student.id.charCodeAt(0)) * 10000;
-            return x - Math.floor(x);
+        const modifiers = {
+            leave_full: fullDayLeaves,
+            leave_half: halfDayLeaves,
+            holiday_full: fullDayHolidays,
+            holiday_half: halfDayHolidays,
         };
-        const shuffledWorkingDays = [...workingDays].sort((a, b) => seededRandom(a.getDate()) - seededRandom(b.getDate()));
-        
-        const presentDaysArr = shuffledWorkingDays.slice(0, totalPresentDays);
-        const absentDaysArr = shuffledWorkingDays.slice(totalPresentDays);
-        
-        let fdd: Date[] = [];
-        let lod: Date[] = [];
-        let dod: Date[] = [];
 
-        if (student.messPlan === 'full_day') {
-            const fDaysCount = Math.round(presentDaysArr.length * 0.9);
-            fdd = presentDaysArr.slice(0, fDaysCount);
-            const hdd = presentDaysArr.slice(fDaysCount);
-            
-            lod = hdd.filter((_, i) => i % 2 === 0);
-            dod = hdd.filter((_, i) => i % 2 !== 0);
-        }
+        const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
+        const htm = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
 
-        return {
-            fullDayDays: fdd, 
-            lunchOnlyDays: lod,
-            dinnerOnlyDays: dod, 
-            absentDays: absentDaysArr,
-            presentDays: student.messPlan !== 'full_day' ? presentDaysArr : []
-        };
-    }, [month, student.id, student.messPlan, currentData.attendance, today]);
+        return { calendarModifiers: modifiers, leaveTypeMap: ltm, holidayTypeMap: htm };
+    }, [month, studentLeaves]);
 
-    const CustomDayContentForPlan = ({ date, activeModifiers }: DayContentProps) => {
-        if (student.messPlan !== 'full_day') {
+    const CustomDayContent = ({ date }: DayContentProps) => {
+        if (!today || date > today) {
             return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
         }
 
-        let dots = null;
+        const dateKey = format(date, 'yyyy-MM-dd');
+        const leaveType = leaveTypeMap.get(dateKey);
+        const holidayType = holidayTypeMap.get(dateKey);
+        const studentPlan = student.messPlan;
 
-        if (activeModifiers.fullDay) {
-            dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white" /></>;
-        } else if (activeModifiers.lunchOnly) {
-            dots = <><div className="h-1 w-1 rounded-full bg-white" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
-        } else if (activeModifiers.dinnerOnly) {
-            dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white" /></>;
-        } else if (activeModifiers.absent) {
-            dots = <><div className="h-1 w-1 rounded-full bg-white/30" /><div className="h-1 w-1 rounded-full bg-white/30" /></>;
+        const isLunchOff = (holidayType === 'full_day' || holidayType === 'lunch_only') ||
+                           (leaveType === 'full_day' || leaveType === 'lunch_only');
+        const isDinnerOff = (holidayType === 'full_day' || holidayType === 'dinner_only') ||
+                            (leaveType === 'full_day' || leaveType === 'dinner_only');
+        
+        let lunchDot = <div className="h-1 w-1 rounded-full bg-primary-foreground/30" />;
+        let dinnerDot = <div className="h-1 w-1 rounded-full bg-primary-foreground/30" />;
+
+        if (!isLunchOff && (studentPlan === 'full_day' || studentPlan === 'lunch_only')) {
+            lunchDot = <div className="h-1 w-1 rounded-full bg-primary-foreground" />;
+        }
+        if (!isDinnerOff && (studentPlan === 'full_day' || studentPlan === 'dinner_only')) {
+            dinnerDot = <div className="h-1 w-1 rounded-full bg-primary-foreground" />;
         }
 
         return (
             <div className="relative h-full w-full flex items-center justify-center">
                 {date.getDate()}
-                {dots && (
+                {studentPlan === 'full_day' && (
                     <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
-                        {dots}
+                        {lunchDot}
+                        {dinnerDot}
                     </div>
                 )}
             </div>
         );
     };
-
-    const calendarModifiers = useMemo(() => {
-        const baseModifiers = {
-            absent: absentDays,
-            holiday: holidays.map(h => h.date),
-        };
-
-        if (student.messPlan === 'full_day') {
-            return {
-                ...baseModifiers,
-                fullDay: fullDayDays,
-                lunchOnly: lunchOnlyDays,
-                dinnerOnly: dinnerOnlyDays,
-            }
-        }
-        return { ...baseModifiers, present: [] };
-    }, [student.messPlan, fullDayDays, lunchOnlyDays, dinnerOnlyDays, absentDays]);
 
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
@@ -321,14 +285,12 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                             month={month}
                             onMonthChange={setMonth}
                             modifiers={calendarModifiers}
-                            components={{ DayContent: CustomDayContentForPlan }}
+                            components={{ DayContent: CustomDayContent }}
                             modifiersClassNames={{
-                                fullDay: "bg-chart-2 text-primary-foreground",
-                                lunchOnly: "bg-chart-3 text-primary-foreground",
-                                dinnerOnly: "bg-chart-3 text-primary-foreground",
-                                present: "bg-chart-2 text-primary-foreground",
-                                absent: "bg-destructive text-destructive-foreground",
-                                holiday: "bg-primary/40 text-primary-foreground",
+                                leave_full: "bg-destructive text-destructive-foreground",
+                                leave_half: "bg-destructive/70 text-destructive-foreground",
+                                holiday_full: "bg-primary/40 text-primary-foreground",
+                                holiday_half: "bg-primary/30 text-primary-foreground",
                             }}
                             classNames={{
                                 months: "w-full",
@@ -345,16 +307,12 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                         />
                     </CardContent>
                     <CardContent className="p-4 pt-2 mt-auto">
-                        <div className="flex w-full items-center justify-center gap-4 text-xs text-muted-foreground">
-                             {student.messPlan === 'full_day' ? (
-                                <>
-                                    <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Full Day</div>
-                                    <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
-                                </>
-                            ) : (
-                                <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Present</div>
-                            )}
-                            <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Absent</div>
+                        <div className="flex w-full items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-0.5"><div className="h-2 w-2 rounded-full bg-foreground" /><div className="h-2 w-2 rounded-full bg-foreground/40" /></div>
+                                <span>Attended / Skipped</span>
+                            </div>
+                            <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
                             <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
                         </div>
                     </CardContent>
@@ -363,5 +321,3 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         </Card>
     );
 }
-
-    
