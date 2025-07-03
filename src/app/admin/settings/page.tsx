@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { DollarSign, Bell, Info, Moon, Sun, RefreshCw, Copy, User, CalendarClock, LifeBuoy } from 'lucide-react';
+import { DollarSign, Bell, Info, Moon, Sun, RefreshCw, Copy, User, CalendarClock, HelpCircle } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from "@/hooks/use-toast";
 import { adminUser, messInfo } from '@/lib/data';
@@ -135,7 +135,7 @@ function SettingsPageContent() {
                         <span className="sr-only">Toggle theme</span>
                     </Button>
                     <Link href="/admin/support" className={cn(buttonVariants({ variant: 'outline', size: 'icon' }))}>
-                        <LifeBuoy className="h-5 w-5" />
+                        <HelpCircle className="h-5 w-5" />
                         <span className="sr-only">Support</span>
                     </Link>
                 </div>

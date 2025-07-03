@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { studentUser, messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun, LifeBuoy } from 'lucide-react';
+import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun, HelpCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
@@ -68,8 +68,8 @@ export default function StudentSettingsPage() {
                         {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
                         <span className="sr-only">Toggle theme</span>
                     </Button>
-                    <Link href="/student/feedback" className={cn(buttonVariants({ variant: 'outline', size: 'icon' }))}>
-                        <LifeBuoy className="h-5 w-5" />
+                    <Link href="/student/support" className={cn(buttonVariants({ variant: 'outline', size: 'icon' }))}>
+                        <HelpCircle className="h-5 w-5" />
                         <span className="sr-only">Support</span>
                     </Link>
                 </div>
