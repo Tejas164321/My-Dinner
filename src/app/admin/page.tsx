@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,11 +11,15 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserX, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays, Moon, Sun } from 'lucide-react';
+import { Users, UserX, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays, Moon, Sun, UserPlus, GitCompareArrows, Check, X } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { holidays, leaveHistory } from '@/lib/data';
+import { holidays, leaveHistory, joinRequests, planChangeRequests } from '@/lib/data';
 import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 export default function AdminDashboard() {
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
@@ -70,10 +75,70 @@ export default function AdminDashboard() {
     return { lunch: lunchOff, dinner: dinnerOff };
   }, [today]);
 
+  const combinedNotifications = useMemo(() => {
+    const jr = joinRequests.map(r => ({ ...r, type: 'join_request', dateObj: new Date(r.date) }));
+    const pcr = planChangeRequests.map(r => ({ ...r, type: 'plan_change', dateObj: new Date(r.date) }));
+    return [...jr, ...pcr].sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
+  }, []);
+
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-      <div>
+      <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
+         <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                     {(joinRequests.length + planChangeRequests.length) > 0 && (
+                        <Badge variant="destructive" className="absolute -top-2 -right-2 px-1.5 h-5 flex items-center justify-center rounded-full text-xs">
+                           {joinRequests.length + planChangeRequests.length}
+                        </Badge>
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-0">
+                 <div className="flex flex-col">
+                    <div className="p-4 border-b">
+                        <h3 className="font-semibold">Notifications</h3>
+                        <p className="text-sm text-muted-foreground">You have {combinedNotifications.length} unread notifications.</p>
+                    </div>
+                    <ScrollArea className="h-96">
+                        <div className="p-2 space-y-2">
+                            {combinedNotifications.length > 0 ? combinedNotifications.map((notif, index) => (
+                                <div key={`${notif.type}-${notif.id}`} className="p-2 rounded-lg hover:bg-secondary/50">
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-secondary p-2 rounded-full mt-1">
+                                            {notif.type === 'join_request' ? <UserPlus className="h-4 w-4 text-primary" /> : <GitCompareArrows className="h-4 w-4 text-primary" />}
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <p className="text-sm text-muted-foreground leading-snug">
+                                                <span className="font-semibold text-foreground">{notif.studentName}</span>
+                                                {notif.type === 'join_request' ? ` has requested to join your mess.` : ` has requested to change plan from `}
+                                                {notif.type === 'plan_change' && <><span className="font-semibold capitalize">{notif.fromPlan.replace('_', ' ')}</span> to <span className="font-semibold capitalize">{notif.toPlan.replace('_', ' ')}</span>.</>}
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <Button size="sm" className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700 text-white">
+                                                    <Check className="h-3 w-3 mr-1" /> Approve
+                                                </Button>
+                                                <Button size="sm" variant="outline" className="h-7 px-2 text-xs">
+                                                    <X className="h-3 w-3 mr-1" /> Decline
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {index < combinedNotifications.length - 1 && <Separator className="mt-3" />}
+                                </div>
+                            )) : (
+                                <p className="text-sm text-muted-foreground text-center p-8">No new notifications.</p>
+                            )}
+                        </div>
+                    </ScrollArea>
+                    <div className="p-2 border-t text-center">
+                        <Button variant="link" size="sm" className="w-full">View all notifications</Button>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -135,32 +200,6 @@ export default function AdminDashboard() {
         </div>
         
         <div className="lg:col-span-1 flex flex-col gap-6">
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Notifications</CardTitle>
-                        <CardDescription>Recent system activities.</CardDescription>
-                    </div>
-                    <Button variant="outline" size="sm">View all</Button>
-                </CardHeader>
-                <CardContent>
-                   <ul className="space-y-4 text-sm text-muted-foreground">
-                        <li className="flex items-start gap-3">
-                            <FileText className="h-4 w-4 mt-1 flex-shrink-0 text-primary"/>
-                            <p><span className="font-semibold text-foreground">Alex Doe</span> paid their monthly bill of ₹3,250.</p>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <Users className="h-4 w-4 mt-1 flex-shrink-0 text-green-400"/>
-                            <p>New student <span className="font-semibold text-foreground">Jane Smith</span> was approved.</p>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <Settings className="h-4 w-4 mt-1 flex-shrink-0"/>
-                            <p>You updated the meal menu for next week.</p>
-                        </li>
-                   </ul>
-                </CardContent>
-            </Card>
-
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-600">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>

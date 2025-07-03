@@ -74,6 +74,20 @@ export const joinRequests = [
     { id: '3', name: 'Sam Wilson', studentId: 'B54321', date: '2023-10-26' },
 ];
 
+export interface PlanChangeRequest {
+    id: string;
+    studentName: string;
+    studentId: string;
+    fromPlan: 'full_day' | 'lunch_only' | 'dinner_only';
+    toPlan: 'full_day' | 'lunch_only' | 'dinner_only';
+    date: string;
+}
+
+export const planChangeRequests: PlanChangeRequest[] = [
+    { id: 'pcr1', studentName: 'Mary Jane', studentId: 'B44556', fromPlan: 'lunch_only', toPlan: 'full_day', date: '2023-10-28' },
+    { id: 'pcr2', studentName: 'Sara Bell', studentId: 'C12378', fromPlan: 'dinner_only', toPlan: 'full_day', date: '2023-10-27' },
+];
+
 export const monthMap: { [key: string]: Date } = {
   'july': new Date(2023, 6, 1),
   'august': new Date(2023, 7, 1),
