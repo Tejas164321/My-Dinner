@@ -12,18 +12,20 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays } from 'lucide-react';
-import { dailyMenus, billHistory, studentsData, holidays, studentUser as mainStudentUser, leaveHistory } from "@/lib/data";
+import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2 } from 'lucide-react';
+import { dailyMenus, billHistory, studentsData, holidays, studentUser as mainStudentUser, leaveHistory as initialLeaveHistory, Leave } from "@/lib/data";
 import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export default function StudentDashboard() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [leaves, setLeaves] = useState<Leave[]>(initialLeaveHistory);
 
   useEffect(() => {
     // Set a fixed date to ensure mock data consistency
@@ -84,10 +86,10 @@ export default function StudentDashboard() {
     const dateKey = formatDateKey(selectedDate);
     const menu = dailyMenus.get(dateKey) || { lunch: ['Not set'], dinner: ['Not set'] };
     
-    const todaysLeave = leaveHistory.find(l => l.studentId === student.id && isSameDay(l.date, selectedDate));
+    const todaysLeave = leaves.find(l => l.studentId === student.id && isSameDay(l.date, selectedDate));
 
     return { displayedMenu: menu, onLeave: todaysLeave };
-  }, [selectedDate, student.id]);
+  }, [selectedDate, student.id, leaves]);
   
   const menuTitle = useMemo(() => {
       if (!selectedDate) return "Today's Menu";
@@ -120,11 +122,14 @@ export default function StudentDashboard() {
 
   const upcomingLeaves = useMemo(() => {
     const today = startOfDay(new Date(2023, 9, 27)); // Use the fixed date for consistency
-    return leaveHistory
+    return leaves
       .filter(l => l.studentId === student.id && l.date >= today)
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .slice(0, 4);
-  }, [student.id]);
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [student.id, leaves]);
+
+  const handleDeleteLeave = (dateToDelete: Date) => {
+    setLeaves(leaves.filter(h => h.date.getTime() !== dateToDelete.getTime()));
+  };
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -239,39 +244,48 @@ export default function StudentDashboard() {
           </Card>
 
           {/* Upcoming Leaves */}
-          <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
+          <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400 flex flex-col">
               <CardHeader>
                   <div className="flex items-center justify-between">
                       <CardTitle>My Upcoming Leaves</CardTitle>
                       <UserX className="h-5 w-5 text-primary" />
                   </div>
-                  <CardDescription>Your next scheduled meal skips.</CardDescription>
+                  <CardDescription>Your next scheduled meal skips. You can cancel a leave from here.</CardDescription>
               </CardHeader>
-              <CardContent>
-                  {upcomingLeaves.length > 0 ? (
-                      <ul className="space-y-4">
-                          {upcomingLeaves.map((leave) => (
-                              <li key={leave.date.toISOString()} className="flex items-start gap-3">
-                                  {leave.type === 'full_day' && <Utensils className="h-5 w-5 mt-1 text-destructive flex-shrink-0" />}
-                                  {leave.type === 'lunch_only' && <Sun className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
-                                  {leave.type === 'dinner_only' && <Moon className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
-                                  <div>
-                                      <p className="font-semibold text-sm capitalize">{leave.type.replace('_', ' ')}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                          {format(leave.date, 'EEEE, MMM do')}
-                                      </p>
-                                  </div>
-                              </li>
-                          ))}
-                      </ul>
-                  ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">You have no upcoming leaves scheduled.</p>
-                  )}
+              <CardContent className="flex-grow p-2 pt-0">
+                  <ScrollArea className="h-48">
+                    <div className="p-4 pt-0 space-y-2">
+                        {upcomingLeaves.length > 0 ? (
+                            upcomingLeaves.map((leave) => (
+                                <div key={leave.date.toISOString()} className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50">
+                                    <div className="flex items-center gap-3">
+                                        {leave.type === 'full_day' && <Utensils className="h-5 w-5 text-destructive flex-shrink-0" />}
+                                        {leave.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
+                                        {leave.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-3 flex-shrink-0" />}
+                                        <div>
+                                            <p className="font-semibold text-sm capitalize">{leave.type.replace('_', ' ')}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {format(leave.date, 'EEEE, MMM do')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteLeave(leave.date)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4">
+                                <p>You have no upcoming leaves scheduled.</p>
+                            </div>
+                        )}
+                    </div>
+                  </ScrollArea>
               </CardContent>
               <CardFooter>
                   <Button asChild className="w-full" variant="outline">
                       <Link href="/student/leave">
-                          Manage Leaves
+                          Apply for More Leaves
                       </Link>
                   </Button>
               </CardFooter>

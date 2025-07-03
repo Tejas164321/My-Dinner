@@ -1,3 +1,4 @@
+
 import { format, subDays, addDays, startOfDay } from 'date-fns';
 
 export const studentNavItems = [
@@ -228,6 +229,9 @@ export const leaveHistory: Leave[] = [
     { studentId: '8', date: new Date(2023, 9, 30), name: 'Student Leave', type: 'lunch_only' },
     { studentId: '8', date: new Date(2023, 10, 5), name: 'Student Leave', type: 'full_day' },
     { studentId: '8', date: new Date(2023, 10, 6), name: 'Student Leave', type: 'dinner_only' },
+    { studentId: '8', date: new Date(2023, 10, 10), name: 'Student Leave', type: 'full_day' },
+    { studentId: '8', date: new Date(2023, 10, 11), name: 'Student Leave', type: 'lunch_only' },
+    { studentId: '8', date: new Date(2023, 10, 15), name: 'Student Leave', type: 'dinner_only' },
 ];
 
 export interface Bill {
