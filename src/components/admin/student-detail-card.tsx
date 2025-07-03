@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect, type ComponentProps } from "react";
@@ -6,13 +5,14 @@ import type { DayContentProps } from "react-day-picker";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import type { Student, Holiday } from "@/lib/data";
 import { holidays, leaveHistory } from "@/lib/data";
-import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 
 const planInfo = {
     full_day: { icon: Utensils, text: 'Full Day', color: 'text-primary' },
@@ -252,11 +252,11 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                     </div>
                 </div>
 
-                <Card className="flex-grow">
+                <Card className="flex-grow flex flex-col">
                     <CardHeader className="p-4 pb-2">
                         <CardTitle className="text-lg flex items-center gap-2"><Wallet className="h-5 w-5" />Billing</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 text-sm p-4 pt-2">
+                    <CardContent className="space-y-3 text-sm p-4 pt-2 flex-grow">
                         <div className="space-y-2">
                              {currentData.bill.details && (
                                 <div className="flex justify-between items-center">
@@ -294,6 +294,11 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
                             <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
                         </div>
                     </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                         <Button variant="outline" className="w-full">
+                            <FileDown className="h-4 w-4 mr-2" /> Download Bill
+                        </Button>
+                    </CardFooter>
                 </Card>
             </div>
 
