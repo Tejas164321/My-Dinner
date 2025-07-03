@@ -47,8 +47,7 @@ export default function StudentDashboard() {
   const [isMenuLoading, setIsMenuLoading] = useState(false);
 
   useEffect(() => {
-    // Set a fixed date to ensure mock data consistency
-    const now = startOfDay(new Date(2023, 9, 27));
+    const now = startOfDay(new Date());
     setSelectedDate(now);
     setToday(now);
     // Filter leaves for the current student and sort them
@@ -142,7 +141,7 @@ export default function StudentDashboard() {
   
   const menuTitle = useMemo(() => {
       if (!selectedDate) return "Today's Menu";
-      const isFixedToday = format(selectedDate, 'yyyy-MM-dd') === '2023-10-27';
+      const isFixedToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
       return isFixedToday ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
   }, [selectedDate]);
 

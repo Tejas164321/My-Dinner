@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Pencil, Save, History, Plus, X, Calendar as CalendarIcon, Utensils } from "lucide-react";
+import { Pencil, Save, History, Plus, X, Calendar as CalendarIcon, Utensils, Loader2 } from "lucide-react";
 import { getMenuForDate, saveMenuForDate } from '@/lib/actions/menu';
 import { commonMenuItems } from "@/lib/data";
 import { format, startOfDay, subDays } from 'date-fns';
@@ -23,6 +23,7 @@ export function MenuSchedule() {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [isEditing, setIsEditing] = useState<false | 'lunch' | 'dinner'>(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
     const [lunchItems, setLunchItems] = useState<string[]>([]);
@@ -93,27 +94,42 @@ export function MenuSchedule() {
     };
 
     const handleSave = async () => {
-        if (!selectedDate) return;
+        if (!selectedDate || isSaving) return;
+
+        setIsSaving(true);
         const dateKey = formatDateKey(selectedDate);
         
-        let menuData: DailyMenu = { lunch: lunchItems, dinner: dinnerItems };
+        let menuData: DailyMenu;
 
         if (isEditing === 'lunch') {
             menuData = { lunch: tempLunchItems, dinner: dinnerItems };
         } else if (isEditing === 'dinner') {
             menuData = { lunch: lunchItems, dinner: tempDinnerItems };
+        } else {
+            setIsSaving(false);
+            return;
         }
         
-        await saveMenuForDate(dateKey, menuData);
-        
-        setLunchItems(menuData.lunch);
-        setDinnerItems(menuData.dinner);
-        setIsEditing(false);
+        try {
+            await saveMenuForDate(dateKey, menuData);
+            
+            setLunchItems(menuData.lunch);
+            setDinnerItems(menuData.dinner);
+            setIsEditing(false);
 
-        toast({
-            title: "Menu Saved!",
-            description: `The menu for ${format(selectedDate, 'PPP')} has been updated.`,
-        });
+            toast({
+                title: "Menu Saved!",
+                description: `The menu for ${format(selectedDate, 'PPP')} has been updated.`,
+            });
+        } catch (error) {
+             toast({
+                variant: "destructive",
+                title: "Save Failed",
+                description: "There was an error saving the menu. Please try again.",
+            });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleCancel = () => {
@@ -217,7 +233,19 @@ export function MenuSchedule() {
                                 isEditing === 'lunch' ? (
                                     <div className="flex gap-2">
                                         <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
-                                        <Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button>
+                                        <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                                            {isSaving ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="h-4 w-4 mr-1" />
+                                                    Save
+                                                </>
+                                            )}
+                                        </Button>
                                     </div>
                                 ) : (
                                     <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
@@ -269,7 +297,19 @@ export function MenuSchedule() {
                                 isEditing === 'dinner' ? (
                                     <div className="flex gap-2">
                                         <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
-                                        <Button size="sm" onClick={handleSave}><Save className="h-4 w-4 mr-1" /> Save</Button>
+                                        <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                                             {isSaving ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="h-4 w-4 mr-1" />
+                                                    Save
+                                                </>
+                                            )}
+                                        </Button>
                                     </div>
                                 ) : (
                                     <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
