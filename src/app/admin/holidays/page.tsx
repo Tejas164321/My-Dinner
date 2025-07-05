@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { format, isFuture, eachDayOfInterval } from 'date-fns';
+import { format, isFuture, eachDayOfInterval, startOfDay } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -43,8 +43,7 @@ export default function HolidaysPage() {
   const [today, setToday] = useState<Date | undefined>();
 
   useEffect(() => {
-    const now = new Date();
-    now.setHours(0,0,0,0);
+    const now = startOfDay(new Date());
     setMonth(now);
     setToday(now);
     setOneDayDate(now);
@@ -64,108 +63,94 @@ export default function HolidaysPage() {
   }, [holidays, today]);
 
   const handleAddHoliday = async () => {
-    if (!newHolidayName) return;
-
-    let newHolidays: Holiday[] = [];
-
-    if (leaveType === 'one_day' && oneDayDate) {
-      newHolidays.push({ name: newHolidayName, date: oneDayDate, type: oneDayType });
-    } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
-      if (longLeaveToDate < longLeaveFromDate) {
+    if (!newHolidayName) {
         toast({
-          variant: "destructive",
-          title: "Invalid Date Range",
-          description: "The 'To Date' cannot be before the 'From Date'.",
+            variant: "destructive",
+            title: "Missing Information",
+            description: "Please provide a name or reason for the holiday.",
         });
         return;
-      }
-      
-      const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
-      
-      if (dates.length === 1) {
-        if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') {
-          newHolidays.push({ name: newHolidayName, date: dates[0], type: 'full_day' });
-        } else if (longLeaveFromType === 'dinner_only') {
-          newHolidays.push({ name: newHolidayName, date: dates[0], type: 'dinner_only' });
-        } else if (longLeaveToType === 'lunch_only') {
-          newHolidays.push({ name: newHolidayName, date: dates[0], type: 'lunch_only' });
-        } else {
-          newHolidays.push({ name: newHolidayName, date: dates[0], type: 'full_day' });
-        }
-      } else {
-        newHolidays = dates.map((date, index) => {
-          if (index === 0) {
-            return { name: newHolidayName, date, type: longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day' };
-          }
-          if (index === dates.length - 1) {
-            return { name: newHolidayName, date, type: longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day' };
-          }
-          return { name: newHolidayName, date, type: 'full_day' };
+    }
+
+    let holidaysToSubmit: Omit<Holiday, 'date'> & { date: string }[] = [];
+
+    if (leaveType === 'one_day' && oneDayDate) {
+        holidaysToSubmit.push({ 
+            name: newHolidayName, 
+            date: oneDayDate.toISOString(), 
+            type: oneDayType 
         });
-      }
+    } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
+        if (longLeaveToDate < longLeaveFromDate) {
+            toast({
+                variant: "destructive",
+                title: "Invalid Date Range",
+                description: "The 'To Date' cannot be before the 'From Date'.",
+            });
+            return;
+        }
+      
+        const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
+      
+        if (dates.length === 1) {
+            let type: HolidayType = 'full_day';
+            if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') type = 'full_day';
+            else if (longLeaveFromType === 'dinner_only') type = 'dinner_only';
+            else if (longLeaveToType === 'lunch_only') type = 'lunch_only';
+            holidaysToSubmit.push({ name: newHolidayName, date: dates[0].toISOString(), type });
+        } else {
+            holidaysToSubmit = dates.map((date, index) => {
+                let type: HolidayType = 'full_day';
+                if (index === 0) {
+                    type = longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day';
+                }
+                if (index === dates.length - 1) {
+                    type = longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day';
+                }
+                return { name: newHolidayName, date: date.toISOString(), type };
+            });
+        }
     } else {
-      return;
+        toast({
+            variant: "destructive",
+            title: "Missing Information",
+            description: "Please select valid dates for the holiday.",
+        });
+        return;
     }
-
-    const existingDates = new Set(holidays.map(h => h.date.getTime()));
-    const uniqueNewHolidays = newHolidays.filter(h => !existingDates.has(h.date.getTime()));
-
-    if (uniqueNewHolidays.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Holiday Already Exists",
-        description: "A holiday for the selected date(s) already exists.",
-      });
-      return;
-    }
-
-    const originalHolidays = [...holidays];
-    const updatedHolidays = [...holidays, ...uniqueNewHolidays].sort((a, b) => a.date.getTime() - b.date.getTime());
-    
-    // Optimistic update
-    setHolidays(updatedHolidays);
 
     try {
-      await addHolidays(uniqueNewHolidays);
-      toast({
-        title: "Success",
-        description: "Holiday(s) have been added successfully.",
-      });
-      // Reset form
-      setNewHolidayName('');
-      setOneDayDate(today);
-      setOneDayType('full_day');
-      setLongLeaveFromDate(undefined);
-      setLongLeaveToDate(undefined);
-      setLongLeaveFromType('dinner_only');
-      setLongLeaveToType('lunch_only');
+        await addHolidays(holidaysToSubmit);
+        toast({
+            title: "Success",
+            description: "Holiday(s) have been added successfully.",
+        });
+        // Reset form
+        setNewHolidayName('');
+        setOneDayDate(today);
+        setOneDayType('full_day');
+        setLongLeaveFromDate(undefined);
+        setLongLeaveToDate(undefined);
+        setLongLeaveFromType('dinner_only');
+        setLongLeaveToType('lunch_only');
     } catch (error) {
-      // Revert on failure
-      setHolidays(originalHolidays);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add holiday(s). Please try again.",
-      });
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        toast({
+            variant: "destructive",
+            title: "Error adding holiday",
+            description: errorMessage,
+        });
     }
   };
 
   const handleDeleteHoliday = async (dateToDelete: Date) => {
-    const originalHolidays = [...holidays];
-    const updatedHolidays = holidays.filter(h => h.date.getTime() !== dateToDelete.getTime());
-
-    // Optimistic update
-    setHolidays(updatedHolidays);
-
     try {
-      await deleteHoliday(dateToDelete);
+      await deleteHoliday(dateToDelete.toISOString());
       toast({
         title: "Success",
         description: "Holiday has been deleted.",
       });
     } catch (error) {
-      // Revert on failure
-      setHolidays(originalHolidays);
       toast({
         variant: "destructive",
         title: "Error",

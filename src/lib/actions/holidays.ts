@@ -1,37 +1,70 @@
+
 'use server';
 
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Holiday } from '@/lib/data';
 import { format } from 'date-fns';
 
 const HOLIDAYS_COLLECTION = 'holidays';
 
+type HolidayPayload = Omit<Holiday, 'date'> & { date: string };
+
 /**
  * Adds an array of holiday objects to Firestore.
- * Uses 'YYYY-MM-DD' as the document ID to prevent duplicates.
+ * This is a server action that handles data validation and creation.
  */
-export async function addHolidays(holidays: Holiday[]): Promise<void> {
-  try {
-    const batch = holidays.map(holiday => {
-      const dateKey = format(holiday.date, 'yyyy-MM-dd');
-      const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
-      // Firestore handles Date object conversion to Timestamp automatically
-      return setDoc(docRef, holiday);
-    });
-    await Promise.all(batch);
-  } catch (error) {
-    console.error("Error adding holidays:", error);
-    throw new Error('Failed to add holidays.');
-  }
+export async function addHolidays(holidays: HolidayPayload[]): Promise<void> {
+    const holidayDates = new Set<string>();
+
+    for (const holiday of holidays) {
+        const dateKey = format(new Date(holiday.date), 'yyyy-MM-dd');
+
+        // Prevent adding multiple holidays for the same day in a single request
+        if (holidayDates.has(dateKey)) {
+            continue;
+        }
+
+        const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            // This date is already a holiday, so we throw an error.
+            // A more advanced implementation might allow overwriting.
+            throw new Error(`A holiday for ${dateKey} already exists.`);
+        }
+        holidayDates.add(dateKey);
+    }
+    
+    // If all checks pass, proceed with batch writing
+    try {
+        const batch = holidays.map(holiday => {
+            const dateObj = new Date(holiday.date);
+            const dateKey = format(dateObj, 'yyyy-MM-dd');
+            const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
+            
+            const dataToSave: Holiday = {
+                ...holiday,
+                date: dateObj,
+            };
+
+            return setDoc(docRef, dataToSave);
+        });
+        await Promise.all(batch);
+    } catch (error) {
+        console.error("Error adding holidays to Firestore:", error);
+        throw new Error('Failed to save holidays to the database.');
+    }
 }
+
 
 /**
  * Deletes a holiday from Firestore based on its date.
+ * Accepts a date string for server action compatibility.
  */
-export async function deleteHoliday(date: Date): Promise<void> {
+export async function deleteHoliday(dateString: string): Promise<void> {
   try {
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateKey = format(new Date(dateString), 'yyyy-MM-dd');
     const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
     await deleteDoc(docRef);
   } catch (error) {
