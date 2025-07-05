@@ -15,37 +15,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { DollarSign, Bell, Info, Moon, Sun, RefreshCw, Copy, User, CalendarClock, HelpCircle } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from "@/hooks/use-toast";
-import { adminUser, messInfo } from '@/lib/data';
+import { useAuth } from '@/contexts/auth-context';
+import { messInfo } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function SettingsPageContent() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { toast } = useToast();
+    const { user: adminUser, loading } = useAuth();
 
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
      const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
-    useEffect(() => {
-        const currentTab = searchParams.get('tab') || 'profile';
-        if (currentTab !== activeTab) {
-            setActiveTab(currentTab);
-        }
-    }, [searchParams, activeTab]);
-
-    const handleTabChange = (value: string) => {
-        setActiveTab(value);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', value);
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    };
-
     // Profile Settings State
-    const [profileName, setProfileName] = useState(adminUser.name);
-    const [profileEmail, setProfileEmail] = useState(adminUser.email);
+    const [profileName, setProfileName] = useState('');
+    const [profileEmail, setProfileEmail] = useState('');
     const [secretCode, setSecretCode] = useState('1234');
 
     // General Settings State
@@ -62,6 +51,13 @@ function SettingsPageContent() {
     const [dinnerDeadline, setDinnerDeadline] = useState('18:00');
 
     const [uniqueSuffix, setUniqueSuffix] = useState('');
+    
+    useEffect(() => {
+        if (adminUser) {
+            setProfileName(adminUser.name || '');
+            setProfileEmail(adminUser.email || '');
+        }
+    }, [adminUser]);
 
     useEffect(() => {
         // This will only run on the client, after initial hydration
@@ -100,6 +96,13 @@ function SettingsPageContent() {
         { value: '19:00', label: '07:00 PM' },
     ];
 
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', value);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    };
+
     const handleRegenerateCode = () => {
         const newCode = Math.floor(1000 + Math.random() * 9000).toString();
         setSecretCode(newCode);
@@ -124,6 +127,24 @@ function SettingsPageContent() {
             description: `The unique ID "${messUniqueId}" has been copied.`,
         });
     };
+    
+    if (loading || !adminUser) {
+        return (
+            <div className="flex flex-col gap-8 animate-in fade-in-0">
+                <div className="flex justify-between items-center">
+                    <Skeleton className="h-8 w-48" />
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-10 w-10 rounded-md" />
+                        <Skeleton className="h-10 w-10 rounded-md" />
+                    </div>
+                </div>
+                <div>
+                    <Skeleton className="h-10 w-full rounded-md" />
+                    <Skeleton className="mt-6 h-[700px] w-full rounded-xl" />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
