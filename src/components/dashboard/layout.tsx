@@ -3,7 +3,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +35,6 @@ import {
   MessageSquare,
   LayoutDashboard
 } from 'lucide-react';
-import { logout } from '@/app/auth/actions';
 
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
@@ -134,12 +133,12 @@ function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onL
         <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <form action={logout} className="w-full">
-                        <Button type="submit" variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
-                            <LogOut className="h-5 w-5 shrink-0" />
-                            <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Log Out</span>
-                        </Button>
-                    </form>
+                    <Button asChild variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
+                        <Link href="/">
+                          <LogOut className="h-5 w-5 shrink-0" />
+                          <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Log Out</span>
+                        </Link>
+                    </Button>
                 </TooltipTrigger>
                 {isCollapsed && (
                     <TooltipContent side="right" sideOffset={5}>
@@ -154,7 +153,6 @@ function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onL
 export function DashboardLayout({ children, navItems, user }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const router = useRouter();
   
   const handleToggle = () => setIsCollapsed(!isCollapsed);
   const handleMobileNavClose = () => setIsMobileNavOpen(false);

@@ -15,17 +15,17 @@ export default function Home() {
           <ChefHat className="h-14 w-14 text-primary" />
         </div>
         <h1 className="text-5xl font-bold tracking-tight text-transparent md:text-7xl bg-clip-text bg-gradient-to-br from-white to-gray-400">
-          Welcome to Messo
+          MessoMate Dashboards
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-          The seamless, modern, and smart way to manage your canteen and mess facility.
+          Direct access to the Admin and Student portals.
         </p>
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Button asChild size="lg" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href="/admin/login"><UserCog /> Admin Portal</Link>
+              <Link href="/admin"><UserCog /> Admin Dashboard</Link>
             </Button>
             <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href="/login"><User /> Student Portal</Link>
+              <Link href="/student/dashboard"><User /> Student Dashboard</Link>
             </Button>
         </div>
       </div>

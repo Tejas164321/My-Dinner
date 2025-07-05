@@ -1,9 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppUser } from '@/lib/data';
 
 interface AuthContextType {
@@ -13,33 +10,43 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
+// A mock user for the student dashboard
+const mockStudentUser: AppUser = {
+  uid: '8', // Matches Alex Doe from studentData
+  email: 'alex.doe@example.com',
+  name: 'Alex Doe',
+  role: 'student',
+  studentId: 'A56789',
+  contact: '+91 9876543214',
+  joinDate: '2023-09-11',
+  messPlan: 'full_day',
+  avatarUrl: `https://i.pravatar.cc/150?u=8`,
+};
+
+// A mock user for the admin dashboard
+const mockAdminUser: AppUser = {
+    uid: 'admin-user-uid',
+    email: 'admin@messo.com',
+    name: 'Admin User',
+    role: 'admin',
+    avatarUrl: `https://i.pravatar.cc/150?u=admin`,
+};
+
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-            const userData = userDocSnap.data() as Omit<AppUser, 'uid' | 'email'>;
-            setUser({ 
-                uid: firebaseUser.uid, 
-                email: firebaseUser.email!, 
-                ...userData 
-            });
-        } else {
-            console.error("No such user document!");
-            setUser(null);
-        }
+    // This check ensures we're on the client side before accessing window
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname.startsWith('/admin')) {
+        setUser(mockAdminUser);
       } else {
-        setUser(null);
+        setUser(mockStudentUser);
       }
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
   return (
