@@ -22,10 +22,10 @@ export default function Home() {
         </p>
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Button asChild size="lg" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href="/admin"><UserCog /> Admin Dashboard</Link>
+              <Link href="/admin/login"><UserCog /> Admin Portal</Link>
             </Button>
             <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href="/student"><User /> Student Dashboard</Link>
+              <Link href="/login"><User /> Student Portal</Link>
             </Button>
         </div>
       </div>

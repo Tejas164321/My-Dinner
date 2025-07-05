@@ -4,38 +4,38 @@ import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { studentLogin } from '@/app/auth/actions';
+import { adminLogin } from '@/app/auth/actions';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, ChefHat } from 'lucide-react';
+import { AlertCircle, UserCog } from 'lucide-react';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button className="w-full" type="submit" disabled={pending}>
-      {pending ? 'Logging in...' : 'Login'}
+      {pending ? 'Logging in...' : 'Login as Admin'}
     </Button>
   );
 }
 
-export default function StudentLoginPage() {
-  const [state, formAction] = useFormState(studentLogin, { message: '' });
+export default function AdminLoginPage() {
+  const [state, formAction] = useFormState(adminLogin, { message: '' });
   const router = useRouter();
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (state.message === 'success' && user?.role === 'student') {
-        router.replace('/student/dashboard');
+    if (state.message === 'success' && user?.role === 'admin') {
+        router.replace('/admin');
     }
   }, [state, user, router]);
   
    useEffect(() => {
-    if (!loading && user?.role === 'student') {
-      router.replace('/student/dashboard');
+    if (!loading && user?.role === 'admin') {
+      router.replace('/admin');
     }
   }, [user, loading, router]);
 
@@ -50,21 +50,21 @@ export default function StudentLoginPage() {
         <div className="flex justify-center mb-6">
             <Link href="/" className="flex items-center gap-3 text-lg font-semibold">
                 <div className="rounded-full border border-primary/20 bg-primary/10 p-3 shadow-lg">
-                    <ChefHat className="h-8 w-8 text-primary" />
+                    <UserCog className="h-8 w-8 text-primary" />
                 </div>
             </Link>
         </div>
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Student Login</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
+            <CardTitle className="text-2xl">Admin Portal</CardTitle>
+            <CardDescription>Enter your admin credentials to access the dashboard.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={formAction} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="student@example.com" required />
+                <Input id="email" name="email" type="email" placeholder="admin@example.com" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -82,14 +82,14 @@ export default function StudentLoginPage() {
               <SubmitButton />
             </form>
             <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="underline text-primary">
+              Don&apos;t have an admin account?{' '}
+              <Link href="/admin/signup" className="underline text-primary">
                 Sign up
               </Link>
             </div>
              <div className="mt-4 text-center text-sm text-muted-foreground">
-                <Link href="/admin/login" className="underline">
-                    Admin Login
+                <Link href="/login" className="underline">
+                    Are you a student?
                 </Link>
             </div>
           </CardContent>
