@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import type { Student, Holiday } from "@/lib/data";
 import { leaveHistory } from "@/lib/data";
-import { getHolidays } from "@/lib/actions/holidays";
+import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
@@ -36,11 +36,11 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         now.setHours(0, 0, 0, 0);
         setToday(new Date(2023, 9, 27)); // Fixed date for consistency
 
-        const fetchHolidays = async () => {
-            const fetchedHolidays = await getHolidays();
-            setHolidays(fetchedHolidays);
-        };
-        fetchHolidays();
+        const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+            setHolidays(updatedHolidays);
+        });
+
+        return () => unsubscribe();
     }, []);
 
     const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;

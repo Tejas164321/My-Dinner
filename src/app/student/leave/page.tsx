@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { leaveHistory as initialLeaves, Leave, Holiday } from '@/lib/data';
-import { getHolidays } from '@/lib/actions/holidays';
+import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { useAuth } from '@/contexts/auth-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -44,11 +44,11 @@ export default function StudentLeavePage() {
         setLeaves(initialLeaves.filter(l => l.studentId === user.uid).sort((a, b) => a.date.getTime() - b.date.getTime()))
     }
 
-    const fetchHolidays = async () => {
-        const fetchedHolidays = await getHolidays();
-        setHolidays(fetchedHolidays);
-    };
-    fetchHolidays();
+    const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+        setHolidays(updatedHolidays);
+    });
+    
+    return () => unsubscribe();
   }, [user]);
 
   const upcomingLeaves = useMemo(() => {

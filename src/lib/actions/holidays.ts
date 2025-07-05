@@ -1,30 +1,11 @@
 'use server';
 
-import { collection, deleteDoc, doc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Holiday } from '@/lib/data';
 import { format } from 'date-fns';
 
 const HOLIDAYS_COLLECTION = 'holidays';
-
-/**
- * Fetches all holidays from Firestore.
- */
-export async function getHolidays(): Promise<Holiday[]> {
-  try {
-    const querySnapshot = await getDocs(collection(db, HOLIDAYS_COLLECTION));
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        ...data,
-        date: (data.date as Timestamp).toDate(),
-      } as Holiday;
-    }).sort((a, b) => a.date.getTime() - b.date.getTime());
-  } catch (error) {
-    console.error("Error getting holidays:", error);
-    return [];
-  }
-}
 
 /**
  * Adds an array of holiday objects to Firestore.

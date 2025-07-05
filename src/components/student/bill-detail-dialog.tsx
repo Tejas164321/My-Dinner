@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import type { Bill, Holiday } from '@/lib/data';
 import { leaveHistory } from '@/lib/data';
-import { getHolidays } from '@/lib/actions/holidays';
+import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { useAuth } from '@/contexts/auth-context';
 import {
   Utensils,
@@ -58,11 +58,8 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
   const dueAmount = bill.totalAmount - paidAmount;
 
   useEffect(() => {
-    const fetchHolidays = async () => {
-        const fetchedHolidays = await getHolidays();
-        setHolidays(fetchedHolidays);
-    };
-    fetchHolidays();
+    const unsubscribe = onHolidaysUpdate(setHolidays);
+    return () => unsubscribe();
   }, []);
 
   const {

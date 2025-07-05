@@ -14,7 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Holiday } from '@/lib/data';
-import { addHolidays, deleteHoliday, getHolidays } from '@/lib/actions/holidays';
+import { addHolidays, deleteHoliday } from '@/lib/actions/holidays';
+import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
@@ -48,13 +49,13 @@ export default function HolidaysPage() {
     setToday(now);
     setOneDayDate(now);
 
-    const fetchHolidays = async () => {
-        setIsLoading(true);
-        const fetchedHolidays = await getHolidays();
-        setHolidays(fetchedHolidays);
+    setIsLoading(true);
+    const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+        setHolidays(updatedHolidays);
         setIsLoading(false);
-    };
-    fetchHolidays();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const upcomingHolidays = useMemo(() => {

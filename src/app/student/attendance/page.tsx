@@ -5,7 +5,7 @@ import type { DayContentProps } from "react-day-picker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { studentsData, leaveHistory, Holiday } from "@/lib/data";
-import { getHolidays } from "@/lib/actions/holidays";
+import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
@@ -26,13 +26,13 @@ export default function StudentAttendancePage() {
         now.setHours(0, 0, 0, 0);
         setToday(new Date(2023, 9, 27)); // Fixed date for consistency
 
-        const fetchHolidays = async () => {
-            setIsLoading(true);
-            const fetchedHolidays = await getHolidays();
-            setHolidays(fetchedHolidays);
+        setIsLoading(true);
+        const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+            setHolidays(updatedHolidays);
             setIsLoading(false);
-        };
-        fetchHolidays();
+        });
+        
+        return () => unsubscribe();
     }, []);
     
     const monthOptions = [

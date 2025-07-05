@@ -15,7 +15,7 @@ import { Users, UserX, TrendingUp, FileText, Settings, Bell, Utensils, CalendarD
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
 import { leaveHistory, joinRequests, planChangeRequests, Holiday } from '@/lib/data';
-import { getHolidays } from '@/lib/actions/holidays';
+import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -36,11 +36,11 @@ export default function AdminDashboard() {
       setMealInfo({ title: "Today's Dinner Count", count: 105 });
     }
 
-    const fetchHolidays = async () => {
-        const fetchedHolidays = await getHolidays();
-        setHolidays(fetchedHolidays);
-    };
-    fetchHolidays();
+    const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+        setHolidays(updatedHolidays);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const { holidaysThisMonth, mealBreaksThisMonth } = useMemo(() => {

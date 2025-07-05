@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2 } from 'lucide-react';
 import { billHistory, studentsData, leaveHistory as initialLeaveHistory, Leave, Holiday } from "@/lib/data";
-import { getHolidays } from '@/lib/actions/holidays';
+import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { useAuth } from '@/contexts/auth-context';
 import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay } from 'date-fns';
 import Link from 'next/link';
@@ -60,11 +60,11 @@ export default function StudentDashboard() {
       setLeaves(studentLeaves);
     }
     
-    const fetchHolidays = async () => {
-        const fetchedHolidays = await getHolidays();
-        setHolidays(fetchedHolidays);
-    };
-    fetchHolidays();
+    const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+        setHolidays(updatedHolidays);
+    });
+    
+    return () => unsubscribe();
   }, [user]);
 
   useEffect(() => {
