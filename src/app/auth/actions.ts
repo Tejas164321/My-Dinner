@@ -96,40 +96,42 @@ export async function adminSignup(prevState: any, formData: FormData) {
 export async function adminLogin(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  let userCredential;
 
   try {
-    userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
+      redirect('/admin');
+    } else {
+      await auth.signOut();
+      return { message: 'This account does not have admin privileges.' };
+    }
   } catch (error: any) {
+    // If sign-in fails, check if it's the special admin user case
     if (error.code === 'auth/user-not-found' && email === 'admin@messo.com') {
+      // This is the first run for the default admin, so create it
       try {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        await setDoc(doc(db, 'users', user.uid), {
+        const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = newUserCredential.user;
+        await setDoc(doc(db, 'users', newUser.uid), {
           name: 'Admin User',
           email: email,
           role: 'admin',
-          avatarUrl: `https://i.pravatar.cc/150?u=${user.uid}`,
+          avatarUrl: `https://i.pravatar.cc/150?u=${newUser.uid}`,
         });
+        // Redirect after successful creation
+        redirect('/admin');
       } catch (createError: any) {
-        return { message: `Failed to create admin account: ${createError.message}` };
+        return { message: `Failed to create default admin account: ${createError.message}` };
       }
     } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
       return { message: 'Invalid email or password.' };
     } else {
       return { message: `An unexpected error occurred: ${error.message}` };
     }
-  }
-
-  const user = userCredential.user;
-  const userDocRef = doc(db, 'users', user.uid);
-  const userDocSnap = await getDoc(userDocRef);
-
-  if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
-    redirect('/admin');
-  } else {
-    await auth.signOut();
-    return { message: 'This account does not have admin privileges.' };
   }
 }
 
