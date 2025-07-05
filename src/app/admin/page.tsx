@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Users, UserX, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays, Moon, Sun, UserPlus, GitCompareArrows, Check, X } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { leaveHistory, joinRequests, planChangeRequests, Holiday } from '@/lib/data';
+import { initialLeaveHistory, joinRequests, planChangeRequests, Holiday } from '@/lib/data';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -64,7 +64,8 @@ export default function AdminDashboard() {
     if (!today) return { lunch: 0, dinner: 0 };
     
     const fixedToday = startOfDay(new Date(2023, 9, 27));
-    const leaves = leaveHistory.filter(l => format(l.date, 'yyyy-MM-dd') === format(fixedToday, 'yyyy-MM-dd'));
+    // NOTE: This uses static data. For a full implementation, this should listen to leave updates from Firestore.
+    const leaves = initialLeaveHistory.filter(l => format(l.date, 'yyyy-MM-dd') === format(fixedToday, 'yyyy-MM-dd'));
 
     let lunchOff = 0;
     let dinnerOff = 0;

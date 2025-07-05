@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,18 +12,11 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { billHistory as initialBillHistory, Bill, paymentReminders } from '@/lib/data';
+import { initialLeaveHistory, paymentReminders, Holiday, Leave, AppUser, BillDetails } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
+import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { cn } from '@/lib/utils';
-import {
-  Receipt,
-  Wallet,
-  CreditCard,
-  Banknote,
-  X,
-  Info,
-  ShieldAlert,
-} from 'lucide-react';
+import { Receipt, Wallet, CreditCard, Banknote, X, Info, ShieldAlert } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -46,14 +40,78 @@ import { BillDetailDialog } from '@/components/student/bill-detail-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { format } from 'date-fns';
+import { format, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, subMonths } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const CHARGE_PER_MEAL = 65;
+
+export interface Bill {
+    id: string;
+    month: string;
+    year: number;
+    generationDate: string;
+    totalAmount: number;
+    payments: { amount: number; date: string }[];
+    status: 'Paid' | 'Due';
+    details: BillDetails;
+}
 
 const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
 
+const calculateBillDetailsForMonth = (
+    monthDate: Date, 
+    user: AppUser, 
+    allHolidays: Holiday[], 
+    allLeaves: Leave[]
+): BillDetails => {
+    const month = getMonth(monthDate);
+    const year = getYear(monthDate);
+    const daysInMonth = getDaysInMonth(monthDate);
+    
+    const holidays = allHolidays.filter(h => getMonth(h.date) === month && getYear(h.date) === year);
+    const leaves = allLeaves.filter(l => getMonth(l.date) === month && getYear(l.date) === year);
+
+    let totalMeals = 0;
+    let fullDays = 0;
+    let halfDays = 0;
+    let absentDays = 0;
+    let holidayCount = 0;
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const day = new Date(year, month, i);
+        const holiday = holidays.find(h => isSameDay(h.date, day));
+        const leave = leaves.find(l => isSameDay(l.date, day));
+
+        if (holiday) {
+            holidayCount++;
+            continue;
+        }
+        
+        if (leave) {
+            absentDays++;
+            if (user.messPlan === 'full_day') {
+                if (leave.type === 'lunch_only') { halfDays++; totalMeals++; }
+                if (leave.type === 'dinner_only') { halfDays++; totalMeals++; }
+            }
+        } else {
+            if (user.messPlan === 'full_day') { fullDays++; totalMeals += 2; }
+            else { halfDays++; totalMeals++; }
+        }
+    }
+    
+    return {
+        totalMeals, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: daysInMonth,
+        holidays: holidayCount, billableDays: daysInMonth - holidayCount,
+        fullDays, halfDays, absentDays
+    };
+};
+
 export default function StudentBillsPage() {
   const { user } = useAuth();
-  const [bills, setBills] = useState<Bill[]>(initialBillHistory);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
@@ -62,10 +120,55 @@ export default function StudentBillsPage() {
 
   const { toast } = useToast();
 
-  const handleOpenPaymentDialog = (bill: Bill) => {
-    setSelectedBill(bill);
-  };
+  useEffect(() => {
+      setIsLoading(true);
+      if(user) {
+          setLeaves(initialLeaveHistory.filter(l => l.studentId === user.uid));
+      }
+      const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+          setHolidays(updatedHolidays);
+          setIsLoading(false);
+      });
+      return () => unsubscribe();
+  }, [user]);
 
+  const dynamicallyGeneratedBills = useMemo(() => {
+    if (!user || isLoading) return [];
+
+    const bills: Bill[] = [];
+    const today = new Date();
+    // Simulate payment history
+    const paymentHistory: {[key: string]: { amount: number; date: string }[]} = {
+      '2023-09': [{ amount: 3380, date: '2023-10-04' }],
+      '2023-08': [{ amount: 1000, date: '2023-09-10' }, { amount: 1000, date: '2023-09-20' }],
+      '2023-10': [{ amount: 3445, date: '2023-11-05' }],
+    };
+
+    for (let i = 0; i < 4; i++) {
+        const monthDate = startOfMonth(subMonths(today, i));
+        // Use a fixed date for consistent demo data
+        const demoMonthDate = startOfMonth(subMonths(new Date(2023, 10, 1), i));
+
+        const details = calculateBillDetailsForMonth(demoMonthDate, user, holidays, leaves);
+        const totalAmount = details.totalMeals * details.chargePerMeal;
+        const monthKey = format(demoMonthDate, 'yyyy-MM');
+        const payments = paymentHistory[monthKey] || [];
+
+        bills.push({
+            id: `bill-${monthKey}`,
+            month: format(demoMonthDate, 'MMMM'),
+            year: getYear(demoMonthDate),
+            generationDate: format(startOfMonth(subMonths(today, i - 1)), 'yyyy-MM-dd'),
+            totalAmount,
+            payments,
+            status: totalAmount - payments.reduce((sum, p) => sum + p.amount, 0) > 0 ? 'Due' : 'Paid',
+            details,
+        });
+    }
+    return bills.reverse();
+  }, [user, holidays, leaves, isLoading]);
+
+  const handleOpenPaymentDialog = (bill: Bill) => setSelectedBill(bill);
   const handleClosePaymentDialogs = () => {
     setSelectedBill(null);
     setIsCashPaymentOpen(false);
@@ -75,42 +178,18 @@ export default function StudentBillsPage() {
   };
 
   const handleMakePayment = (amountToPay: number) => {
+    // This is a mock function, in a real app this would call a server action
     if (!selectedBill || isNaN(amountToPay) || amountToPay <= 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid Amount',
-        description: 'Please enter a valid positive number.',
-      });
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number.' });
       return;
     }
-
     const paidAmount = getPaidAmount(selectedBill);
     const dueAmount = selectedBill.totalAmount - paidAmount;
-    
     if (amountToPay > dueAmount) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid Amount',
-        description: `Payment cannot be more than the due amount of ₹${dueAmount.toLocaleString()}.`,
-      });
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: `Payment cannot be more than the due amount of ₹${dueAmount.toLocaleString()}.` });
       return;
     }
-
-    setBills((prevBills) =>
-      prevBills.map((b) => {
-        if (b.id === selectedBill.id) {
-          const newPayments = [...b.payments, { amount: amountToPay, date: format(new Date(), 'yyyy-MM-dd') }];
-          return { ...b, payments: newPayments };
-        }
-        return b;
-      })
-    );
-
-    toast({
-      title: 'Payment Recorded',
-      description: `A payment of ₹${amountToPay.toLocaleString()} for your ${selectedBill.month} bill has been recorded.`,
-    });
-
+    toast({ title: 'Payment Recorded', description: `A payment of ₹${amountToPay.toLocaleString()} for your ${selectedBill.month} bill has been recorded. This is a demo and will reset.` });
     handleClosePaymentDialogs();
   };
 
@@ -118,19 +197,23 @@ export default function StudentBillsPage() {
   
   const initiatePaymentConfirmation = (amount: number) => {
       if (isNaN(amount) || amount <= 0) {
-        toast({
-            variant: 'destructive',
-            title: 'Invalid Amount',
-            description: 'Please enter a valid positive number.',
-        });
+        toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number.' });
         return;
       }
       setAmountToConfirm(amount);
       setIsConfirmingPayment(true);
   };
   
-  if (!user) {
-    return null; // or loading
+  if (isLoading || !user) {
+    return (
+        <div className="space-y-4">
+             <Skeleton className="h-10 w-48" />
+             <Skeleton className="h-40 w-full" />
+             <Skeleton className="h-20 w-full" />
+             <Skeleton className="h-20 w-full" />
+             <Skeleton className="h-20 w-full" />
+        </div>
+    )
   }
 
   return (
@@ -190,7 +273,7 @@ export default function StudentBillsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {bills.map((bill) => {
+          {dynamicallyGeneratedBills.map((bill) => {
             const paidAmount = getPaidAmount(bill);
             const dueAmount = bill.totalAmount - paidAmount;
 
@@ -232,7 +315,7 @@ export default function StudentBillsPage() {
                              A detailed breakdown of your bill for {bill.month} {bill.year}, including attendance and payment history.
                          </DialogDescription>
                        </DialogHeader>
-                      <BillDetailDialog bill={bill} onPayNow={() => handleOpenPaymentDialog(bill)} />
+                      <BillDetailDialog bill={bill} onPayNow={() => handleOpenPaymentDialog(bill)} leaves={leaves} holidays={holidays} />
                     </DialogContent>
                   </Dialog>
 

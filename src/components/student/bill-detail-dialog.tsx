@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -12,55 +13,34 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
-import type { Bill, Holiday } from '@/lib/data';
-import { leaveHistory } from '@/lib/data';
-import { onHolidaysUpdate } from '@/lib/listeners/holidays';
+import type { Bill, Holiday, Leave } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
-import {
-  Utensils,
-  FileDown,
-  Wallet,
-  CalendarCheck2,
-} from 'lucide-react';
+import { Utensils, FileDown, Wallet, CalendarCheck2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isSameDay } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 
-interface BillDetailDialogProps {
-  bill: Bill;
-  onPayNow: (bill: Bill) => void;
-}
-
 const monthMap: { [key: string]: number } = {
-  January: 0,
-  February: 1,
-  March: 2,
-  April: 3,
-  May: 4,
-  June: 5,
-  July: 6,
-  August: 7,
-  September: 8,
-  October: 9,
-  November: 10,
-  December: 11,
+  January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
+  July: 6, August: 7, September: 8, October: 9, November: 10, December: 11,
 };
 
 const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
 
-export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
+interface BillDetailDialogProps {
+  bill: Bill;
+  onPayNow: (bill: Bill) => void;
+  holidays: Holiday[];
+  leaves: Leave[];
+}
+
+export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetailDialogProps) {
   const { user: student } = useAuth();
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const monthIndex = monthMap[bill.month];
   const monthDate = new Date(bill.year, monthIndex, 1);
   const paidAmount = getPaidAmount(bill);
   const dueAmount = bill.totalAmount - paidAmount;
-
-  useEffect(() => {
-    const unsubscribe = onHolidaysUpdate(setHolidays);
-    return () => unsubscribe();
-  }, []);
 
   const {
     holidayDays,
@@ -84,7 +64,7 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
     const hpDays: Date[] = [];
     const fpDays: Date[] = [];
 
-    const studentLeaves = leaveHistory.filter(l => l.studentId === student.uid);
+    const studentLeaves = leaves.filter(l => l.studentId === student.uid);
     const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
     const htm = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
 
@@ -118,7 +98,7 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
         leaveTypeMap: ltm,
         holidayTypeMap: htm,
     };
-  }, [bill, student, holidays]);
+  }, [bill, student, holidays, leaves]);
 
   function CustomDayContent({ date }: DayContentProps) {
     if (!student) return <div>{date.getDate()}</div>
@@ -150,7 +130,7 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
     );
   }
     
-  const getStatusInfo = (status: Bill['status']) => {
+  const getStatusInfo = (status: 'Paid' | 'Due') => {
     switch (status) {
       case 'Paid':
         return {

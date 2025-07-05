@@ -1,39 +1,40 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from "react";
 import type { DayContentProps } from "react-day-picker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { studentsData, leaveHistory, Holiday } from "@/lib/data";
+import { initialLeaveHistory, Holiday, Leave } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
-import { CalendarCheck, Utensils, Percent, UserX, CalendarDays, Sun, Moon } from "lucide-react";
+import { CalendarCheck, Utensils, Percent, UserX, Sun, Moon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StudentAttendancePage() {
     const { user } = useAuth();
     const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
-    const [today, setToday] = useState<Date | undefined>();
     const [holidays, setHolidays] = useState<Holiday[]>([]);
+    const [leaves, setLeaves] = useState<Leave[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        setToday(new Date(2023, 9, 27)); // Fixed date for consistency
-
         setIsLoading(true);
+        if (user) {
+            setLeaves(initialLeaveHistory.filter(l => l.studentId === user.uid));
+        }
+
         const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
             setHolidays(updatedHolidays);
             setIsLoading(false);
         });
         
         return () => unsubscribe();
-    }, []);
+    }, [user]);
     
     const monthOptions = [
         { value: '2023-10', label: 'October 2023' },
@@ -43,7 +44,7 @@ export default function StudentAttendancePage() {
     ];
 
     const monthlyStats = useMemo(() => {
-        if (!user || !today) {
+        if (!user || isLoading) {
             return {
                 attendancePercent: '0%',
                 totalMeals: 0,
@@ -55,44 +56,48 @@ export default function StudentAttendancePage() {
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
         const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
-        
-        const studentLeaves = leaveHistory.filter(l => l.studentId === user.uid && isSameMonth(l.date, month));
+        const today = startOfDay(new Date());
+
+        const studentLeaves = leaves.filter(l => isSameMonth(l.date, month));
         const monthHolidays = holidays.filter(h => isSameMonth(h.date, month));
 
+        let presentMealsCount = 0;
         let presentDaysCount = 0;
         let absentDaysCount = 0;
-        let totalMealsCount = 0;
+        let totalCountedDays = 0;
         
         const consideredDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1)).filter(d => d <= today);
 
         consideredDays.forEach(day => {
-            const holiday = monthHolidays.find(h => isSameDay(h.date, day));
-            if (holiday) return; // Skip holidays for attendance % calculation
+            const isHoliday = monthHolidays.some(h => isSameDay(h.date, day));
+            if (isHoliday) return;
 
+            totalCountedDays++;
             const leave = studentLeaves.find(l => isSameDay(l.date, day));
 
             if (leave) {
                 absentDaysCount++;
+                if (user.messPlan === 'full_day' && leave.type === 'lunch_only') presentMealsCount++;
+                if (user.messPlan === 'full_day' && leave.type === 'dinner_only') presentMealsCount++;
             } else {
                 presentDaysCount++;
                 if (user.messPlan === 'full_day') {
-                    totalMealsCount += 2;
+                    presentMealsCount += 2;
                 } else {
-                    totalMealsCount += 1;
+                    presentMealsCount += 1;
                 }
             }
         });
         
-        const totalCountedDays = presentDaysCount + absentDaysCount;
         const attendance = totalCountedDays > 0 ? ((presentDaysCount / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
         
         return {
             attendancePercent: attendance,
-            totalMeals: totalMealsCount,
+            totalMeals: presentMealsCount,
             presentDays: presentDaysCount,
             absentDays: absentDaysCount,
         };
-    }, [month, user, today, holidays]);
+    }, [month, user, holidays, leaves, isLoading]);
 
     const {
         holidayDays,
@@ -116,9 +121,11 @@ export default function StudentAttendancePage() {
         const hpDays: Date[] = [];
         const dtMap = new Map();
 
-        const studentLeaves = leaveHistory.filter(l => l.studentId === user.uid);
+        const studentLeaves = leaves.filter(l => isSameMonth(l.date, month));
+        const monthHolidays = holidays.filter(h => isSameMonth(h.date, month));
+
         const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
-        const htm = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
+        const htm = new Map(monthHolidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
 
         allDaysInMonth.forEach(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
@@ -153,10 +160,10 @@ export default function StudentAttendancePage() {
             halfPresentDays: hpDays,
             dayTypeMap: dtMap,
         };
-    }, [month, user, holidays]);
+    }, [month, user, holidays, leaves]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
-        if (!user || !today || date > today) {
+        if (!user) {
             return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
         }
 
@@ -214,7 +221,7 @@ export default function StudentAttendancePage() {
                 <h1 className="text-2xl font-bold tracking-tight">My Attendance</h1>
                  <Select
                     value={format(month, 'yyyy-MM')}
-                    onValueChange={(value) => setMonth(new Date(value))}
+                    onValueChange={(value) => setMonth(startOfDay(new Date(value)))}
                 >
                     <SelectTrigger className="w-[200px]">
                         <SelectValue placeholder="Select month" />

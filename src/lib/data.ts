@@ -1,5 +1,4 @@
 
-
 import { format, subDays, addDays, startOfDay } from 'date-fns';
 
 export const studentNavItems = [
@@ -97,20 +96,17 @@ export interface Student {
     roomNo: string;
     status: 'active' | 'suspended';
     messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
-    monthlyDetails: {
+     monthlyDetails: {
         [key: string]: {
             attendance: string;
             bill: { 
                 total: number; 
                 payments: { amount: number; date: string }[],
-                details: BillDetails
             };
             status: 'Paid' | 'Due';
         }
     }
 }
-
-const CHARGE_PER_MEAL = 65;
 
 export const studentsData: Student[] = [
     { 
@@ -118,10 +114,8 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'full_day',
         monthlyDetails: {
-            'october': { attendance: '92%', bill: { total: 3380, payments: [{ amount: 3380, date: '2023-10-05' }], details: { totalMeals: 52, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 2, billableDays: 29, fullDays: 25, halfDays: 2, absentDays: 2 } }, status: 'Paid' },
-            'september': { attendance: '95%', bill: { total: 3575, payments: [{ amount: 3575, date: '2023-09-05' }], details: { totalMeals: 55, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 30, holidays: 1, billableDays: 29, fullDays: 27, halfDays: 1, absentDays: 1 } }, status: 'Paid' },
-            'august': { attendance: '91%', bill: { total: 3315, payments: [{ amount: 3315, date: '2023-08-05' }], details: { totalMeals: 51, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 1, billableDays: 30, fullDays: 25, halfDays: 2, absentDays: 3 } }, status: 'Paid' },
-            'july': { attendance: '90%', bill: { total: 3510, payments: [{ amount: 3510, date: '2023-07-05' }], details: { totalMeals: 54, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 0, billableDays: 31, fullDays: 25, halfDays: 4, absentDays: 2 } }, status: 'Paid' },
+            'october': { attendance: '92%', bill: { total: 3380, payments: [{ amount: 3380, date: '2023-10-05' }] }, status: 'Paid' },
+            'september': { attendance: '95%', bill: { total: 3575, payments: [{ amount: 3575, date: '2023-09-05' }] }, status: 'Paid' },
         }
     },
     { 
@@ -129,10 +123,8 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'lunch_only',
         monthlyDetails: {
-            'october': { attendance: '88%', bill: { total: 1625, payments: [], details: { totalMeals: 25, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 2, billableDays: 29, fullDays: 0, halfDays: 25, absentDays: 4 } }, status: 'Due' },
-            'september': { attendance: '90%', bill: { total: 1755, payments: [{ amount: 1755, date: '2023-09-08' }], details: { totalMeals: 27, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 30, holidays: 1, billableDays: 29, fullDays: 0, halfDays: 27, absentDays: 2 } }, status: 'Paid' },
-            'august': { attendance: '85%', bill: { total: 1690, payments: [{ amount: 1000, date: '2023-08-10' }], details: { totalMeals: 26, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 1, billableDays: 30, fullDays: 0, halfDays: 26, absentDays: 4 } }, status: 'Due' },
-            'july': { attendance: '89%', bill: { total: 1885, payments: [{ amount: 1885, date: '2023-07-06' }], details: { totalMeals: 29, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 0, billableDays: 31, fullDays: 0, halfDays: 29, absentDays: 2 } }, status: 'Paid' },
+            'october': { attendance: '88%', bill: { total: 1625, payments: [] }, status: 'Due' },
+            'september': { attendance: '90%', bill: { total: 1755, payments: [{ amount: 1755, date: '2023-09-08' }] }, status: 'Paid' },
         }
     },
     { 
@@ -140,10 +132,8 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'full_day',
         monthlyDetails: {
-            'october': { attendance: '98%', bill: { total: 3510, payments: [{ amount: 3510, date: '2023-10-03' }], details: { totalMeals: 54, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 2, billableDays: 29, fullDays: 26, halfDays: 2, absentDays: 1 } }, status: 'Paid' },
-            'september': { attendance: '96%', bill: { total: 3640, payments: [{ amount: 3640, date: '2023-09-04' }], details: { totalMeals: 56, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 30, holidays: 1, billableDays: 29, fullDays: 28, halfDays: 0, absentDays: 1 } }, status: 'Paid' },
-            'august': { attendance: '99%', bill: { total: 3510, payments: [{ amount: 3510, date: '2023-08-02' }], details: { totalMeals: 54, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 1, billableDays: 30, fullDays: 27, halfDays: 0, absentDays: 3 } }, status: 'Paid' },
-            'july': { attendance: '97%', bill: { total: 3770, payments: [{ amount: 3770, date: '2023-07-02' }], details: { totalMeals: 58, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 0, billableDays: 31, fullDays: 28, halfDays: 2, absentDays: 1 } }, status: 'Paid' },
+            'october': { attendance: '98%', bill: { total: 3510, payments: [{ amount: 3510, date: '2023-10-03' }] }, status: 'Paid' },
+            'september': { attendance: '96%', bill: { total: 3640, payments: [{ amount: 3640, date: '2023-09-04' }] }, status: 'Paid' },
         }
     },
     { 
@@ -151,10 +141,8 @@ export const studentsData: Student[] = [
         status: 'suspended',
         messPlan: 'full_day',
         monthlyDetails: {
-            'october': { attendance: '75%', bill: { total: 2795, payments: [], details: { totalMeals: 43, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 2, billableDays: 29, fullDays: 19, halfDays: 5, absentDays: 5 } }, status: 'Due' },
-            'september': { attendance: '80%', bill: { total: 2990, payments: [], details: { totalMeals: 46, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 30, holidays: 1, billableDays: 29, fullDays: 20, halfDays: 6, absentDays: 3 } }, status: 'Due' },
-            'august': { attendance: '78%', bill: { total: 2860, payments: [{ amount: 2860, date: '2023-08-20' }], details: { totalMeals: 44, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 1, billableDays: 30, fullDays: 19, halfDays: 6, absentDays: 5 } }, status: 'Paid' },
-            'july': { attendance: '82%', bill: { total: 3185, payments: [{ amount: 3185, date: '2023-07-21' }], details: { totalMeals: 49, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 0, billableDays: 31, fullDays: 22, halfDays: 5, absentDays: 4 } }, status: 'Paid' },
+            'october': { attendance: '75%', bill: { total: 2795, payments: [] }, status: 'Due' },
+            'september': { attendance: '80%', bill: { total: 2990, payments: [] }, status: 'Due' },
         }
     },
     { 
@@ -162,10 +150,8 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'full_day',
         monthlyDetails: {
-            'october': { attendance: '92%', bill: { total: 3380, payments: [{ amount: 3380, date: '2023-10-06' }], details: { totalMeals: 52, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 2, billableDays: 29, fullDays: 24, halfDays: 4, absentDays: 1 } }, status: 'Paid' },
-            'september': { attendance: '94%', bill: { total: 3510, payments: [{ amount: 3510, date: '2023-09-06' }], details: { totalMeals: 54, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 30, holidays: 1, billableDays: 29, fullDays: 26, halfDays: 2, absentDays: 1 } }, status: 'Paid' },
-            'august': { attendance: '93%', bill: { total: 3380, payments: [{ amount: 3380, date: '2023-08-07' }], details: { totalMeals: 52, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 1, billableDays: 30, fullDays: 25, halfDays: 2, absentDays: 2 } }, status: 'Paid' },
-            'july': { attendance: '95%', bill: { total: 3705, payments: [{ amount: 3705, date: '2023-07-07' }], details: { totalMeals: 57, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 0, billableDays: 31, fullDays: 28, halfDays: 1, absentDays: 2 } }, status: 'Paid' },
+            'october': { attendance: '92%', bill: { total: 3380, payments: [{ amount: 3380, date: '2023-10-06' }] }, status: 'Paid' },
+            'september': { attendance: '94%', bill: { total: 3510, payments: [{ amount: 3510, date: '2023-09-06' }] }, status: 'Paid' },
         }
     },
     { 
@@ -173,10 +159,8 @@ export const studentsData: Student[] = [
         status: 'active',
         messPlan: 'dinner_only',
         monthlyDetails: {
-            'october': { attendance: '99%', bill: { total: 1820, payments: [], details: { totalMeals: 28, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 2, billableDays: 29, fullDays: 0, halfDays: 28, absentDays: 1 } }, status: 'Due' },
-            'september': { attendance: '100%', bill: { total: 1950, payments: [{ amount: 1950, date: '2023-09-01' }], details: { totalMeals: 30, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 30, holidays: 0, billableDays: 30, fullDays: 0, halfDays: 30, absentDays: 0 } }, status: 'Paid' },
-            'august': { attendance: '98%', bill: { total: 1885, payments: [{ amount: 1885, date: '2023-08-01' }], details: { totalMeals: 29, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 1, billableDays: 30, fullDays: 0, halfDays: 29, absentDays: 1 } }, status: 'Paid' },
-            'july': { attendance: '99%', bill: { total: 1950, payments: [], details: { totalMeals: 30, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 31, holidays: 0, billableDays: 31, fullDays: 0, halfDays: 30, absentDays: 1 } }, status: 'Due' },
+            'october': { attendance: '99%', bill: { total: 1820, payments: [] }, status: 'Due' },
+            'september': { attendance: '100%', bill: { total: 1950, payments: [{ amount: 1950, date: '2023-09-01' }] }, status: 'Paid' },
         }
     },
 ];
@@ -196,7 +180,7 @@ export interface Leave {
     type: 'full_day' | 'lunch_only' | 'dinner_only';
 }
 
-export const leaveHistory: Leave[] = [
+export const initialLeaveHistory: Leave[] = [
     // Alex Doe (8)
     { studentId: '8', date: new Date(2023, 9, 27), name: 'Student Leave', type: 'full_day' },
     { studentId: '8', date: new Date(2023, 9, 30), name: 'Student Leave', type: 'lunch_only' },
@@ -238,73 +222,6 @@ export interface Bill {
     status: 'Paid' | 'Due';
     details: BillDetails;
 }
-
-export const billHistory: Bill[] = [
-    {
-        id: 'bill1', month: 'October', year: 2023, generationDate: '2023-11-01', totalAmount: 3445, 
-        payments: [{ amount: 3445, date: '2023-11-05' }], 
-        status: 'Paid',
-        details: { 
-            totalDaysInMonth: 31, 
-            holidays: 2,
-            billableDays: 29,
-            fullDays: 25, 
-            halfDays: 3, 
-            absentDays: 1, 
-            totalMeals: 53, 
-            chargePerMeal: 65 
-        }
-    },
-    {
-        id: 'bill2', month: 'September', year: 2023, generationDate: '2023-10-01', totalAmount: 3380, 
-        payments: [{ amount: 3380, date: '2023-10-04' }], 
-        status: 'Paid',
-        details: { 
-            totalDaysInMonth: 30, 
-            holidays: 1,
-            billableDays: 29,
-            fullDays: 24, 
-            halfDays: 4, 
-            absentDays: 1, 
-            totalMeals: 52, 
-            chargePerMeal: 65 
-        }
-    },
-    {
-        id: 'bill3', month: 'August', year: 2023, generationDate: '2023-09-01', totalAmount: 3120, 
-        payments: [
-            { amount: 1000, date: '2023-09-10' },
-            { amount: 1000, date: '2023-09-20' }
-        ], 
-        status: 'Due',
-        details: { 
-            totalDaysInMonth: 31, 
-            holidays: 1,
-            billableDays: 30,
-            fullDays: 22, 
-            halfDays: 4, 
-            absentDays: 4, 
-            totalMeals: 48, 
-            chargePerMeal: 65 
-        }
-    },
-     {
-        id: 'bill4', month: 'July', year: 2023, generationDate: '2023-08-01', totalAmount: 3445, 
-        payments: [], 
-        status: 'Due',
-        details: { 
-            totalDaysInMonth: 31, 
-            holidays: 0,
-            billableDays: 31,
-            fullDays: 25, 
-            halfDays: 3, 
-            absentDays: 3, 
-            totalMeals: 53, 
-            chargePerMeal: 65 
-        }
-    },
-];
-
 
 export interface Announcement {
     id: string;
