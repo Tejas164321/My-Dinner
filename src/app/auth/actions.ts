@@ -44,6 +44,29 @@ export async function login(prevState: any, formData: FormData) {
     try {
         await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
+        // If login fails because the user doesn't exist, and it's the admin user, create it.
+        if (error.code === 'auth/invalid-credential' && email === 'admin@messo.com') {
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Create the admin user document in Firestore
+                await setDoc(doc(db, 'users', user.uid), {
+                    name: 'Admin User',
+                    email: user.email,
+                    role: 'admin',
+                    avatarUrl: 'https://i.pravatar.cc/150?u=admin01',
+                });
+                
+                // Since user is now created and logged in, we can proceed.
+                revalidatePath('/');
+                return { message: 'success' };
+            } catch (creationError: any) {
+                // If creation fails (e.g., weak password), return that error.
+                return { message: `Admin creation failed: ${creationError.message}` };
+            }
+        }
+        
         if (error.code === 'auth/invalid-credential') {
             return { message: 'Invalid email or password.' };
         }
