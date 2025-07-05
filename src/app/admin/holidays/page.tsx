@@ -71,6 +71,15 @@ export default function HolidaysPage() {
     if (leaveType === 'one_day' && oneDayDate) {
       newHolidays.push({ name: newHolidayName, date: oneDayDate, type: oneDayType });
     } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
+      if (longLeaveToDate < longLeaveFromDate) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Date Range",
+          description: "The 'To Date' cannot be before the 'From Date'.",
+        });
+        return;
+      }
+      
       const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
       
       if (dates.length === 1) {
