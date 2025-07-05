@@ -53,7 +53,7 @@ export default function StudentDashboard() {
     // Filter leaves for the current student and sort them
     if (user) {
       const studentLeaves = initialLeaveHistory
-        .filter(l => l.studentId === user.uid) // MOCK: should use user.uid
+        .filter(l => l.studentId === user.uid)
         .sort((a, b) => a.date.getTime() - b.date.getTime());
       setLeaves(studentLeaves);
     }
@@ -140,10 +140,10 @@ export default function StudentDashboard() {
   }, [selectedDate, leaves]);
   
   const menuTitle = useMemo(() => {
-      if (!selectedDate) return "Today's Menu";
-      const isFixedToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-      return isFixedToday ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
-  }, [selectedDate]);
+      if (!selectedDate || !today) return "Today's Menu";
+      const isToday = format(selectedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+      return isToday ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
+  }, [selectedDate, today]);
 
   const currentMonthBill = useMemo(() => {
     if (!selectedDate) return undefined;
