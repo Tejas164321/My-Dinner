@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { format, isFuture, eachDayOfInterval } from 'date-fns';
+import { format, isFuture, eachDayOfInterval, startOfDay } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -37,7 +38,7 @@ export default function StudentLeavePage() {
   const [today, setToday] = useState<Date | undefined>();
 
   useEffect(() => {
-    const now = new Date();
+    const now = startOfDay(new Date());
     setToday(now);
     setOneDayDate(now);
     if(user) {
@@ -53,13 +54,13 @@ export default function StudentLeavePage() {
 
   const upcomingLeaves = useMemo(() => {
     if (!today) return [];
-    return leaves.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'));
+    return leaves.filter(l => l.date >= today);
   }, [leaves, today]);
   
   const upcomingHolidays = useMemo(() => {
     if (!today) return [];
     return holidays
-        .filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'))
+        .filter(h => h.date >= today)
         .slice(0, 5);
   }, [holidays, today]);
 
