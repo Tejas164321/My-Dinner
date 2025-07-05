@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { studentNavItems } from '@/lib/data';
@@ -11,7 +12,16 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  if (loading) {
+  // Use useEffect to handle redirection based on auth state
+  useEffect(() => {
+    if (!loading && (!user || user.role !== 'student')) {
+      router.replace('/login');
+    }
+  }, [user, loading, router]);
+
+  // While loading or if user is not a valid student, show a loading screen.
+  // The useEffect will handle the redirect.
+  if (loading || !user || user.role !== 'student') {
      return (
        <div className="flex h-screen w-full items-center justify-center">
             <div className="flex items-center space-x-4">
@@ -24,22 +34,8 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
         </div>
     );
   }
-  
-  if (!user || user.role !== 'student') {
-      router.replace('/login');
-       return (
-       <div className="flex h-screen w-full items-center justify-center">
-            <div className="flex items-center space-x-4">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                </div>
-            </div>
-        </div>
-    );
-  }
 
+  // If we reach here, user is a valid student.
   const dashboardUser = {
     name: user.name || 'Student',
     role: 'Student',
