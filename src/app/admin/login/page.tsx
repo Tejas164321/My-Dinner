@@ -27,13 +27,8 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
 
-  useEffect(() => {
-    if (state.message === 'success' && user?.role === 'admin') {
-        router.replace('/admin');
-    }
-  }, [state, user, router]);
-  
    useEffect(() => {
+    // This effect handles redirecting a user who is already logged in
     if (!loading && user?.role === 'admin') {
       router.replace('/admin');
     }

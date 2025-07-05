@@ -26,14 +26,9 @@ export default function StudentLoginPage() {
   const [state, formAction] = useFormState(studentLogin, { message: '' });
   const router = useRouter();
   const { user, loading } = useAuth();
-
-  useEffect(() => {
-    if (state.message === 'success' && user?.role === 'student') {
-        router.replace('/student/dashboard');
-    }
-  }, [state, user, router]);
   
    useEffect(() => {
+    // This effect handles redirecting a user who is already logged in
     if (!loading && user?.role === 'student') {
       router.replace('/student/dashboard');
     }
