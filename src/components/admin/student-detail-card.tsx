@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import type { Student, Holiday } from "@/lib/data";
-import { holidays, leaveHistory } from "@/lib/data";
+import { leaveHistory } from "@/lib/data";
+import { getHolidays } from "@/lib/actions/holidays";
 import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
@@ -28,11 +29,18 @@ interface StudentDetailCardProps {
 export function StudentDetailCard({ student, initialMonth }: StudentDetailCardProps) {
     const [month, setMonth] = useState<Date>(initialMonth);
     const [today, setToday] = useState<Date | undefined>();
+    const [holidays, setHolidays] = useState<Holiday[]>([]);
 
     useEffect(() => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         setToday(new Date(2023, 9, 27)); // Fixed date for consistency
+
+        const fetchHolidays = async () => {
+            const fetchedHolidays = await getHolidays();
+            setHolidays(fetchedHolidays);
+        };
+        fetchHolidays();
     }, []);
 
     const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
@@ -101,7 +109,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             absentMeals: aMeals,
             holidayMeals: hMeals
         };
-    }, [month, student.id, student.messPlan]);
+    }, [month, student.id, student.messPlan, holidays]);
     
     const {
         holidayDays,
@@ -153,7 +161,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             halfPresentDays: hpDays,
             dayTypeMap: dtMap
         };
-    }, [month, student.id, student.messPlan]);
+    }, [month, student.id, student.messPlan, holidays]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
         if (!today || date > today) {

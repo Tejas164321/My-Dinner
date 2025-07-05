@@ -196,13 +196,6 @@ export interface Leave {
     type: 'full_day' | 'lunch_only' | 'dinner_only';
 }
 
-export const holidays: Holiday[] = [
-    { date: new Date(2023, 9, 2), name: 'Gandhi Jayanti', type: 'full_day' },
-    { date: new Date(2023, 9, 24), name: 'Dussehra', type: 'full_day' },
-    { date: new Date(2023, 10, 12), name: 'Diwali', type: 'full_day' },
-    { date: new Date(2023, 11, 25), name: 'Christmas', type: 'full_day' },
-];
-
 export const leaveHistory: Leave[] = [
     // Alex Doe (8)
     { studentId: '8', date: new Date(2023, 9, 27), name: 'Student Leave', type: 'full_day' },

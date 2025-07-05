@@ -13,7 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { holidays as initialHolidays, Holiday } from '@/lib/data';
+import { Holiday } from '@/lib/data';
+import { addHolidays, deleteHoliday, getHolidays } from '@/lib/actions/holidays';
+import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 
@@ -21,7 +23,9 @@ type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
 type LeaveType = 'one_day' | 'long_leave';
 
 export default function HolidaysPage() {
-  const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays.sort((a, b) => a.date.getTime() - b.date.getTime()));
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   
   // Form State
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
@@ -39,17 +43,26 @@ export default function HolidaysPage() {
 
   useEffect(() => {
     const now = new Date();
+    now.setHours(0,0,0,0);
     setMonth(now);
     setToday(now);
     setOneDayDate(now);
+
+    const fetchHolidays = async () => {
+        setIsLoading(true);
+        const fetchedHolidays = await getHolidays();
+        setHolidays(fetchedHolidays);
+        setIsLoading(false);
+    };
+    fetchHolidays();
   }, []);
 
   const upcomingHolidays = useMemo(() => {
     if (!today) return [];
-    return holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'));
+    return holidays.filter(h => h.date >= today);
   }, [holidays, today]);
 
-  const handleAddHoliday = () => {
+  const handleAddHoliday = async () => {
     if (!newHolidayName) return;
 
     let newHolidays: Holiday[] = [];
@@ -87,20 +100,68 @@ export default function HolidaysPage() {
     const existingDates = new Set(holidays.map(h => h.date.getTime()));
     const uniqueNewHolidays = newHolidays.filter(h => !existingDates.has(h.date.getTime()));
 
+    if (uniqueNewHolidays.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Holiday Already Exists",
+        description: "A holiday for the selected date(s) already exists.",
+      });
+      return;
+    }
+
+    const originalHolidays = [...holidays];
     const updatedHolidays = [...holidays, ...uniqueNewHolidays].sort((a, b) => a.date.getTime() - b.date.getTime());
-    setHolidays(updatedHolidays);
     
-    setNewHolidayName('');
-    setOneDayDate(today);
-    setOneDayType('full_day');
-    setLongLeaveFromDate(undefined);
-    setLongLeaveToDate(undefined);
-    setLongLeaveFromType('dinner_only');
-    setLongLeaveToType('lunch_only');
+    // Optimistic update
+    setHolidays(updatedHolidays);
+
+    try {
+      await addHolidays(uniqueNewHolidays);
+      toast({
+        title: "Success",
+        description: "Holiday(s) have been added successfully.",
+      });
+      // Reset form
+      setNewHolidayName('');
+      setOneDayDate(today);
+      setOneDayType('full_day');
+      setLongLeaveFromDate(undefined);
+      setLongLeaveToDate(undefined);
+      setLongLeaveFromType('dinner_only');
+      setLongLeaveToType('lunch_only');
+    } catch (error) {
+      // Revert on failure
+      setHolidays(originalHolidays);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add holiday(s). Please try again.",
+      });
+    }
   };
 
-  const handleDeleteHoliday = (dateToDelete: Date) => {
-    setHolidays(holidays.filter(h => h.date.getTime() !== dateToDelete.getTime()));
+  const handleDeleteHoliday = async (dateToDelete: Date) => {
+    const originalHolidays = [...holidays];
+    const updatedHolidays = holidays.filter(h => h.date.getTime() !== dateToDelete.getTime());
+
+    // Optimistic update
+    setHolidays(updatedHolidays);
+
+    try {
+      await deleteHoliday(dateToDelete);
+      toast({
+        title: "Success",
+        description: "Holiday has been deleted.",
+      });
+    } catch (error) {
+      // Revert on failure
+      setHolidays(originalHolidays);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete holiday. Please try again.",
+      });
+    }
   };
   
   const getHolidayTypeText = (type: Holiday['type']) => {
@@ -258,7 +319,7 @@ export default function HolidaysPage() {
             <CardContent className="flex-grow p-2 pt-0">
               <ScrollArea className="h-48">
                 <div className="p-4 pt-0 space-y-2">
-                  {!today ? (
+                  {isLoading ? (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
                       <p>Loading...</p>
                     </div>
@@ -308,7 +369,11 @@ export default function HolidaysPage() {
               <CardDescription>An overview of all scheduled holidays for the year.</CardDescription>
             </CardHeader>
             <CardContent className="flex items-center justify-center">
-              {month ? (
+              {isLoading || !month ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                  <p>Loading calendar...</p>
+                </div>
+              ) : (
                 <Calendar
                   mode="multiple"
                   month={month}
@@ -328,10 +393,6 @@ export default function HolidaysPage() {
                   }}
                   showOutsideDays={false}
                 />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
-                  <p>Loading calendar...</p>
-                </div>
               )}
             </CardContent>
              <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">

@@ -10,7 +10,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { leaveHistory as initialLeaves, Leave, holidays } from '@/lib/data';
+import { leaveHistory as initialLeaves, Leave, Holiday } from '@/lib/data';
+import { getHolidays } from '@/lib/actions/holidays';
 import { useAuth } from '@/contexts/auth-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ type LeaveType = 'one_day' | 'long_leave';
 export default function StudentLeavePage() {
   const { user } = useAuth();
   const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   
   // Form State
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
@@ -41,6 +43,12 @@ export default function StudentLeavePage() {
     if(user) {
         setLeaves(initialLeaves.filter(l => l.studentId === user.uid).sort((a, b) => a.date.getTime() - b.date.getTime()))
     }
+
+    const fetchHolidays = async () => {
+        const fetchedHolidays = await getHolidays();
+        setHolidays(fetchedHolidays);
+    };
+    fetchHolidays();
   }, [user]);
 
   const upcomingLeaves = useMemo(() => {
@@ -50,8 +58,10 @@ export default function StudentLeavePage() {
   
   const upcomingHolidays = useMemo(() => {
     if (!today) return [];
-    return holidays.filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')).slice(0, 5);
-  }, [today]);
+    return holidays
+        .filter(h => isFuture(h.date) || format(h.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'))
+        .slice(0, 5);
+  }, [holidays, today]);
 
   const handleApplyForLeave = () => {
     if(!user) return;
@@ -270,7 +280,7 @@ export default function StudentLeavePage() {
                                 <p className="text-xs text-muted-foreground">{format(holiday.date, 'MMMM do, yyyy')}</p>
                             </div>
                          </div>
-                         <Badge variant="outline" className={cn("capitalize border-dashed", holiday.type === 'full_day' && 'border-destructive text-destructive', holiday.type !== 'full_day' && 'border-chart-3 text-chart-3')}>{getLeaveTypeText(holiday.type)}</Badge>
+                         <Badge variant="outline" className={cn("capitalize border-dashed", holiday.type === 'full_day' && 'border-destructive text-destructive', holiday.type !== 'full_day' && 'border-chart-3 text-chart-3')}>{getLeaveTypeText(holiday.type as HolidayType)}</Badge>
                       </div>
                     ))
                   ) : (

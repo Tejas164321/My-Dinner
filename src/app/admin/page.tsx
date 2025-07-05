@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Users, UserX, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays, Moon, Sun, UserPlus, GitCompareArrows, Check, X } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { holidays, leaveHistory, joinRequests, planChangeRequests } from '@/lib/data';
+import { leaveHistory, joinRequests, planChangeRequests, Holiday } from '@/lib/data';
+import { getHolidays } from '@/lib/actions/holidays';
 import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -24,17 +25,22 @@ import { Separator } from '@/components/ui/separator';
 export default function AdminDashboard() {
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
   const [today, setToday] = useState<Date>();
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
 
   useEffect(() => {
-    // Use fixed date for consistent mock data
-    const now = startOfDay(new Date(2023, 9, 27));
+    const now = startOfDay(new Date(2023, 9, 27)); // Fixed date for consistency
     setToday(now);
 
     const currentHour = new Date().getHours();
-    // Assuming lunch is over after 3 PM (15:00)
     if (currentHour >= 15) {
       setMealInfo({ title: "Today's Dinner Count", count: 105 });
     }
+
+    const fetchHolidays = async () => {
+        const fetchedHolidays = await getHolidays();
+        setHolidays(fetchedHolidays);
+    };
+    fetchHolidays();
   }, []);
 
   const { holidaysThisMonth, mealBreaksThisMonth } = useMemo(() => {
@@ -52,7 +58,7 @@ export default function AdminDashboard() {
     }, 0);
 
     return { holidaysThisMonth: totalHolidays, mealBreaksThisMonth: totalMealBreaks };
-  }, [today]);
+  }, [today, holidays]);
   
   const onLeaveToday = useMemo(() => {
     if (!today) return { lunch: 0, dinner: 0 };

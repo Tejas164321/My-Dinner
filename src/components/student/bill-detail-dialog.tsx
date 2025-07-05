@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { DayContentProps } from 'react-day-picker';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
@@ -12,8 +12,9 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
-import type { Bill } from '@/lib/data';
-import { holidays, leaveHistory } from '@/lib/data';
+import type { Bill, Holiday } from '@/lib/data';
+import { leaveHistory } from '@/lib/data';
+import { getHolidays } from '@/lib/actions/holidays';
 import { useAuth } from '@/contexts/auth-context';
 import {
   Utensils,
@@ -50,10 +51,19 @@ const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.a
 
 export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
   const { user: student } = useAuth();
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const monthIndex = monthMap[bill.month];
   const monthDate = new Date(bill.year, monthIndex, 1);
   const paidAmount = getPaidAmount(bill);
   const dueAmount = bill.totalAmount - paidAmount;
+
+  useEffect(() => {
+    const fetchHolidays = async () => {
+        const fetchedHolidays = await getHolidays();
+        setHolidays(fetchedHolidays);
+    };
+    fetchHolidays();
+  }, []);
 
   const {
     holidayDays,
@@ -111,7 +121,7 @@ export function BillDetailDialog({ bill, onPayNow }: BillDetailDialogProps) {
         leaveTypeMap: ltm,
         holidayTypeMap: htm,
     };
-  }, [bill, student]);
+  }, [bill, student, holidays]);
 
   function CustomDayContent({ date }: DayContentProps) {
     if (!student) return <div>{date.getDate()}</div>

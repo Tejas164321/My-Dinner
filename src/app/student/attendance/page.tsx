@@ -4,23 +4,35 @@ import { useState, useMemo, useEffect } from "react";
 import type { DayContentProps } from "react-day-picker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { studentsData, holidays, leaveHistory, Holiday, Leave } from "@/lib/data";
+import { studentsData, leaveHistory, Holiday } from "@/lib/data";
+import { getHolidays } from "@/lib/actions/holidays";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, Utensils, Percent, UserX, CalendarDays, Sun, Moon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StudentAttendancePage() {
     const { user } = useAuth();
     const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
     const [today, setToday] = useState<Date | undefined>();
+    const [holidays, setHolidays] = useState<Holiday[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         setToday(new Date(2023, 9, 27)); // Fixed date for consistency
+
+        const fetchHolidays = async () => {
+            setIsLoading(true);
+            const fetchedHolidays = await getHolidays();
+            setHolidays(fetchedHolidays);
+            setIsLoading(false);
+        };
+        fetchHolidays();
     }, []);
     
     const monthOptions = [
@@ -80,7 +92,7 @@ export default function StudentAttendancePage() {
             presentDays: presentDaysCount,
             absentDays: absentDaysCount,
         };
-    }, [month, user, today]);
+    }, [month, user, today, holidays]);
 
     const {
         holidayDays,
@@ -141,7 +153,7 @@ export default function StudentAttendancePage() {
             halfPresentDays: hpDays,
             dayTypeMap: dtMap,
         };
-    }, [month, user]);
+    }, [month, user, holidays]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
         if (!user || !today || date > today) {
@@ -178,8 +190,22 @@ export default function StudentAttendancePage() {
         );
     };
 
-    if (!user) {
-        return <div>Loading student data...</div>
+    if (isLoading || !user) {
+        return (
+            <div className="space-y-8">
+                <div className="flex justify-between items-center">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-10 w-48" />
+                </div>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                </div>
+                <Skeleton className="h-96 w-full" />
+            </div>
+        )
     }
 
     return (

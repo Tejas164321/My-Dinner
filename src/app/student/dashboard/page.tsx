@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2 } from 'lucide-react';
-import { billHistory, studentsData, holidays, leaveHistory as initialLeaveHistory, Leave } from "@/lib/data";
+import { billHistory, studentsData, leaveHistory as initialLeaveHistory, Leave, Holiday } from "@/lib/data";
+import { getHolidays } from '@/lib/actions/holidays';
 import { useAuth } from '@/contexts/auth-context';
 import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay } from 'date-fns';
 import Link from 'next/link';
@@ -41,6 +42,7 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [today, setToday] = useState<Date | undefined>();
   
   const [displayedMenu, setDisplayedMenu] = useState<DailyMenu>({ lunch: [], dinner: [] });
@@ -57,6 +59,12 @@ export default function StudentDashboard() {
         .sort((a, b) => a.date.getTime() - b.date.getTime());
       setLeaves(studentLeaves);
     }
+    
+    const fetchHolidays = async () => {
+        const fetchedHolidays = await getHolidays();
+        setHolidays(fetchedHolidays);
+    };
+    fetchHolidays();
   }, [user]);
 
   useEffect(() => {
@@ -131,7 +139,7 @@ export default function StudentDashboard() {
         halfDays,
         messPlan: user.messPlan
     };
-  }, [today, user, leaves]);
+  }, [today, user, leaves, holidays]);
 
   const { onLeave } = useMemo(() => {
     if (!selectedDate) return { onLeave: null };
@@ -166,7 +174,7 @@ export default function StudentDashboard() {
       .filter(h => h.date >= today)
       .sort((a, b) => a.date.getTime() - b.date.getTime())
       .slice(0, 4);
-  }, [today]);
+  }, [today, holidays]);
 
   const upcomingLeaves = useMemo(() => {
     if (!today) return [];
