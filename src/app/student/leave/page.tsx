@@ -29,7 +29,7 @@ export default function StudentLeavePage() {
   const { toast } = useToast();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [leavesLoading, setLeavesLoading] = useState(true);
   
   // Form State
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
@@ -47,18 +47,18 @@ export default function StudentLeavePage() {
     setToday(now);
     setOneDayDate(now);
 
+    setLeavesLoading(true);
     let leavesUnsubscribe: (() => void) | null = null;
     if (user) {
-        setIsLoading(true);
         leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
             setLeaves(updatedLeaves);
-            setIsLoading(false);
+            setLeavesLoading(false);
         });
+    } else {
+      setLeavesLoading(false);
     }
 
-    const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
-        setHolidays(updatedHolidays);
-    });
+    const holidaysUnsubscribe = onHolidaysUpdate(setHolidays);
     
     return () => {
         if (leavesUnsubscribe) leavesUnsubscribe();
@@ -345,7 +345,7 @@ export default function StudentLeavePage() {
             <CardContent className="flex-grow p-2 pt-0">
               <ScrollArea className="h-96">
                 <div className="p-4 pt-0 space-y-2">
-                  {isLoading ? (
+                  {leavesLoading ? (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10"><p>Loading...</p></div>
                   ) : upcomingLeaves.length > 0 ? (
                     upcomingLeaves.map((leave) => (
@@ -380,3 +380,5 @@ export default function StudentLeavePage() {
     </div>
   );
 }
+
+    

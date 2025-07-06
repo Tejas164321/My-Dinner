@@ -52,24 +52,33 @@ export default function StudentDashboard() {
   
   const [displayedMenu, setDisplayedMenu] = useState<DailyMenu>({ lunch: [], dinner: [] });
   const [isMenuLoading, setIsMenuLoading] = useState(false);
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  
+  const [leavesLoading, setLeavesLoading] = useState(true);
+  const [holidaysLoading, setHolidaysLoading] = useState(true);
+  const isDataLoading = leavesLoading || holidaysLoading;
+
 
   useEffect(() => {
     const now = startOfDay(new Date());
     setSelectedDate(now);
     setToday(now);
 
-    setIsDataLoading(true);
+    setLeavesLoading(true);
+    setHolidaysLoading(true);
+
     let leavesUnsubscribe: (() => void) | null = null;
     if (user) {
-        leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
+        leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
+          setLeaves(updatedLeaves);
+          setLeavesLoading(false);
+        });
+    } else {
+        setLeavesLoading(false);
     }
     
     const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
         setHolidays(updatedHolidays);
-        if (user) { // Only set loading to false once both listeners are likely active
-            setIsDataLoading(false);
-        }
+        setHolidaysLoading(false);
     });
     
     return () => {
@@ -315,7 +324,7 @@ export default function StudentDashboard() {
               <CardContent className="flex-grow p-2 pt-0">
                   <ScrollArea className="h-48">
                     <div className="p-4 pt-0 space-y-2">
-                        {isDataLoading ? (
+                        {leavesLoading ? (
                             <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading leaves...</p></div>
                         ) : upcomingLeaves.length > 0 ? (
                             upcomingLeaves.map((leave) => (
@@ -413,7 +422,7 @@ export default function StudentDashboard() {
                 <CardContent className="flex-grow p-2 pt-0">
                   <ScrollArea className="h-48">
                     <div className="p-4 pt-0 space-y-4">
-                      {isDataLoading ? (
+                      {holidaysLoading ? (
                          <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading holidays...</p></div>
                       ) : upcomingHolidays.length > 0 ? (
                           <ul className="space-y-4">
@@ -446,3 +455,5 @@ export default function StudentDashboard() {
     </div>
   );
 }
+
+    
