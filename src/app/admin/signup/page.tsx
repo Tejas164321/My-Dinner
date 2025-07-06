@@ -2,16 +2,16 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { adminSignup } from '@/app/auth/actions';
-import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, UserCog } from 'lucide-react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -24,16 +24,6 @@ function SubmitButton() {
 
 export default function AdminSignupPage() {
   const [state, formAction] = useFormState(adminSignup, { message: null });
-  const router = useRouter();
-  const { user, loading } = useAuth();
-
-  useEffect(() => {
-    // This effect handles redirecting a user who is already logged in or
-    // has just successfully signed up, once the AuthContext is updated.
-    if (!loading && user) {
-      router.replace('/admin');
-    }
-  }, [user, loading, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
@@ -70,7 +60,7 @@ export default function AdminSignupPage() {
                 <Input id="password" name="password" type="password" required />
               </div>
 
-              {state?.message && state.message !== 'success' && (
+              {state?.message && (
                  <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Signup Failed</AlertTitle>

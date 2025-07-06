@@ -14,26 +14,29 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
   const router = useRouter();
   const pathname = usePathname();
 
-  // Public pages that don't need the auth guard
   const isPublicPage = pathname === '/admin/login' || pathname === '/admin/signup';
 
   useEffect(() => {
-    // Only run the auth check if it's a protected page
-    if (!loading && !isPublicPage) {
+    if (loading) {
+      return; // Wait for the auth state to be determined
+    }
+
+    if (isPublicPage) {
+      // If user is already an admin and on a public page, redirect to the dashboard
+      if (user && user.role === 'admin') {
+        router.replace('/admin');
+      }
+    } else {
+      // If user is not an admin and on a protected page, redirect to login
       if (!user || user.role !== 'admin') {
         router.replace('/admin/login');
       }
     }
   }, [user, loading, router, isPublicPage, pathname]);
 
-  // If it's a public page, just render the content directly without the dashboard layout
-  if (isPublicPage) {
-    return <>{children}</>;
-  }
-
-  // For protected pages, show a loader while checking auth, then the dashboard or redirect
-  if (loading || !user || user.role !== 'admin') {
-    return (
+  // Show a loader while auth is initializing or redirecting
+  if (loading || (!isPublicPage && (!user || user.role !== 'admin')) || (isPublicPage && user && user.role === 'admin')) {
+     return (
        <div className="flex h-screen w-full items-center justify-center">
             <div className="flex items-center space-x-4">
                 <Skeleton className="h-12 w-12 rounded-full" />
@@ -45,7 +48,13 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
         </div>
     );
   }
+  
+  // If on a public page and not logged in, show the page
+  if (isPublicPage) {
+    return <>{children}</>;
+  }
 
+  // If all checks pass, render the protected dashboard layout
   const handleLogout = async () => {
     await logout();
     router.push('/');
