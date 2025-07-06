@@ -15,8 +15,7 @@ const LEAVES_COLLECTION = 'leaves';
 export function onLeavesUpdate(studentId: string, callback: (leaves: Leave[]) => void) {
   const q = query(
     collection(db, LEAVES_COLLECTION), 
-    where("studentId", "==", studentId),
-    orderBy("date", "asc")
+    where("studentId", "==", studentId)
   );
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -28,6 +27,8 @@ export function onLeavesUpdate(studentId: string, callback: (leaves: Leave[]) =>
         date: (data.date as Timestamp).toDate(),
       } as Leave;
     });
+    // Sort on the client to avoid needing a composite index in Firestore
+    leaves.sort((a, b) => a.date.getTime() - b.date.getTime());
     callback(leaves);
   }, (error) => {
     console.error(`Error listening to leaves for student ${studentId}:`, error);
