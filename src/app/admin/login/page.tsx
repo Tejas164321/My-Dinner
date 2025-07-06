@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, UserCog } from 'lucide-react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -21,6 +24,16 @@ function SubmitButton() {
 
 export default function AdminLoginPage() {
   const [state, formAction] = useFormState(adminLogin, { message: '' });
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  // This effect will run when the auth state changes.
+  // It redirects a successfully logged-in admin to their dashboard.
+  useEffect(() => {
+    if (!loading && user?.role === 'admin') {
+      router.replace('/admin');
+    }
+  }, [user, loading, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">

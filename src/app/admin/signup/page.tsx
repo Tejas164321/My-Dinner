@@ -24,6 +24,15 @@ function SubmitButton() {
 
 export default function AdminSignupPage() {
   const [state, formAction] = useFormState(adminSignup, { message: null });
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  // Redirect to dashboard once the user context is populated after signup
+  useEffect(() => {
+    if (!loading && user?.role === 'admin') {
+        router.replace('/admin');
+    }
+  }, [user, loading, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
@@ -60,7 +69,7 @@ export default function AdminSignupPage() {
                 <Input id="password" name="password" type="password" required />
               </div>
 
-              {state?.message && (
+              {state?.message && state.message !== 'success' && (
                  <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Signup Failed</AlertTitle>
