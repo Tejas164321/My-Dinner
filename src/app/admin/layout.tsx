@@ -21,21 +21,16 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
       return; // Wait for the auth state to be determined
     }
 
-    if (isPublicPage) {
-      // If user is already an admin and on a public page, redirect to the dashboard
-      if (user && user.role === 'admin') {
-        router.replace('/admin');
-      }
-    } else {
-      // If user is not an admin and on a protected page, redirect to login
-      if (!user || user.role !== 'admin') {
-        router.replace('/admin/login');
-      }
+    // This is the layout's primary job: if we are on a protected page
+    // and the user is not an admin, redirect them to the login page.
+    if (!isPublicPage && (!user || user.role !== 'admin')) {
+      router.replace('/admin/login');
     }
   }, [user, loading, router, isPublicPage, pathname]);
 
-  // Show a loader while auth is initializing or redirecting
-  if (loading || (!isPublicPage && (!user || user.role !== 'admin')) || (isPublicPage && user && user.role === 'admin')) {
+  // Show a loader while auth is initializing or if we're on a protected page
+  // without a valid user. This covers the brief moment before a redirect occurs.
+  if (loading || (!isPublicPage && (!user || user.role !== 'admin'))) {
      return (
        <div className="flex h-screen w-full items-center justify-center">
             <div className="flex items-center space-x-4">
@@ -49,12 +44,14 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     );
   }
   
-  // If on a public page and not logged in, show the page
+  // If we are on a public page (login/signup), render it.
+  // The page itself is now responsible for redirecting if the user is already logged in.
   if (isPublicPage) {
     return <>{children}</>;
   }
 
-  // If all checks pass, render the protected dashboard layout
+  // If all checks pass, we are on a protected page with a valid admin user.
+  // Render the protected dashboard layout.
   const handleLogout = async () => {
     await logout();
     router.push('/');

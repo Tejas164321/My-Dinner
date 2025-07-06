@@ -2,7 +2,10 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { adminLogin } from '@/app/auth/actions';
+import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +24,16 @@ function SubmitButton() {
 
 export default function AdminLoginPage() {
   const [state, formAction] = useFormState(adminLogin, { message: '' });
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    // This effect redirects the user to the dashboard AFTER the auth state has been confirmed.
+    // This mirrors the working student login flow.
+    if (!loading && user?.role === 'admin') {
+      router.replace('/admin');
+    }
+  }, [user, loading, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
