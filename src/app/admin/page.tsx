@@ -28,7 +28,7 @@ export default function AdminDashboard() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
 
   useEffect(() => {
-    const now = startOfDay(new Date(2023, 9, 27)); // Fixed date for consistency
+    const now = startOfDay(new Date());
     setToday(now);
 
     const currentHour = new Date().getHours();
@@ -63,9 +63,8 @@ export default function AdminDashboard() {
   const onLeaveToday = useMemo(() => {
     if (!today) return { lunch: 0, dinner: 0 };
     
-    const fixedToday = startOfDay(new Date(2023, 9, 27));
     // NOTE: This uses static data. For a full implementation, this should listen to leave updates from Firestore.
-    const leaves = initialLeaveHistory.filter(l => format(l.date, 'yyyy-MM-dd') === format(fixedToday, 'yyyy-MM-dd'));
+    const leaves = initialLeaveHistory.filter(l => today && isToday(l.date));
 
     let lunchOff = 0;
     let dinnerOff = 0;
