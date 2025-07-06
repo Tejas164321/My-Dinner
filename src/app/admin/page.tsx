@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -14,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Users, UserX, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays, Moon, Sun, UserPlus, GitCompareArrows, Check, X } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { initialLeaveHistory, joinRequests, planChangeRequests, Holiday } from '@/lib/data';
+import { joinRequests, planChangeRequests, Holiday, Leave } from '@/lib/data';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
+import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
   const [today, setToday] = useState<Date>();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
 
   useEffect(() => {
     const now = startOfDay(new Date());
@@ -36,11 +37,13 @@ export default function AdminDashboard() {
       setMealInfo({ title: "Today's Dinner Count", count: 105 });
     }
 
-    const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
-        setHolidays(updatedHolidays);
-    });
+    const holidaysUnsubscribe = onHolidaysUpdate(setHolidays);
+    const leavesUnsubscribe = onAllLeavesUpdate(setAllLeaves);
 
-    return () => unsubscribe();
+    return () => {
+        holidaysUnsubscribe();
+        leavesUnsubscribe();
+    };
   }, []);
 
   const { holidaysThisMonth, mealBreaksThisMonth } = useMemo(() => {
@@ -63,8 +66,7 @@ export default function AdminDashboard() {
   const onLeaveToday = useMemo(() => {
     if (!today) return { lunch: 0, dinner: 0 };
     
-    // NOTE: This uses static data. For a full implementation, this should listen to leave updates from Firestore.
-    const leaves = initialLeaveHistory.filter(l => today && isToday(l.date));
+    const leaves = allLeaves.filter(l => today && isToday(l.date));
 
     let lunchOff = 0;
     let dinnerOff = 0;
@@ -79,7 +81,7 @@ export default function AdminDashboard() {
     });
 
     return { lunch: lunchOff, dinner: dinnerOff };
-  }, [today]);
+  }, [today, allLeaves]);
 
   const combinedNotifications = useMemo(() => {
     const jr = joinRequests.map(r => ({ ...r, type: 'join_request', dateObj: new Date(r.date) }));
