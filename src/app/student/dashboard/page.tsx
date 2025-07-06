@@ -155,8 +155,7 @@ export default function StudentDashboard() {
     if (!today) return [];
     return holidays
       .filter(h => h.date >= today)
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .slice(0, 4);
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [today, holidays]);
 
   const upcomingLeaves = useMemo(() => {
@@ -386,7 +385,7 @@ export default function StudentDashboard() {
             </Card>
 
             {/* Upcoming Holidays */}
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400">
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400 flex flex-col">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Upcoming Holidays</CardTitle>
@@ -394,26 +393,32 @@ export default function StudentDashboard() {
                     </div>
                     <CardDescription>The mess will be closed on these days.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    {upcomingHolidays.length > 0 ? (
-                        <ul className="space-y-4">
-                            {upcomingHolidays.map((holiday) => (
-                                <li key={holiday.date.toISOString()} className="flex items-start gap-3">
-                                    {holiday.type === 'full_day' && <Utensils className="h-5 w-5 mt-1 text-destructive flex-shrink-0" />}
-                                    {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
-                                    {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
-                                    <div>
-                                        <p className="font-semibold text-sm">{holiday.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {format(holiday.date, 'EEEE, MMM do')}
-                                        </p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">No upcoming holidays scheduled.</p>
-                    )}
+                <CardContent className="flex-grow p-2 pt-0">
+                  <ScrollArea className="h-48">
+                    <div className="p-4 pt-0 space-y-4">
+                      {upcomingHolidays.length > 0 ? (
+                          <ul className="space-y-4">
+                              {upcomingHolidays.map((holiday) => (
+                                  <li key={holiday.date.toISOString()} className="flex items-start gap-3">
+                                      {holiday.type === 'full_day' && <Utensils className="h-5 w-5 mt-1 text-destructive flex-shrink-0" />}
+                                      {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
+                                      {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
+                                      <div>
+                                          <p className="font-semibold text-sm">{holiday.name}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                              {format(holiday.date, 'EEEE, MMM do')}
+                                          </p>
+                                      </div>
+                                  </li>
+                              ))}
+                          </ul>
+                      ) : (
+                          <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4">
+                            <p>No upcoming holidays scheduled.</p>
+                          </div>
+                      )}
+                    </div>
+                  </ScrollArea>
                 </CardContent>
             </Card>
 
