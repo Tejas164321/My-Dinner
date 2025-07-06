@@ -23,15 +23,8 @@ function SubmitButton() {
 
 export default function AdminSignupPage() {
   const [state, formAction] = useFormState(adminSignup, { message: null });
-  const router = useRouter();
-
-  useEffect(() => {
-    if (state.message === 'success') {
-      // After signup, Firebase automatically logs the user in.
-      // We redirect to the /admin route, and the layout will handle showing the dashboard.
-      router.replace('/admin');
-    }
-  }, [state, router]);
+  // The AdminDashboardLayout will handle redirecting the user to the dashboard
+  // as soon as the auth state changes after a successful signup.
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
