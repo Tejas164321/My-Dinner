@@ -13,8 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2 } from 'lucide-react';
-import { initialLeaveHistory, Leave, Holiday } from "@/lib/data";
+import { Leave, Holiday } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
+import { onLeavesUpdate } from '@/lib/listeners/leaves';
+import { deleteLeave } from '@/lib/actions/leaves';
 import { useAuth } from '@/contexts/auth-context';
 import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay, getYear, getMonth } from 'date-fns';
 import Link from 'next/link';
@@ -36,11 +38,13 @@ import {
 import { getMenuForDate } from '@/lib/actions/menu';
 import type { DailyMenu } from '@/lib/actions/menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export default function StudentDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -56,16 +60,22 @@ export default function StudentDashboard() {
     setToday(now);
 
     setIsDataLoading(true);
+    let leavesUnsubscribe: (() => void) | null = null;
     if (user) {
-      setLeaves(initialLeaveHistory.filter(l => l.studentId === user.uid));
+        leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
     }
     
-    const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+    const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
         setHolidays(updatedHolidays);
-        setIsDataLoading(false);
+        if (user) { // Only set loading to false once both listeners are likely active
+            setIsDataLoading(false);
+        }
     });
     
-    return () => unsubscribe();
+    return () => {
+        if(leavesUnsubscribe) leavesUnsubscribe();
+        holidaysUnsubscribe();
+    };
   }, [user]);
 
   useEffect(() => {
@@ -165,8 +175,13 @@ export default function StudentDashboard() {
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [leaves, today]);
 
-  const handleDeleteLeave = (dateToDelete: Date) => {
-    setLeaves(currentLeaves => currentLeaves.filter(l => l.date.getTime() !== dateToDelete.getTime()));
+  const handleDeleteLeave = async (leaveId: string) => {
+    try {
+      await deleteLeave(leaveId);
+      toast({ title: 'Leave Cancelled' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to cancel leave.' });
+    }
   };
 
   const renderMenuContent = (items: string[]) => {
@@ -300,9 +315,11 @@ export default function StudentDashboard() {
               <CardContent className="flex-grow p-2 pt-0">
                   <ScrollArea className="h-48">
                     <div className="p-4 pt-0 space-y-2">
-                        {upcomingLeaves.length > 0 ? (
+                        {isDataLoading ? (
+                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading leaves...</p></div>
+                        ) : upcomingLeaves.length > 0 ? (
                             upcomingLeaves.map((leave) => (
-                                <div key={leave.date.toISOString()} className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50">
+                                <div key={leave.id} className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50">
                                     <div className="flex items-center gap-3">
                                         {leave.type === 'full_day' && <Utensils className="h-5 w-5 text-destructive flex-shrink-0" />}
                                         {leave.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
@@ -329,7 +346,7 @@ export default function StudentDashboard() {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteLeave(leave.date)}>
+                                                <AlertDialogAction onClick={() => handleDeleteLeave(leave.id)}>
                                                     Confirm
                                                 </AlertDialogAction>
                                             </AlertDialogFooter>
@@ -396,7 +413,9 @@ export default function StudentDashboard() {
                 <CardContent className="flex-grow p-2 pt-0">
                   <ScrollArea className="h-48">
                     <div className="p-4 pt-0 space-y-4">
-                      {upcomingHolidays.length > 0 ? (
+                      {isDataLoading ? (
+                         <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading holidays...</p></div>
+                      ) : upcomingHolidays.length > 0 ? (
                           <ul className="space-y-4">
                               {upcomingHolidays.map((holiday) => (
                                   <li key={holiday.date.toISOString()} className="flex items-start gap-3">

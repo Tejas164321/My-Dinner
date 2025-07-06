@@ -5,8 +5,9 @@ import { useState, useMemo, useEffect } from "react";
 import type { DayContentProps } from "react-day-picker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { initialLeaveHistory, Holiday, Leave } from "@/lib/data";
+import { Holiday, Leave } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
+import { onLeavesUpdate } from "@/lib/listeners/leaves";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay } from 'date-fns';
@@ -24,16 +25,22 @@ export default function StudentAttendancePage() {
     
     useEffect(() => {
         setIsLoading(true);
+        let leavesUnsubscribe: (() => void) | null = null;
         if (user) {
-            setLeaves(initialLeaveHistory.filter(l => l.studentId === user.uid));
+            leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
         }
 
-        const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+        const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
             setHolidays(updatedHolidays);
-            setIsLoading(false);
+            if(user) { // Only finish loading once both listeners are active
+                setIsLoading(false);
+            }
         });
         
-        return () => unsubscribe();
+        return () => {
+            if (leavesUnsubscribe) leavesUnsubscribe();
+            holidaysUnsubscribe();
+        };
     }, [user]);
     
     const monthOptions = [

@@ -12,9 +12,10 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { initialLeaveHistory, paymentReminders, Holiday, Leave, AppUser, BillDetails } from '@/lib/data';
+import { paymentReminders, Holiday, Leave, AppUser, BillDetails } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
+import { onLeavesUpdate } from '@/lib/listeners/leaves';
 import { cn } from '@/lib/utils';
 import { Receipt, Wallet, CreditCard, Banknote, X, Info, ShieldAlert } from 'lucide-react';
 import {
@@ -121,15 +122,19 @@ export default function StudentBillsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-      setIsLoading(true);
-      if(user) {
-          setLeaves(initialLeaveHistory.filter(l => l.studentId === user.uid));
-      }
-      const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
-          setHolidays(updatedHolidays);
-          setIsLoading(false);
-      });
-      return () => unsubscribe();
+    setIsLoading(true);
+    let leavesUnsubscribe: (() => void) | null = null;
+    if (user) {
+        leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
+    }
+    const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
+        setHolidays(updatedHolidays);
+        if(user) setIsLoading(false);
+    });
+    return () => {
+        if (leavesUnsubscribe) leavesUnsubscribe();
+        holidaysUnsubscribe();
+    };
   }, [user]);
 
   const dynamicallyGeneratedBills = useMemo(() => {
@@ -137,7 +142,7 @@ export default function StudentBillsPage() {
 
     const bills: Bill[] = [];
     const today = new Date();
-    // Simulate payment history
+    // Simulate payment history for consistent demo
     const paymentHistory: {[key: string]: { amount: number; date: string }[]} = {
       '2023-09': [{ amount: 3380, date: '2023-10-04' }],
       '2023-08': [{ amount: 1000, date: '2023-09-10' }, { amount: 1000, date: '2023-09-20' }],
@@ -146,10 +151,10 @@ export default function StudentBillsPage() {
 
     for (let i = 0; i < 4; i++) {
         const monthDate = startOfMonth(subMonths(today, i));
-        // Use a fixed date for consistent demo data
         const demoMonthDate = startOfMonth(subMonths(new Date(2023, 10, 1), i));
 
-        const details = calculateBillDetailsForMonth(demoMonthDate, user, holidays, leaves);
+        const userLeaves = leaves.filter(l => l.studentId === user.uid);
+        const details = calculateBillDetailsForMonth(demoMonthDate, user, holidays, userLeaves);
         const totalAmount = details.totalMeals * details.chargePerMeal;
         const monthKey = format(demoMonthDate, 'yyyy-MM');
         const payments = paymentHistory[monthKey] || [];

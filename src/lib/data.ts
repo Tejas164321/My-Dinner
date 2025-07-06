@@ -96,16 +96,6 @@ export interface Student {
     roomNo: string;
     status: 'active' | 'suspended';
     messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
-     monthlyDetails: {
-        [key: string]: {
-            attendance: string;
-            bill: { 
-                total: number; 
-                payments: { amount: number; date: string }[],
-            };
-            status: 'Paid' | 'Due';
-        }
-    }
 }
 
 export const studentsData: Student[] = [
@@ -113,55 +103,31 @@ export const studentsData: Student[] = [
         id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15', email: 'peter.jones@example.com', contact: '+91 9876543210', roomNo: 'H-101',
         status: 'active',
         messPlan: 'full_day',
-        monthlyDetails: {
-            'october': { attendance: '92%', bill: { total: 3380, payments: [{ amount: 3380, date: '2023-10-05' }] }, status: 'Paid' },
-            'september': { attendance: '95%', bill: { total: 3575, payments: [{ amount: 3575, date: '2023-09-05' }] }, status: 'Paid' },
-        }
     },
     { 
         id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14', email: 'mary.jane@example.com', contact: '+91 9876543211', roomNo: 'H-102',
         status: 'active',
         messPlan: 'lunch_only',
-        monthlyDetails: {
-            'october': { attendance: '88%', bill: { total: 1625, payments: [] }, status: 'Due' },
-            'september': { attendance: '90%', bill: { total: 1755, payments: [{ amount: 1755, date: '2023-09-08' }] }, status: 'Paid' },
-        }
     },
     { 
         id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13', email: 'chris.lee@example.com', contact: '+91 9876543212', roomNo: 'H-201',
         status: 'active',
         messPlan: 'full_day',
-        monthlyDetails: {
-            'october': { attendance: '98%', bill: { total: 3510, payments: [{ amount: 3510, date: '2023-10-03' }] }, status: 'Paid' },
-            'september': { attendance: '96%', bill: { total: 3640, payments: [{ amount: 3640, date: '2023-09-04' }] }, status: 'Paid' },
-        }
     },
     { 
         id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12', email: 'bryan.fury@example.com', contact: '+91 9876543213', roomNo: 'H-202',
         status: 'suspended',
         messPlan: 'full_day',
-        monthlyDetails: {
-            'october': { attendance: '75%', bill: { total: 2795, payments: [] }, status: 'Due' },
-            'september': { attendance: '80%', bill: { total: 2990, payments: [] }, status: 'Due' },
-        }
     },
     { 
         id: '8', name: 'Alex Doe', studentId: 'A56789', joinDate: '2023-09-11', email: 'alex.doe@example.com', contact: '+91 9876543214', roomNo: 'H-301',
         status: 'active',
         messPlan: 'full_day',
-        monthlyDetails: {
-            'october': { attendance: '92%', bill: { total: 3380, payments: [{ amount: 3380, date: '2023-10-06' }] }, status: 'Paid' },
-            'september': { attendance: '94%', bill: { total: 3510, payments: [{ amount: 3510, date: '2023-09-06' }] }, status: 'Paid' },
-        }
     },
     { 
         id: '9', name: 'Sara Bell', studentId: 'C12378', joinDate: '2023-09-10', email: 'sara.bell@example.com', contact: '+91 9876543215', roomNo: 'H-302',
         status: 'active',
         messPlan: 'dinner_only',
-        monthlyDetails: {
-            'october': { attendance: '99%', bill: { total: 1820, payments: [] }, status: 'Due' },
-            'september': { attendance: '100%', bill: { total: 1950, payments: [{ amount: 1950, date: '2023-09-01' }] }, status: 'Paid' },
-        }
     },
 ];
 
@@ -174,43 +140,12 @@ export interface Holiday {
 }
 
 export interface Leave {
+    id: string; // Document ID from Firestore
     studentId: string;
     date: Date;
     name: string;
     type: 'full_day' | 'lunch_only' | 'dinner_only';
 }
-
-export const initialLeaveHistory: Leave[] = [
-    // Alex Doe (8)
-    { studentId: '8', date: new Date(2023, 9, 27), name: 'Student Leave', type: 'full_day' },
-    { studentId: '8', date: new Date(2023, 9, 30), name: 'Student Leave', type: 'lunch_only' },
-    { studentId: '8', date: new Date(2023, 10, 5), name: 'Student Leave', type: 'full_day' },
-    { studentId: '8', date: new Date(2023, 10, 6), name: 'Student Leave', type: 'dinner_only' },
-    { studentId: '8', date: new Date(2023, 10, 10), name: 'Student Leave', type: 'full_day' },
-    { studentId: '8', date: new Date(2023, 10, 11), name: 'Student Leave', type: 'lunch_only' },
-    { studentId: '8', date: new Date(2023, 10, 15), name: 'Student Leave', type: 'dinner_only' },
-    { studentId: '8', date: new Date(2023, 8, 5), name: 'Student Leave', type: 'full_day' },
-    { studentId: '8', date: new Date(2023, 7, 10), name: 'Student Leave', type: 'lunch_only' },
-    { studentId: '8', date: new Date(2023, 7, 11), name: 'Student Leave', type: 'dinner_only' },
-    { studentId: '8', date: new Date(2023, 6, 1), name: 'Student Leave', type: 'full_day' },
-    { studentId: '8', date: new Date(2023, 6, 2), name: 'Student Leave', type: 'full_day' },
-    
-    // Peter Jones (4)
-    { studentId: '4', date: new Date(2023, 9, 10), name: 'Student Leave', type: 'full_day' },
-    { studentId: '4', date: new Date(2023, 9, 11), name: 'Student Leave', type: 'full_day' },
-
-    // Mary Jane (5)
-    { studentId: '5', date: new Date(2023, 9, 15), name: 'Student Leave', type: 'lunch_only' },
-    { studentId: '5', date: new Date(2023, 9, 16), name: 'Student Leave', type: 'lunch_only' },
-    { studentId: '5', date: new Date(2023, 9, 17), name: 'Student Leave', type: 'lunch_only' },
-    { studentId: '5', date: new Date(2023, 9, 18), name: 'Student Leave', type: 'lunch_only' },
-    
-    // Chris Lee (6)
-    { studentId: '6', date: new Date(2023, 9, 20), name: 'Student Leave', type: 'full_day' },
-
-    // Sara Bell (9)
-    { studentId: '9', date: new Date(2023, 9, 5), name: 'Student Leave', type: 'dinner_only' },
-];
 
 export interface Bill {
     id: string;
@@ -264,60 +199,6 @@ export const paymentReminders: PaymentReminder[] = [
         title: 'Payment Due for August',
         message: 'Your bill for August of ₹3,120 is overdue. Please pay at the earliest to avoid late fees.',
         date: '2023-09-25',
-    },
-    {
-        id: 'rem2',
-        title: 'Reminder: July Bill Overdue',
-        message: 'This is a final reminder that your July bill of ₹3,445 is still pending. Please clear your dues immediately.',
-        date: '2023-09-15',
-    },
-    {
-        id: 'rem3',
-        title: 'Gentle Reminder: August Bill',
-        message: 'A friendly reminder that your August bill payment is pending. The due amount is ₹1,120.',
-        date: '2023-09-10',
-    },
-    {
-        id: 'rem4',
-        title: 'Urgent: July Bill Payment',
-        message: 'Your July bill of ₹3,445 is significantly overdue. Please pay now to restore full services.',
-        date: '2023-09-05',
-    },
-    {
-        id: 'rem5',
-        title: 'First Reminder for August Bill',
-        message: 'This is a reminder that your August bill is now due. The total amount is ₹3,120.',
-        date: '2023-09-02',
-    },
-    {
-        id: 'rem6',
-        title: 'Final Reminder: June Bill',
-        message: 'Your June bill of ₹3,200 is overdue. This is the final reminder before action is taken.',
-        date: '2023-8-20',
-    },
-    {
-        id: 'rem7',
-        title: 'Payment Pending for June',
-        message: 'Your payment for the June bill is still pending. Amount due: ₹3,200.',
-        date: '2023-8-10',
-    },
-    {
-        id: 'rem8',
-        title: 'May Bill Overdue',
-        message: 'Your bill for May of ₹3,300 is overdue. Please pay at the earliest.',
-        date: '2023-7-25',
-    },
-    {
-        id: 'rem9',
-        title: 'Gentle Reminder: May Bill',
-        message: 'A friendly reminder that your May bill payment of ₹3,300 is pending.',
-        date: '2023-7-15',
-    },
-    {
-        id: 'rem10',
-        title: 'April Bill Payment Reminder',
-        message: 'This is a reminder for your April bill payment of ₹3,150.',
-        date: '2023-6-10',
     },
 ];
 

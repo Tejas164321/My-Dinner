@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect, type ComponentProps } from "react";
@@ -6,8 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import type { Student, Holiday } from "@/lib/data";
-import { leaveHistory } from "@/lib/data";
+import type { Student, Holiday, Leave } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,18 +23,25 @@ const planInfo = {
 
 interface StudentDetailCardProps {
     student: Student;
+    leaves: Leave[];
     initialMonth: Date;
 }
 
-export function StudentDetailCard({ student, initialMonth }: StudentDetailCardProps) {
+export function StudentDetailCard({ student, leaves, initialMonth }: StudentDetailCardProps) {
     const [month, setMonth] = useState<Date>(initialMonth);
     const [today, setToday] = useState<Date | undefined>();
     const [holidays, setHolidays] = useState<Holiday[]>([]);
 
+    // Dummy data for billing as it's not implemented for admin detail view yet
+    const currentData = { 
+        bill: { total: 3380, payments: [{ amount: 3380, date: '2023-10-05' }], details: { totalMeals: 52, chargePerMeal: 65, fullDays: 26, halfDays: 0, absentDays: 1, holidays: 4, totalDaysInMonth: 31 } }, 
+        status: 'Paid' 
+    };
+
     useEffect(() => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-        setToday(new Date(2023, 9, 27)); // Fixed date for consistency
+        setToday(now);
 
         const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
             setHolidays(updatedHolidays);
@@ -42,13 +49,6 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
 
         return () => unsubscribe();
     }, []);
-
-    const monthName = format(month, 'MMMM').toLowerCase() as keyof typeof student.monthlyDetails;
-    const currentData = student.monthlyDetails[monthName] || { 
-        attendance: '0%', 
-        bill: { total: 0, payments: [], details: { totalMeals: 0, chargePerMeal: 65, fullDays: 0, halfDays: 0, absentDays: 0, holidays: 0, totalDaysInMonth: 30 } }, 
-        status: 'Paid' 
-    };
     
     const paidAmount = currentData.bill.payments.reduce((sum, p) => sum + p.amount, 0);
     const remainingBill = currentData.bill.total - paidAmount;
@@ -57,8 +57,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
 
-        const studentLeaves = leaveHistory.filter(leave => 
-            leave.studentId === student.id &&
+        const studentLeaves = leaves.filter(leave => 
             new Date(leave.date).getFullYear() === year &&
             new Date(leave.date).getMonth() === monthIndex
         );
@@ -109,7 +108,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             absentMeals: aMeals,
             holidayMeals: hMeals
         };
-    }, [month, student.id, student.messPlan, holidays]);
+    }, [month, student.id, student.messPlan, holidays, leaves]);
     
     const {
         holidayDays,
@@ -131,8 +130,7 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
         const hpDays: Date[] = [];
         const dtMap = new Map();
 
-        const studentLeaves = leaveHistory.filter(l => l.studentId === student.id);
-        const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
+        const ltm = new Map(leaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
         const htm = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
 
         allDaysInMonth.forEach(day => {
@@ -161,10 +159,10 @@ export function StudentDetailCard({ student, initialMonth }: StudentDetailCardPr
             halfPresentDays: hpDays,
             dayTypeMap: dtMap
         };
-    }, [month, student.id, student.messPlan, holidays]);
+    }, [month, student.id, student.messPlan, holidays, leaves]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
-        if (!today || date > today) {
+        if (!today) {
             return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
         }
 

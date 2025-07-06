@@ -11,20 +11,25 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { leaveHistory as initialLeaves, Leave, Holiday } from '@/lib/data';
+import { Leave, Holiday } from '@/lib/data';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
+import { onLeavesUpdate } from '@/lib/listeners/leaves';
+import { addLeaves, deleteLeave, type LeavePayload } from '@/lib/actions/leaves';
 import { useAuth } from '@/contexts/auth-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
 type LeaveType = 'one_day' | 'long_leave';
 
 export default function StudentLeavePage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Form State
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
@@ -41,15 +46,24 @@ export default function StudentLeavePage() {
     const now = startOfDay(new Date());
     setToday(now);
     setOneDayDate(now);
-    if(user) {
-        setLeaves(initialLeaves.filter(l => l.studentId === user.uid).sort((a, b) => a.date.getTime() - b.date.getTime()))
+
+    let leavesUnsubscribe: (() => void) | null = null;
+    if (user) {
+        setIsLoading(true);
+        leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
+            setLeaves(updatedLeaves);
+            setIsLoading(false);
+        });
     }
 
-    const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+    const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
         setHolidays(updatedHolidays);
     });
     
-    return () => unsubscribe();
+    return () => {
+        if (leavesUnsubscribe) leavesUnsubscribe();
+        holidaysUnsubscribe();
+    };
   }, [user]);
 
   const upcomingLeaves = useMemo(() => {
@@ -64,53 +78,79 @@ export default function StudentLeavePage() {
         .slice(0, 5);
   }, [holidays, today]);
 
-  const handleApplyForLeave = () => {
-    if(!user) return;
-    let newLeaves: Leave[] = [];
+  const handleApplyForLeave = async () => {
+    if (!user) return;
+    
+    let leavesToSubmit: LeavePayload[] = [];
     const reason = "Student Leave";
     
     if (leaveType === 'one_day' && oneDayDate) {
-      newLeaves.push({ studentId: user.uid, name: reason, date: oneDayDate, type: oneDayType });
+      leavesToSubmit.push({ 
+          studentId: user.uid, 
+          name: reason, 
+          date: oneDayDate.toISOString(), 
+          type: oneDayType 
+      });
     } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
+        if (longLeaveToDate < longLeaveFromDate) {
+            toast({ variant: "destructive", title: "Invalid Date Range" });
+            return;
+        }
       const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
       
       if (dates.length === 1) {
-         if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') {
-             newLeaves.push({ studentId: user.uid, name: reason, date: dates[0], type: 'full_day' });
-         } else if (longLeaveFromType === 'dinner_only') {
-             newLeaves.push({ studentId: user.uid, name: reason, date: dates[0], type: 'dinner_only' });
-         } else if (longLeaveToType === 'lunch_only') {
-            newLeaves.push({ studentId: user.uid, name: reason, date: dates[0], type: 'lunch_only' });
-         } else {
-             newLeaves.push({ studentId: user.uid, name: reason, date: dates[0], type: 'full_day' });
-         }
+         let type: HolidayType = 'full_day';
+         if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') type = 'full_day';
+         else if (longLeaveFromType === 'dinner_only') type = 'dinner_only';
+         else if (longLeaveToType === 'lunch_only') type = 'lunch_only';
+         else type = 'full_day';
+         leavesToSubmit.push({ studentId: user.uid, name: reason, date: dates[0].toISOString(), type });
       } else {
-        newLeaves = dates.map((date, index) => {
-          if (index === 0) return { studentId: user.uid, name: reason, date, type: longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day' };
-          if (index === dates.length - 1) return { studentId: user.uid, name: reason, date, type: longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day' };
-          return { studentId: user.uid, name: reason, date, type: 'full_day' };
+        leavesToSubmit = dates.map((date, index) => {
+            let type: HolidayType = 'full_day';
+            if (index === 0) {
+                type = longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day';
+            }
+            if (index === dates.length - 1) {
+                type = longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day';
+            }
+            return { studentId: user.uid, name: reason, date: date.toISOString(), type };
         });
       }
     } else {
+      toast({ variant: "destructive", title: "Missing Information" });
       return;
     }
 
-    const existingDates = new Set(leaves.map(h => h.date.getTime()));
-    const uniqueNewLeaves = newLeaves.filter(h => !existingDates.has(h.date.getTime()));
+    // Filter out dates that are already on leave
+    const existingLeaveDates = new Set(leaves.map(l => format(l.date, 'yyyy-MM-dd')));
+    const uniqueNewLeaves = leavesToSubmit.filter(l => !existingLeaveDates.has(format(new Date(l.date), 'yyyy-MM-dd')));
 
-    const updatedLeaves = [...leaves, ...uniqueNewLeaves].sort((a, b) => a.date.getTime() - b.date.getTime());
-    setLeaves(updatedLeaves);
-    
-    setOneDayDate(today);
-    setOneDayType('full_day');
-    setLongLeaveFromDate(undefined);
-    setLongLeaveToDate(undefined);
-    setLongLeaveFromType('dinner_only');
-    setLongLeaveToType('lunch_only');
+    if(uniqueNewLeaves.length === 0) {
+        toast({ title: "Already Applied", description: "You have already applied for leave on the selected date(s)." });
+        return;
+    }
+
+    try {
+        await addLeaves(uniqueNewLeaves);
+        toast({ title: "Success", description: "Your leave application has been submitted." });
+        // Reset form
+        setOneDayDate(today);
+        setOneDayType('full_day');
+        setLongLeaveFromDate(undefined);
+        setLongLeaveToDate(undefined);
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to apply for leave." });
+    }
   };
 
-  const handleDeleteLeave = (dateToDelete: Date) => {
-    setLeaves(leaves.filter(h => h.date.getTime() !== dateToDelete.getTime()));
+  const handleDeleteLeave = async (leaveId: string) => {
+    try {
+      await deleteLeave(leaveId);
+      toast({ title: "Leave Cancelled", description: "Your leave has been successfully cancelled." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to cancel leave." });
+    }
   };
   
   const getLeaveTypeText = (type: Leave['type']) => {
@@ -303,11 +343,11 @@ export default function StudentLeavePage() {
             <CardContent className="flex-grow p-2 pt-0">
               <ScrollArea className="h-96">
                 <div className="p-4 pt-0 space-y-2">
-                  {!today ? (
+                  {isLoading ? (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10"><p>Loading...</p></div>
                   ) : upcomingLeaves.length > 0 ? (
                     upcomingLeaves.map((leave) => (
-                      <div key={leave.date.toISOString()} className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50">
+                      <div key={leave.id} className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50">
                          <div className="flex items-center gap-3">
                             {leave.type === 'full_day' && <Utensils className="h-5 w-5 text-destructive flex-shrink-0" />}
                             {leave.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
@@ -318,7 +358,7 @@ export default function StudentLeavePage() {
                             </div>
                          </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteLeave(leave.date)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDeleteLeave(leave.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>

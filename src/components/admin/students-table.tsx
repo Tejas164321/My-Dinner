@@ -1,12 +1,14 @@
+
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { studentsData, joinRequests, monthMap, Student, planChangeRequests } from "@/lib/data";
+import { studentsData, joinRequests, monthMap, Student, planChangeRequests, Leave } from "@/lib/data";
+import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { Check, X, Trash2, UserX, Search, Utensils, Sun, Moon } from "lucide-react";
 import {
   AlertDialog,
@@ -31,6 +33,7 @@ import { StudentDetailCard } from "./student-detail-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
+import { Skeleton } from '../ui/skeleton';
 
 interface StudentsTableProps {
     filterMonth: string;
@@ -45,17 +48,22 @@ const planInfo = {
     dinner_only: { icon: Moon, text: 'Dinner Only', color: 'text-purple-400' }
 };
 
-const StudentRowCard = ({ student, month, initialDate, showActions }: { student: Student, month: string, initialDate: Date, showActions: boolean }) => {
-    const monthDetails = student.monthlyDetails[month as keyof typeof student.monthlyDetails];
-    if (!monthDetails) {
-        return null;
+// A dummy bill calculation for display purposes. This should be replaced by real data.
+const getDummyBillForStudent = (student: Student) => {
+    const base = student.messPlan === 'full_day' ? 3500 : 1800;
+    const due = student.id === '5' || student.id === '9' ? base : 0;
+    return {
+        due,
+        attendance: `${90 + parseInt(student.id, 10) % 10}%`,
+        status: due > 0 ? 'Due' : 'Paid',
     }
-    const paidAmount = monthDetails.bill.payments.reduce((sum, p) => sum + p.amount, 0);
-    const dueAmount = monthDetails.bill.total - paidAmount;
-    const billDisplay = dueAmount > 0 ? `₹${dueAmount.toLocaleString()}` : '₹0';
+};
+
+const StudentRowCard = ({ student, month, initialDate, showActions, leaves }: { student: Student, month: string, initialDate: Date, showActions: boolean, leaves: Leave[] }) => {
+    const dummyBill = getDummyBillForStudent(student);
+    const billDisplay = dummyBill.due > 0 ? `₹${dummyBill.due.toLocaleString()}` : '₹0';
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
-    const status = dueAmount <= 0 ? 'Paid' : 'Due';
     
     return (
         <Dialog>
@@ -80,11 +88,11 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                                 </div>
                                 <div className="text-center hidden sm:block">
                                     <p className="text-xs text-muted-foreground">Attendance</p>
-                                    <p className="font-semibold">{monthDetails.attendance}</p>
+                                    <p className="font-semibold">{dummyBill.attendance}</p>
                                 </div>
                                 <div className="text-center hidden sm:block">
                                     <p className="text-xs text-muted-foreground">Bill</p>
-                                    <Badge variant={status === 'Paid' ? 'secondary' : 'destructive'} className={cn(status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{billDisplay}</Badge>
+                                    <Badge variant={dummyBill.status === 'Paid' ? 'secondary' : 'destructive'} className={cn(dummyBill.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{billDisplay}</Badge>
                                 </div>
                             </div>
                         </div>
@@ -141,7 +149,7 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
                         Detailed information for {student.name}, including personal info, attendance, and billing.
                     </DialogDescription>
                 </DialogHeader>
-                <StudentDetailCard student={student} initialMonth={initialDate} />
+                <StudentDetailCard student={student} leaves={leaves} initialMonth={initialDate} />
             </DialogContent>
         </Dialog>
     );
@@ -151,6 +159,17 @@ const StudentRowCard = ({ student, month, initialDate, showActions }: { student:
 export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPlan }: StudentsTableProps) {
     const searchParams = useSearchParams();
     const tab = searchParams.get('tab');
+    const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        const unsubscribe = onAllLeavesUpdate((updatedLeaves) => {
+            setAllLeaves(updatedLeaves);
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
 
     const { activeStudents, suspendedStudents } = useMemo(() => {
         const active: Student[] = [];
@@ -164,14 +183,9 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     const filteredActiveStudents = useMemo(() => {
         return activeStudents
             .filter(student => {
-                const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
-                if (!monthDetails || filterStatus === 'all') return true;
-                
-                const paidAmount = monthDetails.bill.payments.reduce((sum, p) => sum + p.amount, 0);
-                const dueAmount = monthDetails.bill.total - paidAmount;
-                const status = dueAmount <= 0 ? 'Paid' : 'Due';
-
-                return status === filterStatus;
+                const dummyBill = getDummyBillForStudent(student);
+                if (filterStatus === 'all') return true;
+                return dummyBill.status === filterStatus;
             })
              .filter(student => {
                 if (filterPlan === 'all') return true;
@@ -205,9 +219,18 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                     
                     <TabsContent value="joined" className="mt-4">
                         <div className="flex flex-col gap-4">
-                            {filteredActiveStudents.length > 0 ? (
+                            {isLoading ? (
+                                Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
+                            ) : filteredActiveStudents.length > 0 ? (
                                 filteredActiveStudents.map((student) => (
-                                   <StudentRowCard key={student.id} student={student} month={filterMonth} initialDate={initialDate} showActions={true} />
+                                   <StudentRowCard 
+                                        key={student.id} 
+                                        student={student} 
+                                        month={filterMonth} 
+                                        initialDate={initialDate} 
+                                        showActions={true} 
+                                        leaves={allLeaves.filter(l => l.studentId === student.id)}
+                                    />
                                 ))
                             ) : (
                                 <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
@@ -223,7 +246,14 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                      <TabsContent value="suspended" className="mt-4">
                         <div className="flex flex-col gap-4">
                             {suspendedStudents.map((student) => (
-                               <StudentRowCard key={student.id} student={student} month={filterMonth} initialDate={initialDate} showActions={false} />
+                               <StudentRowCard 
+                                    key={student.id} 
+                                    student={student} 
+                                    month={filterMonth} 
+                                    initialDate={initialDate} 
+                                    showActions={false}
+                                    leaves={allLeaves.filter(l => l.studentId === student.id)}
+                                />
                             ))}
                         </div>
                     </TabsContent>
