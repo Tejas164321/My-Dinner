@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
                 <Input id="password" name="password" type="password" required />
               </div>
 
-              {state.message && (
+              {state.message && state.message !== 'success' && (
                  <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Login Failed</AlertTitle>
