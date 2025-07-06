@@ -20,21 +20,15 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     if (loading) {
       return; // Wait for auth state to load
     }
-
-    if (isPublicPage) {
-      // If on a public page (login/signup) and we are logged in as an admin, redirect to dashboard
-      if (user?.role === 'admin') {
-        router.replace('/admin');
-      }
-    } else {
-      // If on a protected page and we are NOT logged in as an admin, redirect to login
-      if (user?.role !== 'admin') {
-        router.replace('/admin/login');
-      }
+    
+    // If on a protected page and the user is not an admin, redirect to the login page.
+    if (!isPublicPage && user?.role !== 'admin') {
+      router.replace('/admin/login');
     }
   }, [user, loading, router, isPublicPage, pathname]);
 
-  // While loading auth state, show a skeleton loader.
+
+  // While loading, show a skeleton UI
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -49,17 +43,17 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     );
   }
 
-  // If on a public page and not yet an authenticated admin, render the public page.
-  // The useEffect handles redirecting away if/when we become authenticated.
-  if (isPublicPage && user?.role !== 'admin') {
+  // If on a public page (login/signup), render it directly.
+  // The page component itself will handle redirecting away if the user is already logged in.
+  if (isPublicPage) {
     return <>{children}</>;
   }
 
-  // If on a protected page, but we don't have a valid admin user, show a loader.
-  // The useEffect will handle the redirect, this prevents a flash of content.
-  if (!isPublicPage && user?.role !== 'admin') {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
+  // If we are on a protected page, but the user is not a valid admin,
+  // the effect above has already started the redirect. Show a loader in the meantime.
+  if (user?.role !== 'admin') {
+     return (
+       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex items-center space-x-4">
           <Skeleton className="h-12 w-12 rounded-full" />
           <div className="space-y-2">
@@ -71,12 +65,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     );
   }
   
-  // If all checks pass, we must be on a protected page with a valid admin user.
-  if (!user) {
-    // This case should ideally not be hit if the logic above is correct, but it's a good safeguard.
-    return null;
-  }
-
+  // If all checks pass, we have a valid admin on a protected page.
   const handleLogout = async () => {
     await logout();
     router.push('/');
