@@ -1,15 +1,27 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { adminNavItems } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { logout } from '@/app/auth/actions';
 
 export default function AdminDashboardLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const router = useRouter();
 
-  if (loading || !user) {
+  useEffect(() => {
+    if (!loading) {
+      if (!user || user.role !== 'admin') {
+        router.replace('/admin/login');
+      }
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user || user.role !== 'admin') {
     return (
        <div className="flex h-screen w-full items-center justify-center">
             <div className="flex items-center space-x-4">
@@ -31,7 +43,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
   };
 
   return (
-    <DashboardLayout navItems={adminNavItems} user={dashboardUser}>
+    <DashboardLayout navItems={adminNavItems} user={dashboardUser} onLogout={logout}>
       {children}
     </DashboardLayout>
   );

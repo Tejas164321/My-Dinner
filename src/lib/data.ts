@@ -65,16 +65,6 @@ export interface BillDetails {
     absentDays: number;
 }
 
-export interface JoinRequest {
-    id: string; // Document ID from Firestore
-    name: string;
-    studentId: string;
-    contact: string;
-    email: string;
-    date: string; // ISO string for the request date
-    roomNo: string;
-}
-
 export interface PlanChangeRequest {
     id: string;
     studentId: string;
@@ -84,15 +74,27 @@ export interface PlanChangeRequest {
     date: string;
 }
 
-export interface Student {
-    id: string;
-    name: string;
-    studentId: string;
-    joinDate: string;
+export interface AppUser {
+    uid: string;
     email: string;
+    name: string;
+    role: 'admin' | 'student';
+    studentId?: string;
+    contact?: string;
+    roomNo?: string;
+    joinDate?: string;
+    status?: 'active' | 'suspended' | 'pending';
+    messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
+    avatarUrl?: string;
+}
+
+export interface Student extends AppUser {
+    role: 'student';
+    studentId: string;
     contact: string;
     roomNo: string;
-    status: 'active' | 'suspended';
+    joinDate: string;
+    status: 'active' | 'suspended' | 'pending';
     messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
 }
 
@@ -166,15 +168,3 @@ export const paymentReminders: PaymentReminder[] = [
         date: '2023-09-25',
     },
 ];
-
-export interface AppUser {
-    uid: string;
-    email: string;
-    name: string;
-    role: 'admin' | 'student';
-    studentId?: string;
-    contact?: string;
-    joinDate?: string;
-    messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
-    avatarUrl?: string;
-}

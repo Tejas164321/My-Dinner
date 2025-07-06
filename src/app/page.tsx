@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ChefHat, UserCog, User } from 'lucide-react';
+import { ChefHat, UserCog, User, LogIn } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -15,17 +15,17 @@ export default function Home() {
           <ChefHat className="h-14 w-14 text-primary" />
         </div>
         <h1 className="text-5xl font-bold tracking-tight text-transparent md:text-7xl bg-clip-text bg-gradient-to-br from-white to-gray-400">
-          MessoMate Dashboards
+          Welcome to MessoMate
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-          Direct access to the Admin and Student portals.
+          The smart, simple solution for managing your mess. Please log in to continue.
         </p>
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Button asChild size="lg" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href="/admin"><UserCog /> Admin Dashboard</Link>
+              <Link href="/admin/login"><UserCog /> Admin Portal</Link>
             </Button>
             <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href="/student/dashboard"><User /> Student Dashboard</Link>
+              <Link href="/login"><User /> Student Portal</Link>
             </Button>
         </div>
       </div>

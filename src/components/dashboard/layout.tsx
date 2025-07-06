@@ -61,6 +61,7 @@ interface DashboardLayoutProps {
   children: ReactNode;
   navItems: NavItem[];
   user: { name: string; role: string; email: string; avatarUrl?: string };
+  onLogout: () => Promise<void>;
 }
 
 function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[], isCollapsed: boolean, onLinkClick?: () => void }) {
@@ -128,17 +129,17 @@ function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLa
     )
 }
 
-function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onLinkClick?: () => void }) {
+function LogoutButton({ isCollapsed, onLogout, onLinkClick }: { isCollapsed?: boolean, onLogout: () => Promise<void>, onLinkClick?: () => void }) {
      return (
         <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button asChild variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
-                        <Link href="/">
-                          <LogOut className="h-5 w-5 shrink-0" />
-                          <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Log Out</span>
-                        </Link>
-                    </Button>
+                    <form action={onLogout} className="w-full">
+                        <Button type="submit" variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
+                            <LogOut className="h-5 w-5 shrink-0" />
+                            <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Log Out</span>
+                        </Button>
+                    </form>
                 </TooltipTrigger>
                 {isCollapsed && (
                     <TooltipContent side="right" sideOffset={5}>
@@ -150,7 +151,7 @@ function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onL
      )
 }
 
-export function DashboardLayout({ children, navItems, user }: DashboardLayoutProps) {
+export function DashboardLayout({ children, navItems, user, onLogout }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   
@@ -181,7 +182,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
           <NavContent navItems={navItems} isCollapsed={isCollapsed} />
         </div>
         <div className="mt-auto border-t p-2">
-           <LogoutButton isCollapsed={isCollapsed} />
+           <LogoutButton isCollapsed={isCollapsed} onLogout={onLogout} />
         </div>
         <button
           onClick={handleToggle}
@@ -218,7 +219,7 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
                     <NavContent navItems={navItems} isCollapsed={false} onLinkClick={handleMobileNavClose} />
                 </div>
                 <div className="mt-auto border-t p-2">
-                    <LogoutButton isCollapsed={false} onLinkClick={handleMobileNavClose} />
+                    <LogoutButton isCollapsed={false} onLogout={onLogout} onLinkClick={handleMobileNavClose} />
                 </div>
             </SheetContent>
           </Sheet>

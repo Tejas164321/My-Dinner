@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -7,11 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Student, Leave, JoinRequest, PlanChangeRequest, monthMap } from "@/lib/data";
+import { Student, Leave, PlanChangeRequest, monthMap } from "@/lib/data";
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onUsersUpdate } from '@/lib/listeners/users';
-import { onJoinRequestsUpdate, onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
-import { approveJoinRequest, rejectJoinRequest, approvePlanChangeRequest, rejectPlanChangeRequest, suspendStudent, deleteStudent, reactivateStudent } from '@/lib/actions/requests';
+import { onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
+import { approveStudent, rejectStudent, approvePlanChangeRequest, rejectPlanChangeRequest, suspendStudent, deleteStudent, reactivateStudent } from '@/lib/actions/requests';
 import { Check, X, Trash2, UserX, Search, Utensils, Sun, Moon, RotateCcw } from "lucide-react";
 import {
   AlertDialog,
@@ -54,7 +53,7 @@ const planInfo = {
 
 const getDummyBillForStudent = (student: Student) => {
     const base = student.messPlan === 'full_day' ? 3500 : 1800;
-    const due = student.id.charCodeAt(0) % 2 === 0 ? base : 0; // consistent dummy due
+    const due = student.uid.charCodeAt(0) % 2 === 0 ? base : 0; // consistent dummy due
     return {
         due,
         attendance: `${90 + parseInt(student.studentId.slice(-1), 16) % 10}%`,
@@ -187,7 +186,6 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     
     const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
     const [users, setUsers] = useState<Student[]>([]);
-    const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
     const [planChangeRequests, setPlanChangeRequests] = useState<PlanChangeRequest[]>([]);
     
     const [isLoading, setIsLoading] = useState(true);
@@ -196,28 +194,28 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         setIsLoading(true);
         const unsubscribeUsers = onUsersUpdate(setUsers);
         const unsubscribeLeaves = onAllLeavesUpdate(setAllLeaves);
-        const unsubscribeJoins = onJoinRequestsUpdate(setJoinRequests);
         const unsubscribePlans = onPlanChangeRequestsUpdate(setPlanChangeRequests);
         
-        // A simple way to wait for the first batch of data
         const timer = setTimeout(() => setIsLoading(false), 1500);
 
         return () => {
             unsubscribeUsers();
             unsubscribeLeaves();
-            unsubscribeJoins();
             unsubscribePlans();
             clearTimeout(timer);
         };
     }, []);
 
-    const { activeStudents, suspendedStudents } = useMemo(() => {
+    const { activeStudents, suspendedStudents, pendingStudents } = useMemo(() => {
         const active: Student[] = [];
         const suspended: Student[] = [];
+        const pending: Student[] = [];
         users.forEach(student => {
-            (student.status === 'suspended' ? suspended : active).push(student);
+            if (student.status === 'suspended') suspended.push(student);
+            else if (student.status === 'pending') pending.push(student);
+            else active.push(student);
         });
-        return { activeStudents: active, suspendedStudents: suspended };
+        return { activeStudents, suspendedStudents, pendingStudents };
     }, [users]);
 
     const filteredActiveStudents = useMemo(() => {
@@ -252,7 +250,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                 <Tabs defaultValue={tab || "joined"} className="w-full">
                     <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="joined">All Students ({activeStudents.length})</TabsTrigger>
-                        <TabsTrigger value="requests">Join Requests <Badge variant={joinRequests.length > 0 ? 'destructive' : 'secondary'} className="ml-2">{joinRequests.length}</Badge></TabsTrigger>
+                        <TabsTrigger value="requests">Pending Approval <Badge variant={pendingStudents.length > 0 ? 'destructive' : 'secondary'} className="ml-2">{pendingStudents.length}</Badge></TabsTrigger>
                         <TabsTrigger value="plan_requests">Plan Requests <Badge variant={planChangeRequests.length > 0 ? 'destructive' : 'secondary'} className="ml-2">{planChangeRequests.length}</Badge></TabsTrigger>
                         <TabsTrigger value="suspended">Suspended <Badge variant="secondary" className="ml-2">{suspendedStudents.length}</Badge></TabsTrigger>
                     </TabsList>
@@ -282,30 +280,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             )}
                         </div>
                     </TabsContent>
-
-                     <TabsContent value="suspended" className="mt-4">
-                        <div className="flex flex-col gap-4">
-                             {isLoading ? (
-                                Array.from({ length: 1 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
-                            ) : suspendedStudents.length > 0 ? (
-                                suspendedStudents.map((student) => (
-                                <StudentRowCard 
-                                        key={student.id} 
-                                        student={student} 
-                                        month={filterMonth} 
-                                        initialDate={initialDate} 
-                                        showActions={false}
-                                        leaves={allLeaves.filter(l => l.studentId === student.id)}
-                                    />
-                                ))
-                             ) : (
-                                <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
-                                    <p>No suspended students.</p>
-                                </div>
-                             )}
-                        </div>
-                    </TabsContent>
-
+                    
                     <TabsContent value="requests" className="mt-4">
                         <div className="overflow-x-auto">
                             <Table>
@@ -313,28 +288,26 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                     <TableRow>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Student ID</TableHead>
-                                        <TableHead>Room No.</TableHead>
                                         <TableHead>Contact</TableHead>
-                                        <TableHead>Date</TableHead>
+                                        <TableHead>Date Joined</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {isLoading && joinRequests.length === 0 ? (
-                                        <TableRow><TableCell colSpan={6} className="text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                                    ) : joinRequests.length > 0 ? (
-                                        joinRequests.map((req) => (
+                                    {isLoading && pendingStudents.length === 0 ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                    ) : pendingStudents.length > 0 ? (
+                                        pendingStudents.map((req) => (
                                             <TableRow key={req.id}>
                                                 <TableCell className="font-medium">{req.name}</TableCell>
                                                 <TableCell>{req.studentId}</TableCell>
-                                                <TableCell>{req.roomNo}</TableCell>
                                                 <TableCell>{req.contact}</TableCell>
-                                                <TableCell>{format(parseISO(req.date), 'MMM do, yyyy')}</TableCell>
+                                                <TableCell>{req.joinDate}</TableCell>
                                                 <TableCell className="text-right space-x-2">
-                                                    <Button onClick={() => approveJoinRequest(req.id, req)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
+                                                    <Button onClick={() => approveStudent(req.id)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
                                                         <Check className="h-4 w-4" />
                                                     </Button>
-                                                    <Button onClick={() => rejectJoinRequest(req.id)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
+                                                    <Button onClick={() => rejectStudent(req.id)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
                                                         <X className="h-4 w-4" />
                                                     </Button>
                                                 </TableCell>
@@ -392,6 +365,28 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                         </div>
                     </TabsContent>
 
+                     <TabsContent value="suspended" className="mt-4">
+                        <div className="flex flex-col gap-4">
+                             {isLoading ? (
+                                Array.from({ length: 1 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
+                            ) : suspendedStudents.length > 0 ? (
+                                suspendedStudents.map((student) => (
+                                <StudentRowCard 
+                                        key={student.id} 
+                                        student={student} 
+                                        month={filterMonth} 
+                                        initialDate={initialDate} 
+                                        showActions={false}
+                                        leaves={allLeaves.filter(l => l.studentId === student.id)}
+                                    />
+                                ))
+                             ) : (
+                                <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
+                                    <p>No suspended students.</p>
+                                </div>
+                             )}
+                        </div>
+                    </TabsContent>
                 </Tabs>
             </CardContent>
         </Card>

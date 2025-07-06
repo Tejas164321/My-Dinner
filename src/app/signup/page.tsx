@@ -2,10 +2,7 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { submitJoinRequest } from '@/lib/actions/requests';
-import { useAuth } from '@/contexts/auth-context';
+import { studentSignup } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,13 +14,13 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button className="w-full" type="submit" disabled={pending}>
-      {pending ? 'Submitting Request...' : 'Request to Join'}
+      {pending ? 'Creating Account...' : 'Create Account'}
     </Button>
   );
 }
 
 export default function StudentSignupPage() {
-  const [state, formAction] = useFormState(submitJoinRequest, { message: null });
+  const [state, formAction] = useFormState(studentSignup, { message: null });
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
@@ -45,12 +42,12 @@ export default function StudentSignupPage() {
             <CardHeader>
               <CardTitle className="text-2xl text-center">Request Submitted!</CardTitle>
               <CardDescription className="text-center pt-2">
-                Your request to join the mess has been sent to the admin for approval. You will be notified once it's reviewed.
+                Your account has been created and is now pending admin approval. You will be able to log in once it's reviewed.
               </CardDescription>
             </CardHeader>
             <CardFooter>
               <Button asChild className="w-full">
-                <Link href="/">Back to Home</Link>
+                <Link href="/login">Back to Login</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -58,7 +55,7 @@ export default function StudentSignupPage() {
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Create a Student Account</CardTitle>
-              <CardDescription>Enter your details to join the mess.</CardDescription>
+              <CardDescription>Enter your details to join the mess. Admin approval will be required.</CardDescription>
             </CardHeader>
             <CardContent>
               <form action={formAction} className="space-y-4">
@@ -85,6 +82,10 @@ export default function StudentSignupPage() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" name="email" type="email" placeholder="john.doe@example.com" required />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" name="password" type="password" required />
                 </div>
                 
                 {state?.message && (
