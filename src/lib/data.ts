@@ -65,6 +65,15 @@ export interface BillDetails {
     absentDays: number;
 }
 
+export interface JoinRequest {
+    id: string;
+    name: string;
+    studentId: string;
+    contact: string;
+    roomNo: string;
+    date: string;
+}
+
 export interface PlanChangeRequest {
     id: string;
     studentId: string;
@@ -168,3 +177,5 @@ export const paymentReminders: PaymentReminder[] = [
         date: '2023-09-25',
     },
 ];
+
+export const studentsData: Student[] = [];
