@@ -68,7 +68,9 @@ export default function StudentLeavePage() {
 
   const upcomingLeaves = useMemo(() => {
     if (!today) return [];
-    return leaves.filter(l => l.date >= today);
+    return leaves
+      .filter(l => l.date >= today)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [leaves, today]);
   
   const upcomingHolidays = useMemo(() => {
