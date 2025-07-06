@@ -34,6 +34,12 @@ export default function AdminLoginPage() {
     }
   }, [user, loading, router]);
 
+  useEffect(() => {
+    if (state.message === 'success') {
+      router.replace('/admin');
+    }
+  }, [state, router]);
+
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">

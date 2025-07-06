@@ -33,6 +33,12 @@ export default function AdminSignupPage() {
     }
   }, [user, loading, router]);
 
+  useEffect(() => {
+    if (state?.message === 'success') {
+      router.replace('/admin');
+    }
+  }, [state, router]);
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
       <div className="absolute inset-0 grid-bg [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
