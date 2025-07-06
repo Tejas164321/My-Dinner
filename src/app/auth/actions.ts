@@ -4,7 +4,6 @@ import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, type UserCredential } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
 export async function studentSignup(prevState: any, formData: FormData) {
   const name = formData.get('name') as string;
@@ -77,13 +76,11 @@ export async function studentLogin(prevState: any, formData: FormData) {
             await auth.signOut();
             return { message: 'Your account has been suspended. Please contact the mess admin.' };
         }
-        // Success
-        redirect('/student/dashboard');
-
     } else {
         await auth.signOut();
         return { message: 'User data not found. Please contact support.' };
     }
+    return { message: 'success' };
 }
 
 export async function adminSignup(prevState: any, formData: FormData) {
@@ -110,7 +107,7 @@ export async function adminSignup(prevState: any, formData: FormData) {
   }
   
   revalidatePath('/');
-  redirect('/admin');
+  return { message: 'success' };
 }
 
 
@@ -148,7 +145,7 @@ export async function adminLogin(prevState: any, formData: FormData) {
     const userDocSnap = await getDoc(userDocRef);
 
     if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
-      redirect('/admin');
+        return { message: 'success' };
     } else {
       await auth.signOut();
       return { message: 'This account does not have admin privileges.' };
@@ -161,5 +158,4 @@ export async function adminLogin(prevState: any, formData: FormData) {
 
 export async function logout() {
     await auth.signOut();
-    redirect('/');
 }

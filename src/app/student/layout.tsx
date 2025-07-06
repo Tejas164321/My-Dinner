@@ -24,10 +24,13 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
         const message = user.status === 'pending'
           ? 'Your account is pending approval.'
           : 'Your account has been suspended.';
-        logout().then(() => {
-          toast({ variant: 'destructive', title: 'Access Denied', description: message });
-          router.replace('/login');
-        });
+        
+        const handleLogout = async () => {
+            await logout();
+            toast({ variant: 'destructive', title: 'Access Denied', description: message });
+            router.replace('/login');
+        };
+        handleLogout();
       }
     }
   }, [user, loading, router, toast]);
@@ -46,6 +49,11 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
     );
   }
 
+  const handleLogout = async () => {
+      await logout();
+      router.push('/');
+  }
+
   const dashboardUser = {
     name: user.name || 'Student',
     role: 'Student',
@@ -54,7 +62,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
   };
   
   return (
-    <DashboardLayout navItems={studentNavItems} user={dashboardUser} onLogout={logout}>
+    <DashboardLayout navItems={studentNavItems} user={dashboardUser} onLogout={handleLogout}>
       {children}
     </DashboardLayout>
   );

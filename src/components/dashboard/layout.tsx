@@ -3,7 +3,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -130,16 +130,22 @@ function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLa
 }
 
 function LogoutButton({ isCollapsed, onLogout, onLinkClick }: { isCollapsed?: boolean, onLogout: () => Promise<void>, onLinkClick?: () => void }) {
+    const router = useRouter();
+    const handleLogout = async () => {
+        if (onLinkClick) onLinkClick();
+        await onLogout();
+        // Redirect to home page after logout.
+        router.push('/');
+    }
+
      return (
         <TooltipProvider delayDuration={300}>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <form action={onLogout} className="w-full">
-                        <Button type="submit" variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')} onClick={onLinkClick}>
-                            <LogOut className="h-5 w-5 shrink-0" />
-                            <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Log Out</span>
-                        </Button>
-                    </form>
+                    <Button onClick={handleLogout} variant="ghost" className={cn("w-full transition-colors duration-300 overflow-hidden", isCollapsed ? 'justify-center h-10' : 'justify-start h-10 gap-3 px-3')}>
+                        <LogOut className="h-5 w-5 shrink-0" />
+                        <span className={cn("whitespace-nowrap transition-all duration-200", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>Log Out</span>
+                    </Button>
                 </TooltipTrigger>
                 {isCollapsed && (
                     <TooltipContent side="right" sideOffset={5}>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -47,6 +46,11 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     );
   }
 
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  }
+
   const dashboardUser = {
     name: user.name || 'Admin',
     role: 'Mess Manager',
@@ -55,7 +59,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
   };
 
   return (
-    <DashboardLayout navItems={adminNavItems} user={dashboardUser} onLogout={logout}>
+    <DashboardLayout navItems={adminNavItems} user={dashboardUser} onLogout={handleLogout}>
       {children}
     </DashboardLayout>
   );
