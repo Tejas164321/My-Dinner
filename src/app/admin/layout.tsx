@@ -17,30 +17,24 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
   const isPublicPage = pathname === '/admin/login' || pathname === '/admin/signup';
 
   useEffect(() => {
-    // Don't do anything while auth state is loading
     if (loading) {
-      return;
+      return; // Wait for auth state to load
     }
 
-    const isUserAdmin = user?.role === 'admin';
-
-    // If user is on a public page (login/signup)
     if (isPublicPage) {
-      // and they are already logged in as an admin, redirect to dashboard
-      if (isUserAdmin) {
+      // If on a public page (login/signup) and we are logged in as an admin, redirect to dashboard
+      if (user?.role === 'admin') {
         router.replace('/admin');
       }
-    } 
-    // If user is on a protected page
-    else {
-      // and they are not an admin, redirect to login
-      if (!isUserAdmin) {
+    } else {
+      // If on a protected page and we are NOT logged in as an admin, redirect to login
+      if (user?.role !== 'admin') {
         router.replace('/admin/login');
       }
     }
   }, [user, loading, router, isPublicPage, pathname]);
 
-  // While loading auth state, show a skeleton loader for all admin pages.
+  // While loading auth state, show a skeleton loader.
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -55,16 +49,16 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     );
   }
 
-  // If we are on a public page AND not yet authenticated as an admin, render the public page.
-  // The useEffect handles redirecting away if we become authenticated.
+  // If on a public page and not yet an authenticated admin, render the public page.
+  // The useEffect handles redirecting away if/when we become authenticated.
   if (isPublicPage && user?.role !== 'admin') {
     return <>{children}</>;
   }
 
-  // If we are on a protected page, but the user is not an admin, we show a loader
-  // while the useEffect redirects them. This prevents a flash of unstyled content.
+  // If on a protected page, but we don't have a valid admin user, show a loader.
+  // The useEffect will handle the redirect, this prevents a flash of content.
   if (!isPublicPage && user?.role !== 'admin') {
-      return (
+    return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex items-center space-x-4">
           <Skeleton className="h-12 w-12 rounded-full" />
@@ -77,27 +71,16 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     );
   }
   
-  // If all checks pass, we are on a protected page with a valid admin user.
-  // Render the protected dashboard layout.
+  // If all checks pass, we must be on a protected page with a valid admin user.
+  if (!user) {
+    // This case should ideally not be hit if the logic above is correct, but it's a good safeguard.
+    return null;
+  }
+
   const handleLogout = async () => {
     await logout();
     router.push('/');
   };
-
-  // This check is needed because user can be null here briefly during redirect.
-  if (!user) {
-     return (
-       <div className="flex h-screen w-full items-center justify-center">
-         <div className="flex items-center space-x-4">
-           <Skeleton className="h-12 w-12 rounded-full" />
-           <div className="space-y-2">
-             <Skeleton className="h-4 w-[250px]" />
-             <Skeleton className="h-4 w-[200px]" />
-           </div>
-         </div>
-       </div>
-    );
-  }
 
   const dashboardUser = {
     name: user.name || 'Admin',

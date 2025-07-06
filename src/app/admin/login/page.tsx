@@ -2,7 +2,10 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { adminLogin } from '@/app/auth/actions';
+import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,7 +23,17 @@ function SubmitButton() {
 }
 
 export default function AdminLoginPage() {
-  const [state, formAction] = useFormState(adminLogin, { message: '' });
+  const [state, formAction] = useFormState(adminLogin, { message: null });
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    // This effect will run when the auth state changes.
+    // If the user is successfully logged in as an admin, it will redirect.
+    if (!loading && user?.role === 'admin') {
+      router.replace('/admin');
+    }
+  }, [user, loading, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
@@ -53,7 +66,7 @@ export default function AdminLoginPage() {
                 <Input id="password" name="password" type="password" required />
               </div>
 
-              {state.message && state.message !== 'success' && (
+              {state?.message && state.message !== 'success' && (
                  <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Login Failed</AlertTitle>

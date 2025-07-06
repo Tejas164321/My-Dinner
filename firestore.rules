@@ -2,10 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Allow read/write access to all documents for any authenticated user.
+    // This is a common starting point for development.
+    // For production, you should implement more granular rules.
     match /{document=**} {
-      // Allow any authenticated user to read or write to any document.
-      // This is a simple, secure rule for development. For production,
-      // you would implement more granular, role-based security rules.
       allow read, write: if request.auth != null;
     }
   }
