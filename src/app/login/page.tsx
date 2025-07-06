@@ -28,17 +28,12 @@ export default function StudentLoginPage() {
   const { user, loading } = useAuth();
   
    useEffect(() => {
-    // This effect handles redirecting a user who is already logged in
+    // This effect handles redirecting a user who is already logged in or
+    // has just successfully logged in, once the AuthContext is updated.
     if (!loading && user?.role === 'student') {
       router.replace('/student/dashboard');
     }
   }, [user, loading, router]);
-
-  useEffect(() => {
-    if (state.message === 'success') {
-      router.replace('/student/dashboard');
-    }
-  }, [state, router]);
 
 
   return (

@@ -28,16 +28,12 @@ export default function AdminSignupPage() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
+    // This effect handles redirecting a user who is already logged in or
+    // has just successfully signed up, once the AuthContext is updated.
     if (!loading && user) {
       router.replace('/admin');
     }
   }, [user, loading, router]);
-
-  useEffect(() => {
-    if (state?.message === 'success') {
-      router.replace('/admin');
-    }
-  }, [state, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
