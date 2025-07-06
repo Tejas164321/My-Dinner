@@ -47,27 +47,6 @@ export const revenueData = [
     { month: 'Jul', revenue: 285450 },
 ];
 
-
-export const joinRequests = [
-    { id: '1', name: 'John Doe', studentId: 'B12345', date: '2023-10-27' },
-    { id: '2', name: 'Jane Smith', studentId: 'B67890', date: '2023-10-26' },
-    { id: '3', name: 'Sam Wilson', studentId: 'B54321', date: '2023-10-26' },
-];
-
-export interface PlanChangeRequest {
-    id: string;
-    studentName: string;
-    studentId: string;
-    fromPlan: 'full_day' | 'lunch_only' | 'dinner_only';
-    toPlan: 'full_day' | 'lunch_only' | 'dinner_only';
-    date: string;
-}
-
-export const planChangeRequests: PlanChangeRequest[] = [
-    { id: 'pcr1', studentName: 'Mary Jane', studentId: 'B44556', fromPlan: 'lunch_only', toPlan: 'full_day', date: '2023-10-28' },
-    { id: 'pcr2', studentName: 'Sara Bell', studentId: 'C12378', fromPlan: 'dinner_only', toPlan: 'full_day', date: '2023-10-27' },
-];
-
 export const monthMap: { [key: string]: Date } = {
   'july': new Date(2023, 6, 1),
   'august': new Date(2023, 7, 1),
@@ -86,6 +65,25 @@ export interface BillDetails {
     absentDays: number;
 }
 
+export interface JoinRequest {
+    id: string; // Document ID from Firestore
+    name: string;
+    studentId: string;
+    contact: string;
+    email: string;
+    date: string; // ISO string for the request date
+    roomNo: string;
+}
+
+export interface PlanChangeRequest {
+    id: string;
+    studentId: string;
+    studentName: string;
+    fromPlan: 'full_day' | 'lunch_only' | 'dinner_only';
+    toPlan: 'full_day' | 'lunch_only' | 'dinner_only';
+    date: string;
+}
+
 export interface Student {
     id: string;
     name: string;
@@ -97,39 +95,6 @@ export interface Student {
     status: 'active' | 'suspended';
     messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
 }
-
-export const studentsData: Student[] = [
-    { 
-        id: '4', name: 'Peter Jones', studentId: 'B11223', joinDate: '2023-09-15', email: 'peter.jones@example.com', contact: '+91 9876543210', roomNo: 'H-101',
-        status: 'active',
-        messPlan: 'full_day',
-    },
-    { 
-        id: '5', name: 'Mary Jane', studentId: 'B44556', joinDate: '2023-09-14', email: 'mary.jane@example.com', contact: '+91 9876543211', roomNo: 'H-102',
-        status: 'active',
-        messPlan: 'lunch_only',
-    },
-    { 
-        id: '6', name: 'Chris Lee', studentId: 'B77889', joinDate: '2023-09-13', email: 'chris.lee@example.com', contact: '+91 9876543212', roomNo: 'H-201',
-        status: 'active',
-        messPlan: 'full_day',
-    },
-    { 
-        id: '7', name: 'Bryan Fury', studentId: 'B98765', joinDate: '2023-09-12', email: 'bryan.fury@example.com', contact: '+91 9876543213', roomNo: 'H-202',
-        status: 'suspended',
-        messPlan: 'full_day',
-    },
-    { 
-        id: '8', name: 'Alex Doe', studentId: 'A56789', joinDate: '2023-09-11', email: 'alex.doe@example.com', contact: '+91 9876543214', roomNo: 'H-301',
-        status: 'active',
-        messPlan: 'full_day',
-    },
-    { 
-        id: '9', name: 'Sara Bell', studentId: 'C12378', joinDate: '2023-09-10', email: 'sara.bell@example.com', contact: '+91 9876543215', roomNo: 'H-302',
-        status: 'active',
-        messPlan: 'dinner_only',
-    },
-];
 
 export const commonMenuItems = ['Dal', 'Rice', 'Chapatti', 'Salad', 'Raita', 'Pulav'];
 

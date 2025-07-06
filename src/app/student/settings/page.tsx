@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { submitPlanChangeRequest } from '@/lib/actions/requests';
 
 export default function StudentSettingsPage() {
     const { toast } = useToast();
@@ -45,12 +46,22 @@ export default function StudentSettingsPage() {
         });
     };
     
-    const handlePlanChangeRequest = () => {
-        setIsRequestPending(true);
-        toast({
-            title: "Request Submitted",
-            description: `Your request to change to the "${selectedPlan.replace('_', ' ')}" plan is pending admin approval.`,
-        });
+    const handlePlanChangeRequest = async () => {
+        if (!user || !user.studentId) {
+             toast({ variant: 'destructive', title: "Error", description: "User information is missing." });
+             return;
+        }
+
+        try {
+            await submitPlanChangeRequest(user.studentId, user.name || 'Student', currentPlan, selectedPlan);
+            setIsRequestPending(true);
+            toast({
+                title: "Request Submitted",
+                description: `Your request to change to the "${selectedPlan.replace('_', ' ')}" plan is pending admin approval.`,
+            });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Submission Failed", description: "Could not submit your request. Please try again." });
+        }
     };
     
     const planDetails = {

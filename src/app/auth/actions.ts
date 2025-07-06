@@ -6,39 +6,6 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export async function studentSignup(prevState: any, formData: FormData) {
-  const name = formData.get('name') as string;
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const studentId = formData.get('studentId') as string;
-  const contact = formData.get('contact') as string;
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    await setDoc(doc(db, 'users', user.uid), {
-      name,
-      email,
-      studentId,
-      contact,
-      role: 'student',
-      joinDate: new Date().toISOString().split('T')[0],
-      messPlan: 'full_day',
-      status: 'active'
-    });
-
-  } catch (error: any) {
-    if (error.code === 'auth/email-already-in-use') {
-        return { message: 'This email is already registered. Please login.' };
-    }
-    return { message: error.message };
-  }
-  
-  revalidatePath('/');
-  redirect('/student/dashboard');
-}
-
 export async function studentLogin(prevState: any, formData: FormData) {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;

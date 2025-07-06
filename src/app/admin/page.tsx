@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,9 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Users, UserX, TrendingUp, FileText, Settings, Bell, Utensils, CalendarDays, Moon, Sun, UserPlus, GitCompareArrows, Check, X } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { joinRequests, planChangeRequests, Holiday, Leave } from '@/lib/data';
+import { Holiday, Leave, JoinRequest, PlanChangeRequest } from '@/lib/data';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
+import { onJoinRequestsUpdate, onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
 import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +29,8 @@ export default function AdminDashboard() {
   const [today, setToday] = useState<Date>();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
+  const [planChangeRequests, setPlanChangeRequests] = useState<PlanChangeRequest[]>([]);
 
   useEffect(() => {
     const now = startOfDay(new Date());
@@ -39,10 +43,14 @@ export default function AdminDashboard() {
 
     const holidaysUnsubscribe = onHolidaysUpdate(setHolidays);
     const leavesUnsubscribe = onAllLeavesUpdate(setAllLeaves);
+    const joinRequestsUnsubscribe = onJoinRequestsUpdate(setJoinRequests);
+    const planChangeRequestsUnsubscribe = onPlanChangeRequestsUpdate(setPlanChangeRequests);
 
     return () => {
         holidaysUnsubscribe();
         leavesUnsubscribe();
+        joinRequestsUnsubscribe();
+        planChangeRequestsUnsubscribe();
     };
   }, []);
 
@@ -87,7 +95,7 @@ export default function AdminDashboard() {
     const jr = joinRequests.map(r => ({ ...r, type: 'join_request', dateObj: new Date(r.date) }));
     const pcr = planChangeRequests.map(r => ({ ...r, type: 'plan_change', dateObj: new Date(r.date) }));
     return [...jr, ...pcr].sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
-  }, []);
+  }, [joinRequests, planChangeRequests]);
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -97,9 +105,9 @@ export default function AdminDashboard() {
             <PopoverTrigger asChild>
                 <Button variant="outline" size="icon" className="relative">
                     <Bell className="h-5 w-5" />
-                     {(joinRequests.length + planChangeRequests.length) > 0 && (
+                     {combinedNotifications.length > 0 && (
                         <Badge variant="destructive" className="absolute -top-2 -right-2 px-1.5 h-5 flex items-center justify-center rounded-full text-xs">
-                           {joinRequests.length + planChangeRequests.length}
+                           {combinedNotifications.length}
                         </Badge>
                     )}
                 </Button>
@@ -124,7 +132,7 @@ export default function AdminDashboard() {
                                         </div>
                                         <div className="flex-1 space-y-1">
                                             <p className="text-sm text-muted-foreground leading-snug">
-                                                <span className="font-semibold text-foreground">{notif.studentName}</span>
+                                                <span className="font-semibold text-foreground">{notif.type === 'join_request' ? notif.name : notif.studentName}</span>
                                                 {notif.type === 'join_request' ? ` has requested to join your mess.` : ` has requested to change plan from `}
                                                 {notif.type === 'plan_change' && <><span className="font-semibold capitalize">{notif.fromPlan.replace('_', ' ')}</span> to <span className="font-semibold capitalize">{notif.toPlan.replace('_', ' ')}</span>.</>}
                                             </p>
