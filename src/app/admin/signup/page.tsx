@@ -2,6 +2,8 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { adminSignup } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +23,15 @@ function SubmitButton() {
 
 export default function AdminSignupPage() {
   const [state, formAction] = useFormState(adminSignup, { message: null });
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.message === 'success') {
+      // After signup, Firebase automatically logs the user in.
+      // We redirect to the /admin route, and the layout will handle showing the dashboard.
+      router.replace('/admin');
+    }
+  }, [state, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
