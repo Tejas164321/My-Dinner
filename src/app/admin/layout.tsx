@@ -18,34 +18,41 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
 
   useEffect(() => {
     if (loading) {
-      return; // Wait for the auth state to be determined
+      return; // Wait for auth state to be determined
     }
 
-    // This is the layout's primary job: if we are on a protected page
-    // and the user is not an admin, redirect them to the login page.
-    if (!isPublicPage && (!user || user.role !== 'admin')) {
-      router.replace('/admin/login');
+    if (isPublicPage) {
+      // If user is on a public page (login/signup) but is already logged in as an admin,
+      // redirect them to the dashboard.
+      if (user?.role === 'admin') {
+        router.replace('/admin');
+      }
+    } else {
+      // If user is on a protected page but is not an admin,
+      // redirect them to the login page.
+      if (!user || user.role !== 'admin') {
+        router.replace('/admin/login');
+      }
     }
   }, [user, loading, router, isPublicPage, pathname]);
 
-  // Show a loader while auth is initializing or if we're on a protected page
-  // without a valid user. This covers the brief moment before a redirect occurs.
+  // While loading, or if we are about to redirect away from a protected page, show a loader.
   if (loading || (!isPublicPage && (!user || user.role !== 'admin'))) {
-     return (
-       <div className="flex h-screen w-full items-center justify-center">
-            <div className="flex items-center space-x-4">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                </div>
-            </div>
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex items-center space-x-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
         </div>
+      </div>
     );
   }
-  
-  // If we are on a public page (login/signup), render it.
-  // The page itself is now responsible for redirecting if the user is already logged in.
+
+  // If we are on a public page and auth checks have passed (i.e., user is not logged in),
+  // render the page itself.
   if (isPublicPage) {
     return <>{children}</>;
   }
@@ -55,7 +62,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
   const handleLogout = async () => {
     await logout();
     router.push('/');
-  }
+  };
 
   const dashboardUser = {
     name: user.name || 'Admin',
