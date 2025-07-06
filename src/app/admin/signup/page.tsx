@@ -9,9 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, UserCog } from 'lucide-react';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -24,15 +21,6 @@ function SubmitButton() {
 
 export default function AdminSignupPage() {
   const [state, formAction] = useFormState(adminSignup, { message: null });
-  const router = useRouter();
-  const { user, loading } = useAuth();
-
-  // Redirect to dashboard once the user context is populated after signup
-  useEffect(() => {
-    if (!loading && user?.role === 'admin') {
-        router.replace('/admin');
-    }
-  }, [user, loading, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
