@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ChefHat, UserCog, User, LogIn } from 'lucide-react';
+import { ChefHat, UserCog, User } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -18,14 +18,14 @@ export default function Home() {
           Welcome to MessoMate
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-          The smart, simple solution for managing your mess. Please log in to continue.
+          The smart, simple solution for managing your mess. Select your portal to continue.
         </p>
         <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Button asChild size="lg" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href="/admin/login"><UserCog /> Admin Portal</Link>
+              <Link href="/admin"><UserCog /> Admin Portal</Link>
             </Button>
             <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-6 transition-transform hover:scale-105">
-              <Link href="/login"><User /> Student Portal</Link>
+              <Link href="/student/dashboard"><User /> Student Portal</Link>
             </Button>
         </div>
       </div>
