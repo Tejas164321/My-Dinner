@@ -14,6 +14,7 @@ import type { AppUser } from '@/lib/data';
 interface ActionResult {
   success: boolean;
   error?: string;
+  userStatus?: AppUser['status'];
 }
 
 // --- Student Actions ---
@@ -30,18 +31,14 @@ export async function studentLogin(prevState: any, formData: FormData): Promise<
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const userDocRef = doc(db, 'users', userCredential.user.uid);
     const userDoc = await getDoc(userDocRef);
-    const userData = userDoc.data();
+    const userData = userDoc.data() as AppUser | undefined;
 
     if (!userDoc.exists() || userData?.role !== 'student') {
         await signOut(auth);
         return { success: false, error: 'Access denied. Not a valid student account.' };
     }
     
-    if (userData?.status === 'unaffiliated') {
-        redirect('/student/select-mess');
-    } else {
-        redirect('/student');
-    }
+    return { success: true, userStatus: userData.status };
 
   } catch (error: any) {
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
@@ -78,13 +75,13 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
         
         await setDoc(doc(db, 'users', user.uid), newStudent);
 
-        redirect('/student/select-mess');
     } catch (error: any) {
          if (error.code === 'auth/email-already-in-use') {
             return { success: false, error: 'This email is already registered.' };
         }
         return { success: false, error: 'An unknown error occurred. Please try again.' };
     }
+    redirect('/student/select-mess');
 }
 
 export async function submitJoinRequest(studentUid: string, messId: string, prevState: any, formData: FormData): Promise<ActionResult> {
@@ -118,12 +115,12 @@ export async function submitJoinRequest(studentUid: string, messId: string, prev
             messPlan: 'full_day'
         });
         
-        return { success: true };
-
     } catch (error) {
         console.error("Error submitting join request: ", error);
         return { success: false, error: 'A server error occurred. Please try again later.' };
     }
+
+    redirect('/student');
 }
 
 export async function cancelJoinRequest(userId: string): Promise<ActionResult> {
@@ -162,19 +159,21 @@ export async function adminLogin(prevState: any, formData: FormData): Promise<Ac
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const userDocRef = doc(db, 'users', userCredential.user.uid);
     const userDoc = await getDoc(userDocRef);
+    const userData = userDoc.data();
 
-    if (!userDoc.exists() || userDoc.data()?.role !== 'admin') {
+    if (!userDoc.exists() || userData?.role !== 'admin') {
       await signOut(auth);
       return { success: false, error: 'Access denied. Not a valid admin account.' };
     }
     
-    redirect('/admin');
   } catch (error: any) {
      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         return { success: false, error: "Invalid credentials. Please try again." };
     }
     return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
+
+  redirect('/admin');
 }
 
 export async function adminSignup(prevState: any, formData: FormData): Promise<ActionResult> {
@@ -185,6 +184,10 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
 
   if (!name || !email || !password || !messName) {
       return { success: false, error: 'All fields are required.' };
+  }
+  
+  if (password.length < 6) {
+    return { success: false, error: 'Password must be at least 6 characters long.' };
   }
 
   try {
@@ -205,21 +208,26 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
     };
 
     await setDoc(doc(db, 'users', user.uid), newAdmin);
-    redirect('/admin');
   } catch (error: any) {
     if (error.code === 'auth/email-already-in-use') {
       return { success: false, error: 'This email is already registered.' };
     }
+     if (error.code === 'auth/weak-password') {
+        return { success: false, error: 'Password is too weak. It must be at least 6 characters long.' };
+    }
+    console.error("Admin Signup Error:", error);
     return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
+  
+  redirect('/admin');
 }
 
 // --- Universal Logout Action ---
 export async function logout(): Promise<ActionResult> {
   try {
     await signOut(auth);
-    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
+  redirect('/');
 }
