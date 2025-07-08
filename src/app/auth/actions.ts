@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -36,7 +37,10 @@ export async function studentLogin(prevState: any, formData: FormData): Promise<
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: "Invalid credentials. Please try again." };
+    if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        return { success: false, error: "Invalid credentials. Please try again." };
+    }
+    return { success: false, error: "An unknown error occurred. Please try again." };
   }
 }
 
@@ -175,6 +179,9 @@ export async function adminLogin(prevState: any, formData: FormData): Promise<Ac
     
     return { success: true };
   } catch (error: any) {
+     if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        return { success: false, error: "Invalid credentials. Please try again." };
+    }
     return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
 }
