@@ -1,68 +1,83 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // --- Helper Functions ---
-    function isAdmin() {
-      // Check if the requesting user has the 'admin' role in their user document.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
     }
-    
+
+    function isStudent() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     function isOwner(userId) {
-      // Check if the requesting user's UID matches the provided userId.
       return request.auth.uid == userId;
     }
 
-    // --- Collection Rules ---
+    // Default deny all access to prevent accidental exposure
+    match /{document=**} {
+      allow read, write: if false;
+    }
 
+    // Users Collection
     match /users/{userId} {
-      // LIST: Any authenticated user can query the users collection.
-      // This is required for students to find and select a mess (which are admin accounts).
-      allow list: if request.auth != null;
-
-      // GET: A user can read their own profile. Admins can read any user profile.
-      allow get: if isOwner(userId) || isAdmin();
-
-      // UPDATE: A user can only update their own profile information.
-      allow update: if isOwner(userId);
+      // A user can read their own document
+      allow get: if isSignedIn() && isOwner(userId);
       
-      // DELETE: A user can only delete their own account.
-      allow delete: if isOwner(userId);
+      // A student can read an admin's profile to get the secret code during the join process
+      allow get: if isStudent() && get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
 
-      // CREATE: Any authenticated user can create a user document during signup.
-      allow create: if request.auth.uid != null;
+      // A user can update their own document.
+      allow update: if isSignedIn() && isOwner(userId);
+      
+      // An admin can read, update, or delete any user document.
+      allow get, update, delete: if isAdmin();
+      
+      // Anyone can create a user document (for signup).
+      allow create: if true;
+    }
+    
+    // Messes Collection - for public listing of messes
+    match /messes/{messId} {
+        // Any signed-in user can read the list of messes.
+        allow read: if isSignedIn();
+        // Only admins can create mess documents (and they must be the owner).
+        allow create: if isAdmin() && isOwner(messId);
+        // Only the owner admin can update their mess info.
+        allow update: if isAdmin() && isOwner(messId);
     }
 
+    // Holidays Collection
     match /holidays/{holidayId} {
-      // READ: Any authenticated user can read the list of holidays.
-      allow read: if request.auth != null;
-      // WRITE: Only admins can create, update, or delete holidays.
+      allow read: if isSignedIn();
+      // write includes create, update, delete
       allow write: if isAdmin();
     }
 
+    // Leaves Collection
     match /leaves/{leaveId} {
-      // READ: A user can read a leave document if they are the owner (studentId) or if they are an admin.
-      allow read: if isOwner(get(/databases/$(database)/documents/leaves/$(leaveId)).data.studentId) || isAdmin();
-      // CREATE: A user can only create a leave for themselves.
-      allow create: if isOwner(request.resource.data.studentId);
-      // DELETE: A user can only delete their own leave.
-      allow delete: if isOwner(get(/databases/$(database)/documents/leaves/$(leaveId)).data.studentId);
+      allow create: if isStudent();
+      allow read, delete: if isStudent() && resource.data.studentId == request.auth.uid;
+      // Allows admin to query all leaves
+      allow list: if isAdmin();
     }
-    
+
+    // Menus Collection
     match /menus/{menuId} {
-      // READ: Any authenticated user can read the daily menus.
-      allow read: if request.auth != null;
-      // WRITE: Only admins can set or change the menu.
-      allow write: if isAdmin();
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
     }
     
+    // Plan Change Requests Collection
     match /planChangeRequests/{requestId} {
-      // READ, DELETE: Only admins can read or delete plan change requests.
-      allow read, delete: if isAdmin();
-      // CREATE: Any authenticated user can create a plan change request.
-      allow create: if request.auth != null;
+        allow create: if isStudent();
+        allow read, delete: if isAdmin();
     }
   }
 }

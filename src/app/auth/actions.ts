@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { AppUser } from '@/lib/data';
 
@@ -52,7 +52,7 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
         return { success: false, error: 'An unknown error occurred. Please try again.' };
     }
     
-    redirect('/student/login');
+    return { success: true };
 }
 
 
@@ -77,6 +77,9 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
     const user = userCredential.user;
     
     const secretCode = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    const adminUserRef = doc(db, 'users', user.uid);
+    const messRef = doc(db, 'messes', user.uid);
 
     const newAdmin: AppUser = {
       uid: user.uid,
@@ -88,8 +91,17 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
       status: 'active',
       avatarUrl: `https://avatar.vercel.sh/${email}.png`
     };
+    
+    const newMess = {
+        messName: messName,
+        adminUid: user.uid
+    };
 
-    await setDoc(doc(db, 'users', user.uid), newAdmin);
+    const batch = writeBatch(db);
+    batch.set(adminUserRef, newAdmin);
+    batch.set(messRef, newMess);
+    await batch.commit();
+
   } catch (error: any) {
     if (error.code === 'auth/email-already-in-use') {
       return { success: false, error: 'This email is already registered.' };
@@ -101,7 +113,7 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
     return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
   
-  redirect('/admin/login');
+  return { success: true };
 }
 
 // --- Universal Logout Action ---
@@ -111,5 +123,5 @@ export async function logout(): Promise<ActionResult> {
   } catch (error: any) {
     return { success: false, error: error.message };
   }
-  redirect('/');
+  return { success: true };
 }

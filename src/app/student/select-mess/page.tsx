@@ -3,14 +3,14 @@
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, ChevronRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 
 interface Mess {
-    id: string;
+    id: string; // This will be the admin's UID
     messName: string;
 }
 
@@ -21,7 +21,6 @@ export default function SelectMessPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Only fetch if the user is authenticated
         if (!user) {
             setLoading(false);
             return;
@@ -31,10 +30,11 @@ export default function SelectMessPage() {
             setLoading(true);
             setError(null);
             try {
-                const q = query(collection(db, 'users'), where('role', '==', 'admin'));
+                // Query the new 'messes' collection
+                const q = query(collection(db, 'messes'));
                 const querySnapshot = await getDocs(q);
                 const fetchedMesses = querySnapshot.docs.map((doc) => ({
-                    id: doc.id,
+                    id: doc.id, // The document ID is the admin's UID
                     messName: doc.data().messName || 'Unnamed Mess',
                 }));
                 setMesses(fetchedMesses);
