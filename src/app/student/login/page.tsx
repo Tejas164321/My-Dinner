@@ -31,9 +31,9 @@ export default function StudentLoginPage() {
   useEffect(() => {
     if (state.success) {
       toast({ title: 'Login Successful', description: 'Redirecting...' });
-      // The main layout will now handle redirecting the user to the correct page
-      // (e.g., /student/select-mess or /student/dashboard) based on their status.
-      // We no longer force a redirect from here to prevent race conditions.
+      // A new or unaffiliated user is sent to select a mess.
+      // The main layout will then handle redirecting them to the dashboard if they are already active.
+      router.replace('/student/select-mess');
     } else if (state.error) {
       toast({ variant: 'destructive', title: 'Login Failed', description: state.error });
     }

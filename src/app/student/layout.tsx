@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -76,24 +77,44 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
     const pathname = usePathname();
 
     useEffect(() => {
-        if (loading) return;
+        if (loading) {
+            return; // Wait until auth state is confirmed
+        }
 
-        const isAuthPage = pathname.startsWith('/student/login') || pathname.startsWith('/student/signup');
-        const isJoiningProcessPage = isAuthPage || pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess');
+        const isPublicPage = pathname.startsWith('/student/login') ||
+                             pathname.startsWith('/student/signup');
+                             
+        const isJoiningProcessPage = isPublicPage || 
+                                     pathname.startsWith('/student/select-mess') || 
+                                     pathname.startsWith('/student/join-mess');
 
-        if (!user && !isAuthPage) {
-            router.replace('/student/login');
-        } else if (user) {
-            if (isAuthPage) {
-                if (user.status === 'unaffiliated') {
-                    router.replace('/student/select-mess');
-                } else {
-                    router.replace('/student/dashboard');
-                }
-            } else if (user.status === 'unaffiliated' && !isJoiningProcessPage) {
-                 router.replace('/student/select-mess');
+        // Case 1: User is NOT logged in.
+        if (!user) {
+            // If they are not on a public page, redirect them to login.
+            if (!isPublicPage) {
+                router.replace('/student/login');
+            }
+            // If they are on a public page, let them stay.
+            return;
+        }
+        
+        // Case 2: User IS logged in.
+        // Redirect based on their affiliation status.
+        if (user.status === 'unaffiliated') {
+            // If they are unaffiliated, they should be in the joining process.
+            // If they are on a page outside this process, redirect them.
+            if (!isJoiningProcessPage) {
+                router.replace('/student/select-mess');
+            }
+        } else if (user.status === 'active' || user.status === 'suspended') {
+            // If they are active or suspended, they should be on a dashboard page.
+            // If they land on a joining page, redirect them to their dashboard.
+            if (isJoiningProcessPage) {
+                router.replace('/student/dashboard');
             }
         }
+        // If user.status is 'pending_approval', the PendingApprovalScreen is shown,
+        // which is handled below. We don't need to redirect here.
 
     }, [user, loading, router, pathname]);
     
@@ -107,27 +128,37 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
     }
 
     if (!user) {
+        // Render login/signup pages without the full layout.
         return <>{children}</>;
     }
+    
+    // User is logged in, decide what to show based on their status
+    switch (user.status) {
+        case 'unaffiliated':
+            // Render the mess selection/joining pages
+            return <>{children}</>;
+        
+        case 'pending_approval':
+            // Show a dedicated pending screen, blocking access to other pages
+            return <PendingApprovalScreen onLogout={handleLogout} />;
+            
+        case 'active':
+        case 'suspended':
+            // Show the full dashboard for active and suspended users
+            const dashboardUser = {
+                name: user?.name || 'Student',
+                role: user?.messName || 'Student',
+                email: user?.email || '',
+                avatarUrl: user?.avatarUrl,
+            };
+            return (
+                <DashboardLayout navItems={studentNavItems} user={dashboardUser} onLogout={handleLogout}>
+                    {children}
+                </DashboardLayout>
+            );
 
-    if (user.status === 'unaffiliated' || pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess')) {
-        return <>{children}</>;
+        default:
+             // Fallback for any unexpected status
+            return <StudentDashboardSkeleton />;
     }
-    
-    if (user.status === 'pending_approval') {
-        return <PendingApprovalScreen onLogout={handleLogout} />;
-    }
-    
-    const dashboardUser = {
-        name: user?.name || 'Student',
-        role: user?.messName || 'Student',
-        email: user?.email || '',
-        avatarUrl: user?.avatarUrl,
-    };
-    
-    return (
-        <DashboardLayout navItems={studentNavItems} user={dashboardUser} onLogout={handleLogout}>
-            {children}
-        </DashboardLayout>
-    );
 }

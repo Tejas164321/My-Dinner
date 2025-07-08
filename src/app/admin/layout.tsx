@@ -37,48 +37,62 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     const pathname = usePathname();
 
     useEffect(() => {
-        if (!loading) {
-            const isAdminPage = pathname.startsWith('/admin');
-            const isAuthPage = pathname === '/admin/login' || pathname === '/admin/signup';
+        if (loading) {
+            return; // Wait until the auth state is confirmed
+        }
 
-            // If not an admin user, redirect to login page.
-            if (isAdminPage && !isAuthPage && (!user || user.role !== 'admin')) {
+        const isAuthPage = pathname.startsWith('/admin/login') || pathname.startsWith('/admin/signup');
+
+        // Case 1: User is not logged in or is not an admin.
+        if (!user || user.role !== 'admin') {
+            // If they are trying to access a protected page, redirect them to login.
+            if (!isAuthPage) {
                 router.replace('/admin/login');
             }
+            // If they are already on an auth page, let them stay.
+            return;
+        }
 
-            // If an admin user is on an auth page, redirect to the dashboard.
-            if (isAuthPage && user && user.role === 'admin') {
+        // Case 2: An admin user is logged in.
+        if (user && user.role === 'admin') {
+            // If they are on a login/signup page, they shouldn't be. Redirect to the dashboard.
+            if (isAuthPage) {
                 router.replace('/admin/dashboard');
             }
         }
     }, [user, loading, router, pathname]);
     
-    // While loading, or if the user is not a verified admin yet (and not on an auth page),
-    // show a loading state to prevent flickering of content they shouldn't see.
-    if ((loading || !user) && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/signup')) {
+    // While loading, show a skeleton to prevent flickering of content.
+    if (loading) {
         return <AdminDashboardSkeleton />;
     }
 
-    // On login/signup pages, render the children directly without the full dashboard layout.
-    if (pathname.startsWith('/admin/login') || pathname.startsWith('/admin/signup')) {
+    // If there's no user and we are on an auth page, render the auth page.
+    if (!user && (pathname.startsWith('/admin/login') || pathname.startsWith('/admin/signup'))) {
         return <>{children}</>;
     }
-
-    const handleLogout = async () => {
-        await logout();
-        router.push('/');
-    };
     
-    const dashboardUser = {
-        name: user?.name || 'Admin',
-        role: user?.messName || 'Mess Manager',
-        email: user?.email || '',
-        avatarUrl: user?.avatarUrl,
-    };
+    // If there is an admin user and we are on a protected page, render the dashboard layout.
+    if (user && user.role === 'admin' && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/signup')) {
+        const handleLogout = async () => {
+            await logout();
+            router.push('/');
+        };
+        
+        const dashboardUser = {
+            name: user?.name || 'Admin',
+            role: user?.messName || 'Mess Manager',
+            email: user?.email || '',
+            avatarUrl: user?.avatarUrl,
+        };
+        
+        return (
+            <DashboardLayout navItems={adminNavItems} user={dashboardUser} onLogout={handleLogout}>
+                {children}
+            </DashboardLayout>
+        );
+    }
     
-    return (
-        <DashboardLayout navItems={adminNavItems} user={dashboardUser} onLogout={handleLogout}>
-            {children}
-        </DashboardLayout>
-    );
+    // Fallback: show skeleton while routing logic determines the correct view.
+    return <AdminDashboardSkeleton />;
 }
