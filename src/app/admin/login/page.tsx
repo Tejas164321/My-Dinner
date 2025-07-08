@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { adminLogin } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +24,7 @@ function SubmitButton() {
 }
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useFormState(adminLogin, { success: false });
 
@@ -30,7 +32,11 @@ export default function AdminLoginPage() {
     if (state?.error) {
       toast({ variant: 'destructive', title: 'Login Failed', description: state.error });
     }
-  }, [state, toast]);
+    if (state?.success) {
+      toast({ title: 'Login Successful!' });
+      router.push('/admin');
+    }
+  }, [state, router, toast]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">

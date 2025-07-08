@@ -30,6 +30,9 @@ export default function AdminSignupPage() {
     if (state?.error) {
       toast({ variant: 'destructive', title: 'Signup Failed', description: state.error });
     }
+    if (state?.success) {
+      toast({ title: 'Account Created!', description: 'Please log in to continue.' });
+    }
   }, [state, toast]);
 
   return (

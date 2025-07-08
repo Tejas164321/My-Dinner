@@ -166,14 +166,14 @@ export async function adminLogin(prevState: any, formData: FormData): Promise<Ac
       return { success: false, error: 'Access denied. Not a valid admin account.' };
     }
     
+    return { success: true };
+
   } catch (error: any) {
      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         return { success: false, error: "Invalid credentials. Please try again." };
     }
     return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
-
-  redirect('/admin');
 }
 
 export async function adminSignup(prevState: any, formData: FormData): Promise<ActionResult> {
@@ -219,7 +219,7 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
     return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
   
-  redirect('/admin');
+  redirect('/admin/login');
 }
 
 // --- Universal Logout Action ---
