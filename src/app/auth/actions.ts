@@ -81,7 +81,8 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
         }
         return { success: false, error: 'An unknown error occurred. Please try again.' };
     }
-    redirect('/student/select-mess');
+    
+    return { success: true };
 }
 
 export async function submitJoinRequest(studentUid: string, messId: string, prevState: any, formData: FormData): Promise<ActionResult> {
@@ -120,7 +121,7 @@ export async function submitJoinRequest(studentUid: string, messId: string, prev
         return { success: false, error: 'A server error occurred. Please try again later.' };
     }
 
-    redirect('/student');
+    return { success: true };
 }
 
 export async function cancelJoinRequest(userId: string): Promise<ActionResult> {
@@ -219,7 +220,7 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
     return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
   
-  redirect('/admin/login');
+  return { success: true };
 }
 
 // --- Universal Logout Action ---

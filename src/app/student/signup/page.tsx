@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { studentSignup } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +24,7 @@ function SubmitButton() {
 }
 
 export default function StudentSignupPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useFormState(studentSignup, { success: false });
 
@@ -30,7 +32,11 @@ export default function StudentSignupPage() {
     if (state?.error) {
       toast({ variant: 'destructive', title: 'Signup Failed', description: state.error });
     }
-  }, [state, toast]);
+    if (state?.success) {
+      toast({ title: 'Account Created!', description: 'Please log in to continue.' });
+      router.push('/student/login');
+    }
+  }, [state, toast, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
