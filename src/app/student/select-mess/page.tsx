@@ -1,10 +1,13 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getMesses } from '@/app/auth/actions';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, ChevronRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/auth-context';
 
 interface Mess {
     id: string;
@@ -12,17 +15,39 @@ interface Mess {
 }
 
 export default function SelectMessPage() {
+    const { user } = useAuth();
     const [messes, setMesses] = useState<Mess[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        async function fetchMesses() {
-            const fetchedMesses = await getMesses();
-            setMesses(fetchedMesses);
+        // Only fetch if the user is authenticated
+        if (!user) {
             setLoading(false);
+            return;
         }
+
+        async function fetchMesses() {
+            setLoading(true);
+            setError(null);
+            try {
+                const q = query(collection(db, 'users'), where('role', '==', 'admin'));
+                const querySnapshot = await getDocs(q);
+                const fetchedMesses = querySnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    messName: doc.data().messName || 'Unnamed Mess',
+                }));
+                setMesses(fetchedMesses);
+            } catch (err: any) {
+                console.error("Error fetching messes:", err);
+                setError("Could not load messes. Please check your connection or permissions.");
+            } finally {
+                setLoading(false);
+            }
+        }
+        
         fetchMesses();
-    }, []);
+    }, [user]);
 
     return (
         <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
@@ -37,6 +62,10 @@ export default function SelectMessPage() {
                         <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
                             <Loader2 className="h-8 w-8 mb-4 animate-spin" />
                             <p>Loading available messes...</p>
+                        </div>
+                    ) : error ? (
+                         <div className="text-center text-destructive py-8">
+                            <p>{error}</p>
                         </div>
                     ) : messes.length > 0 ? (
                         messes.map((mess) => (

@@ -83,21 +83,6 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
     }
 }
 
-export async function getMesses(): Promise<{ id: string, messName: string }[]> {
-    try {
-        const q = query(collection(db, 'users'), where('role', '==', 'admin'));
-        const querySnapshot = await getDocs(q);
-        const messes = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            messName: doc.data().messName || 'Unnamed Mess'
-        }));
-        return messes;
-    } catch (error) {
-        console.error("Error fetching messes:", error);
-        return [];
-    }
-}
-
 export async function submitJoinRequest(studentUid: string, messId: string, prevState: any, formData: FormData): Promise<ActionResult> {
     const secretCode = formData.get('secretCode') as string;
 
@@ -125,7 +110,7 @@ export async function submitJoinRequest(studentUid: string, messId: string, prev
             messName: messAdminDoc.data()?.messName || 'Unnamed Mess',
             status: 'pending_approval',
             studentId: studentId,
-            joinDate: new Date().toISOString(),
+            joinDate: new Date().toISOString().split('T')[0],
             messPlan: 'full_day'
         });
         

@@ -1,42 +1,68 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // --- Helper Functions ---
+    function isAdmin() {
+      // Check if the requesting user has the 'admin' role in their user document.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
     
-    // Users can create their own document on signup, and can read/update their own data.
-    // Any authenticated user can get a list of users (for selecting a mess).
+    function isOwner(userId) {
+      // Check if the requesting user's UID matches the provided userId.
+      return request.auth.uid == userId;
+    }
+
+    // --- Collection Rules ---
+
     match /users/{userId} {
-      allow create, get, list: if request.auth != null;
-      allow update: if request.auth != null && request.auth.uid == userId;
-      // Admins can manage all user documents
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // LIST: Any authenticated user can query the users collection.
+      // This is required for students to find and select a mess (which are admin accounts).
+      allow list: if request.auth != null;
+
+      // GET: A user can read their own profile. Admins can read any user profile.
+      allow get: if isOwner(userId) || isAdmin();
+
+      // UPDATE: A user can only update their own profile information.
+      allow update: if isOwner(userId);
+      
+      // DELETE: A user can only delete their own account.
+      allow delete: if isOwner(userId);
+
+      // CREATE: Any authenticated user can create a user document during signup.
+      allow create: if request.auth.uid != null;
     }
 
-    // Holidays can be read by anyone authenticated, but only written by admins.
     match /holidays/{holidayId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // READ: Any authenticated user can read the list of holidays.
+      allow read: if request.auth != null;
+      // WRITE: Only admins can create, update, or delete holidays.
+      allow write: if isAdmin();
     }
 
-    // Leaves can be created and read by the student who owns them.
-    // They can be deleted by the student.
-    // They can be read in a list by admins.
     match /leaves/{leaveId} {
-        allow create: if request.auth != null && request.resource.data.studentId == request.auth.uid;
-        allow get, delete: if request.auth != null && resource.data.studentId == request.auth.uid;
-        allow list: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Menus can be read by anyone authenticated, but only written by admins.
-    match /menus/{menuId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // READ: A user can read a leave document if they are the owner (studentId) or if they are an admin.
+      allow read: if isOwner(get(/databases/$(database)/documents/leaves/$(leaveId)).data.studentId) || isAdmin();
+      // CREATE: A user can only create a leave for themselves.
+      allow create: if isOwner(request.resource.data.studentId);
+      // DELETE: A user can only delete their own leave.
+      allow delete: if isOwner(get(/databases/$(database)/documents/leaves/$(leaveId)).data.studentId);
     }
     
-    // Plan change requests can be created by the student.
-    // They can be read and deleted by admins.
+    match /menus/{menuId} {
+      // READ: Any authenticated user can read the daily menus.
+      allow read: if request.auth != null;
+      // WRITE: Only admins can set or change the menu.
+      allow write: if isAdmin();
+    }
+    
     match /planChangeRequests/{requestId} {
+      // READ, DELETE: Only admins can read or delete plan change requests.
+      allow read, delete: if isAdmin();
+      // CREATE: Any authenticated user can create a plan change request.
       allow create: if request.auth != null;
-      allow read, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
