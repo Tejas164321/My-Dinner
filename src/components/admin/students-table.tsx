@@ -211,9 +211,13 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         const suspended: Student[] = [];
         const pending: Student[] = [];
         users.forEach(student => {
-            if (student.status === 'suspended') suspended.push(student);
-            else if (student.status === 'pending') pending.push(student);
-            else active.push(student);
+            if (student.status === 'suspended') {
+                suspended.push(student);
+            } else if (student.status === 'pending_approval') {
+                pending.push(student);
+            } else if (student.status === 'active') {
+                active.push(student);
+            }
         });
         return { activeStudents, suspendedStudents, pendingStudents };
     }, [users]);
@@ -287,22 +291,20 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Name</TableHead>
-                                        <TableHead>Student ID</TableHead>
-                                        <TableHead>Contact</TableHead>
-                                        <TableHead>Date Joined</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Date Requested</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {isLoading && pendingStudents.length === 0 ? (
-                                        <TableRow><TableCell colSpan={5} className="text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={4} className="text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
                                     ) : pendingStudents.length > 0 ? (
                                         pendingStudents.map((req) => (
                                             <TableRow key={req.id}>
                                                 <TableCell className="font-medium">{req.name}</TableCell>
-                                                <TableCell>{req.studentId}</TableCell>
-                                                <TableCell>{req.contact}</TableCell>
-                                                <TableCell>{req.joinDate}</TableCell>
+                                                <TableCell>{req.email}</TableCell>
+                                                <TableCell>{req.joinDate ? format(parseISO(req.joinDate), 'MMM do, yyyy') : 'N/A'}</TableCell>
                                                 <TableCell className="text-right space-x-2">
                                                     <Button onClick={() => approveStudent(req.id)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
                                                         <Check className="h-4 w-4" />
@@ -314,7 +316,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                             </TableRow>
                                         ))
                                     ) : (
-                                        <TableRow><TableCell colSpan={6} className="text-center h-24 text-muted-foreground">No pending join requests.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No pending join requests.</TableCell></TableRow>
                                     )}
                                 </TableBody>
                             </Table>

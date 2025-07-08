@@ -11,7 +11,7 @@ export function onJoinRequestsUpdate(callback: (requests: JoinRequest[]) => void
   const q = query(
     collection(db, USERS_COLLECTION),
     where("role", "==", "student"),
-    where("status", "==", "pending")
+    where("status", "==", "pending_approval")
   );
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {

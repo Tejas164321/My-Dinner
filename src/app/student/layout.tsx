@@ -1,16 +1,17 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import React, { useEffect, useTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { studentNavItems } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
-import { logout } from '@/app/auth/actions';
+import { logout, cancelJoinRequest } from '@/app/auth/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 function StudentDashboardSkeleton() {
     return (
@@ -34,6 +35,22 @@ function StudentDashboardSkeleton() {
 }
 
 function PendingApprovalScreen({ onLogout }: { onLogout: () => void }) {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [isCancelling, startTransition] = useTransition();
+
+    const handleCancel = () => {
+        if (!user) return;
+        startTransition(async () => {
+            const result = await cancelJoinRequest(user.uid);
+            if (result.success) {
+                toast({ title: 'Request Cancelled', description: 'You can now join a different mess.' });
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            }
+        });
+    };
+
     return (
         <main className="flex min-h-screen flex-col items-center justify-center p-4">
             <Card className="max-w-md text-center">
@@ -41,8 +58,12 @@ function PendingApprovalScreen({ onLogout }: { onLogout: () => void }) {
                     <CardTitle>Request Sent!</CardTitle>
                     <CardDescription>Your request to join the mess is pending approval from the admin. Please check back later.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Button onClick={onLogout} variant="outline">Log Out</Button>
+                <CardContent className="flex flex-col sm:flex-row gap-2 justify-center">
+                    <Button onClick={handleCancel} variant="destructive" disabled={isCancelling} className="w-full sm:w-auto">
+                        {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isCancelling ? 'Cancelling...' : 'Cancel Request'}
+                    </Button>
+                    <Button onClick={onLogout} variant="outline" className="w-full sm:w-auto">Log Out</Button>
                 </CardContent>
             </Card>
         </main>

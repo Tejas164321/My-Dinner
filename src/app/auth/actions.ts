@@ -119,7 +119,7 @@ export async function submitJoinRequest(studentUid: string, messId: string, prev
             messName: messAdminDoc.data()?.messName || 'Unnamed Mess',
             status: 'pending_approval',
             studentId: studentId,
-            joinDate: new Date().toISOString().split('T')[0],
+            joinDate: new Date().toISOString(),
             messPlan: 'full_day'
         });
         
@@ -129,6 +129,28 @@ export async function submitJoinRequest(studentUid: string, messId: string, prev
         console.error("Error submitting join request: ", error);
         return { success: false, error: 'A server error occurred. Please try again later.' };
     }
+}
+
+export async function cancelJoinRequest(userId: string): Promise<ActionResult> {
+  if (!userId) {
+    return { success: false, error: 'User ID is missing.' };
+  }
+
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      status: 'unaffiliated',
+      messId: null,
+      messName: null,
+      studentId: null,
+      joinDate: null,
+      messPlan: null,
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error cancelling join request:", error);
+    return { success: false, error: 'Failed to cancel request.' };
+  }
 }
 
 // --- Admin Actions ---
