@@ -84,35 +84,39 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
         const isAuthPage = pathname.startsWith('/student/login') || pathname.startsWith('/student/signup');
         const isJoiningProcessPage = pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess');
 
-        // Case 1: User is logged in
-        if (user) {
-            // A logged-in user should never be on a login/signup page. Redirect them away.
-            if (isAuthPage) {
-                if (user.status === 'unaffiliated') {
-                    router.replace('/student/select-mess');
-                } else {
-                    router.replace('/student/dashboard');
-                }
-                return; // Redirect initiated, stop further checks.
-            }
-
-            // Handle routing for users who are already logged in but on the wrong pages.
-            if ((user.status === 'active' || user.status === 'suspended') && isJoiningProcessPage) {
-                // An active student shouldn't be on a joining page.
-                router.replace('/student/dashboard');
-            } else if (user.status === 'unaffiliated' && !isJoiningProcessPage) {
-                // An unaffiliated student MUST be on a joining page.
-                router.replace('/student/select-mess');
-            }
-        
-        // Case 2: User is NOT logged in
-        } else {
-            // If the user is not logged in, they can only be on auth or joining pages.
-            const isAllowedPublicPage = isAuthPage || isJoiningProcessPage;
-            if (!isAllowedPublicPage) {
+        // Case 1: User is NOT logged in
+        if (!user) {
+            // If the user is not logged in and not on an auth page, redirect them.
+            if (!isAuthPage) {
                 router.replace('/student/login');
             }
+            return; // Stop further checks for non-logged-in users.
         }
+
+        // --- From this point, we know the user is logged in ---
+        
+        // Case 2: A logged-in user is on an auth page. They should be redirected.
+        if (isAuthPage) {
+            if (user.status === 'unaffiliated') {
+                router.replace('/student/select-mess');
+            } else {
+                router.replace('/student');
+            }
+            return;
+        }
+
+        // Case 3: An unaffiliated user is on a protected page. They should be in the joining flow.
+        if (user.status === 'unaffiliated' && !isJoiningProcessPage) {
+            router.replace('/student/select-mess');
+            return;
+        }
+
+        // Case 4: An affiliated user is on a joining page. They should be on their dashboard.
+        if (user.status !== 'unaffiliated' && isJoiningProcessPage) {
+            router.replace('/student');
+            return;
+        }
+        
     }, [user, loading, router, pathname]);
     
     const handleLogout = async () => {
@@ -124,8 +128,9 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
         return <StudentDashboardSkeleton />;
     }
 
+    // If we're on an auth page, the logic above will handle redirection if needed.
+    // For non-logged-in users, we show the auth page itself.
     if (!user) {
-        // Render login/signup/joining pages without the full layout.
         return <>{children}</>;
     }
     

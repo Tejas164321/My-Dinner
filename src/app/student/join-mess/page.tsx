@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense } from 'react';
@@ -38,7 +39,7 @@ function JoinMessContent() {
     useEffect(() => {
         if (state.success) {
             toast({ title: 'Request Sent!', description: 'Your join request is pending admin approval.' });
-            router.replace('/student/dashboard');
+            router.replace('/student');
         } else if (state.error) {
             toast({ variant: 'destructive', title: 'Request Failed', description: state.error });
         }
