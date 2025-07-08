@@ -55,33 +55,6 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
     redirect('/student/login');
 }
 
-export async function submitJoinRequest(prevState: any, formData: FormData): Promise<ActionResult> {
-    const messId = formData.get('messId') as string;
-    const secretCode = formData.get('secretCode') as string;
-
-    if (!messId || !secretCode) {
-        return { success: false, error: 'Missing information. Please try again.' };
-    }
-
-    try {
-        const messAdminRef = doc(db, 'users', messId);
-        const messAdminDoc = await getDoc(messAdminRef);
-
-        if (!messAdminDoc.exists() || !messAdminDoc.data()?.secretCode) {
-            return { success: false, error: 'Invalid mess selected. The admin profile could not be found.' };
-        }
-
-        if (messAdminDoc.data()?.secretCode !== secretCode) {
-            return { success: false, error: 'The secret code is incorrect.' };
-        }
-        
-    } catch (error) {
-        console.error("Error validating join request: ", error);
-        return { success: false, error: 'A server error occurred during validation. Please try again later.' };
-    }
-
-    return { success: true };
-}
 
 // --- Admin Actions ---
 

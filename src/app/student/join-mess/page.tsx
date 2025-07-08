@@ -1,30 +1,16 @@
-
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, FormEvent } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useFormState, useFormStatus } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
-import { submitJoinRequest } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { KeyRound, Send, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
-import { updateDoc, doc } from 'firebase/firestore';
+import { updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-function SubmitButton({ isSubmitting }: { isSubmitting: boolean }) {
-  const { pending } = useFormStatus();
-  const isLoading = pending || isSubmitting;
-  return (
-    <Button type="submit" className="w-full" disabled={isLoading}>
-      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="ml-2" />}
-      {isLoading ? 'Submitting...' : 'Submit Join Request'}
-    </Button>
-  );
-}
 
 function JoinMessContent() {
     const searchParams = useSearchParams();
@@ -33,39 +19,70 @@ function JoinMessContent() {
     
     const messId = searchParams.get('messId');
     const messName = searchParams.get('messName');
-    
-    const [state, formAction] = useFormState(submitJoinRequest, { success: false, error: undefined });
+
+    const [secretCode, setSecretCode] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        if (state.success && user && messId && messName && !isSubmitting) {
-            const updateUserStatus = async () => {
-                setIsSubmitting(true);
-                try {
-                    const studentId = `STU${user.uid.slice(-5).toUpperCase()}`;
-                    const studentRef = doc(db, 'users', user.uid);
-                    await updateDoc(studentRef, {
-                        messId: messId,
-                        messName: messName,
-                        status: 'pending_approval',
-                        studentId: studentId,
-                        joinDate: new Date().toISOString().split('T')[0],
-                        messPlan: 'full_day'
-                    });
-                    // The onSnapshot listener in AuthProvider will handle the state update
-                    // and the layout will redirect to the pending approval screen.
-                    toast({ title: 'Request Sent!', description: 'Your join request is pending admin approval.' });
-                } catch (error) {
-                    console.error("Error updating user status:", error);
-                    toast({ variant: 'destructive', title: 'Update Failed', description: "Could not update your profile. Please contact support." });
-                    setIsSubmitting(false); // Reset on failure
-                }
-            };
-            updateUserStatus();
-        } else if (state.error) {
-            toast({ variant: 'destructive', title: 'Request Failed', description: state.error });
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        if (!user || !messId || !messName) {
+            toast({ variant: 'destructive', title: 'Error', description: 'User or mess information is missing.' });
+            setIsSubmitting(false);
+            return;
         }
-    }, [state, user, messId, messName, toast, isSubmitting]);
+
+        if (!secretCode || secretCode.length !== 4) {
+             toast({ variant: 'destructive', title: 'Invalid Code', description: 'Please enter a 4-digit secret code.' });
+             setIsSubmitting(false);
+             return;
+        }
+
+        try {
+            // 1. Fetch the admin document to validate the code
+            const messAdminRef = doc(db, 'users', messId);
+            const messAdminDoc = await getDoc(messAdminRef);
+
+            if (!messAdminDoc.exists() || messAdminDoc.data()?.role !== 'admin') {
+                toast({ variant: 'destructive', title: 'Validation Failed', description: 'Invalid mess selected.' });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 2. Compare the secret code
+            if (messAdminDoc.data()?.secretCode !== secretCode) {
+                toast({ variant: 'destructive', title: 'Incorrect Code', description: 'The secret code you entered is incorrect.' });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 3. If code is correct, update the student's document
+            const studentId = `STU${user.uid.slice(-5).toUpperCase()}`;
+            const studentRef = doc(db, 'users', user.uid);
+            await updateDoc(studentRef, {
+                messId: messId,
+                messName: messName,
+                status: 'pending_approval',
+                studentId: studentId,
+                joinDate: new Date().toISOString().split('T')[0],
+                messPlan: 'full_day'
+            });
+
+            toast({ title: 'Request Sent!', description: 'Your join request is pending admin approval.' });
+            // The layout's useEffect will handle the redirect to the pending screen.
+
+        } catch (error: any) {
+            console.error("Error submitting join request:", error);
+            if (error.code === 'permission-denied') {
+                 toast({ variant: 'destructive', title: 'Permission Error', description: 'You do not have permission to perform this action.' });
+            } else {
+                toast({ variant: 'destructive', title: 'Request Failed', description: 'A server error occurred. Please try again later.' });
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     if (!messId || !messName) {
         return (
@@ -80,8 +97,7 @@ function JoinMessContent() {
                 <CardDescription>Enter the 4-digit secret code provided by the mess admin.</CardDescription>
             </CardHeader>
             <CardContent>
-                <form action={formAction} className="space-y-4">
-                    <input type="hidden" name="messId" value={messId || ''} />
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="secretCode">Secret Code</Label>
                         <div className="relative">
@@ -94,11 +110,16 @@ function JoinMessContent() {
                                 required
                                 maxLength={4}
                                 className="pl-9 font-mono tracking-[0.5em] text-center"
+                                value={secretCode}
+                                onChange={(e) => setSecretCode(e.target.value)}
                                 disabled={isSubmitting}
                             />
                         </div>
                     </div>
-                    <SubmitButton isSubmitting={isSubmitting} />
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                      {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="ml-2" />}
+                      {isSubmitting ? 'Submitting...' : 'Submit Join Request'}
+                    </Button>
                 </form>
             </CardContent>
         </Card>
