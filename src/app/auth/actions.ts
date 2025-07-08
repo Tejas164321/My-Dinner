@@ -19,35 +19,6 @@ interface ActionResult {
 
 // --- Student Actions ---
 
-export async function studentLogin(prevState: any, formData: FormData): Promise<ActionResult> {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-
-  if (!email || !password) {
-    return { success: false, error: 'Email and password are required.' };
-  }
-
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const userDocRef = doc(db, 'users', userCredential.user.uid);
-    const userDoc = await getDoc(userDocRef);
-    const userData = userDoc.data() as AppUser | undefined;
-
-    if (!userDoc.exists() || userData?.role !== 'student') {
-        await signOut(auth);
-        return { success: false, error: 'Access denied. Not a valid student account.' };
-    }
-    
-    return { success: true, userStatus: userData.status };
-
-  } catch (error: any) {
-    if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        return { success: false, error: "Invalid credentials. Please try again." };
-    }
-    return { success: false, error: "An unknown error occurred. Please try again." };
-  }
-}
-
 export async function studentSignup(prevState: any, formData: FormData): Promise<ActionResult> {
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
@@ -148,35 +119,6 @@ export async function cancelJoinRequest(userId: string): Promise<ActionResult> {
 
 // --- Admin Actions ---
 
-export async function adminLogin(prevState: any, formData: FormData): Promise<ActionResult> {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-
-  if (!email || !password) {
-    return { success: false, error: 'Email and password are required.' };
-  }
-
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const userDocRef = doc(db, 'users', userCredential.user.uid);
-    const userDoc = await getDoc(userDocRef);
-    const userData = userDoc.data();
-
-    if (!userDoc.exists() || userData?.role !== 'admin') {
-      await signOut(auth);
-      return { success: false, error: 'Access denied. Not a valid admin account.' };
-    }
-    
-    return { success: true };
-
-  } catch (error: any) {
-     if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        return { success: false, error: "Invalid credentials. Please try again." };
-    }
-    return { success: false, error: 'An unknown error occurred. Please try again.' };
-  }
-}
-
 export async function adminSignup(prevState: any, formData: FormData): Promise<ActionResult> {
   const name = formData.get('name') as string;
   const messName = formData.get('messName') as string;
@@ -188,7 +130,7 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
   }
   
   if (password.length < 6) {
-    return { success: false, error: 'Password must be at least 6 characters long.' };
+    return { success: false, error: 'Password is too weak. It must be at least 6 characters long.' };
   }
 
   try {
