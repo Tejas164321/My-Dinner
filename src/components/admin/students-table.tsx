@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -219,7 +220,11 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                 active.push(student);
             }
         });
-        return { activeStudents, suspendedStudents, pendingStudents };
+        return { 
+            activeStudents: active, 
+            suspendedStudents: suspended, 
+            pendingStudents: pending 
+        };
     }, [users]);
 
     const filteredActiveStudents = useMemo(() => {
