@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { adminLogin } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
@@ -23,18 +22,18 @@ function SubmitButton() {
 }
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useFormState(adminLogin, { success: false });
 
   useEffect(() => {
+    // The layout component now handles all redirection based on auth state.
+    // This hook only shows success or error messages.
     if (state.success) {
-      toast({ title: 'Login Successful', description: 'Welcome back, Admin!' });
-      router.replace('/admin/dashboard');
+      toast({ title: 'Login Successful', description: 'Redirecting to your dashboard...' });
     } else if (state.error) {
       toast({ variant: 'destructive', title: 'Login Failed', description: state.error });
     }
-  }, [state, router, toast]);
+  }, [state, toast]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
