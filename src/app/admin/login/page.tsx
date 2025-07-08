@@ -27,10 +27,7 @@ export default function AdminLoginPage() {
   const [state, formAction] = useFormState(adminLogin, { success: false });
 
   useEffect(() => {
-    if (state.success) {
-      toast({ title: 'Login Successful', description: 'Redirecting to your dashboard...' });
-      // The redirect is now handled by the layout component.
-    } else if (state.error) {
+    if (state?.error) {
       toast({ variant: 'destructive', title: 'Login Failed', description: state.error });
     }
   }, [state, toast]);

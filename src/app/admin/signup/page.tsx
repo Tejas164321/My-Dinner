@@ -27,10 +27,7 @@ export default function AdminSignupPage() {
   const [state, formAction] = useFormState(adminSignup, { success: false });
 
   useEffect(() => {
-    if (state.success) {
-      toast({ title: 'Account Created', description: "Your admin account is ready. Welcome!" });
-      // The redirect is now handled by the layout component.
-    } else if (state.error) {
+    if (state?.error) {
       toast({ variant: 'destructive', title: 'Signup Failed', description: state.error });
     }
   }, [state, toast]);

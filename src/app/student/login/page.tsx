@@ -27,10 +27,7 @@ export default function StudentLoginPage() {
   const [state, formAction] = useFormState(studentLogin, { success: false });
 
   useEffect(() => {
-    if (state.success) {
-      toast({ title: 'Login Successful', description: 'Redirecting...' });
-      // The redirect is now handled by the layout component.
-    } else if (state.error) {
+    if (state?.error) {
       toast({ variant: 'destructive', title: 'Login Failed', description: state.error });
     }
   }, [state, toast]);

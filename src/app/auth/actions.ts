@@ -1,19 +1,19 @@
 
 'use server';
 
+import { redirect } from 'next/navigation';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { AppUser } from '@/lib/data';
 
 interface ActionResult {
   success: boolean;
   error?: string;
-  status?: AppUser['status'];
 }
 
 // --- Student Actions ---
@@ -36,8 +36,13 @@ export async function studentLogin(prevState: any, formData: FormData): Promise<
         await signOut(auth);
         return { success: false, error: 'Access denied. Not a valid student account.' };
     }
+    
+    if (userData?.status === 'unaffiliated') {
+        redirect('/student/select-mess');
+    } else {
+        redirect('/student');
+    }
 
-    return { success: true, status: userData?.status };
   } catch (error: any) {
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         return { success: false, error: "Invalid credentials. Please try again." };
@@ -59,7 +64,6 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
     }
 
     try {
-        // This automatically signs the user in
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
@@ -74,7 +78,7 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
         
         await setDoc(doc(db, 'users', user.uid), newStudent);
 
-        return { success: true, status: 'unaffiliated' };
+        redirect('/student/select-mess');
     } catch (error: any) {
          if (error.code === 'auth/email-already-in-use') {
             return { success: false, error: 'This email is already registered.' };
@@ -164,7 +168,7 @@ export async function adminLogin(prevState: any, formData: FormData): Promise<Ac
       return { success: false, error: 'Access denied. Not a valid admin account.' };
     }
     
-    return { success: true };
+    redirect('/admin');
   } catch (error: any) {
      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         return { success: false, error: "Invalid credentials. Please try again." };
@@ -201,7 +205,7 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
     };
 
     await setDoc(doc(db, 'users', user.uid), newAdmin);
-    return { success: true };
+    redirect('/admin');
   } catch (error: any) {
     if (error.code === 'auth/email-already-in-use') {
       return { success: false, error: 'This email is already registered.' };

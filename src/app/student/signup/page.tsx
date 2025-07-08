@@ -27,10 +27,7 @@ export default function StudentSignupPage() {
   const [state, formAction] = useFormState(studentSignup, { success: false });
 
   useEffect(() => {
-    if (state.success) {
-      toast({ title: 'Account Created', description: "You've been signed up successfully." });
-      // The redirect is now handled by the layout component.
-    } else if (state.error) {
+    if (state?.error) {
       toast({ variant: 'destructive', title: 'Signup Failed', description: state.error });
     }
   }, [state, toast]);
