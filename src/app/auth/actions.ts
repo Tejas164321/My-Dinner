@@ -133,7 +133,7 @@ export async function submitJoinRequest(studentUid: string, messId: string, prev
 
 // --- Admin Actions ---
 
-export async function adminLogin(formData: FormData): Promise<ActionResult> {
+export async function adminLogin(prevState: any, formData: FormData): Promise<ActionResult> {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -153,11 +153,11 @@ export async function adminLogin(formData: FormData): Promise<ActionResult> {
     
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
 }
 
-export async function adminSignup(formData: FormData): Promise<ActionResult> {
+export async function adminSignup(prevState: any, formData: FormData): Promise<ActionResult> {
   const name = formData.get('name') as string;
   const messName = formData.get('messName') as string;
   const email = formData.get('email') as string;
@@ -187,7 +187,10 @@ export async function adminSignup(formData: FormData): Promise<ActionResult> {
     await setDoc(doc(db, 'users', user.uid), newAdmin);
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    if (error.code === 'auth/email-already-in-use') {
+      return { success: false, error: 'This email is already registered.' };
+    }
+    return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
 }
 

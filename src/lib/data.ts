@@ -10,7 +10,7 @@ export const studentNavItems = [
 ];
 
 export const adminNavItems = [
-    { href: '/admin', label: 'Dashboard', icon: 'LayoutDashboard' },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
     { href: '/admin/students', label: 'Students', icon: 'Users' },
     { href: '/admin/menu', label: 'Meal Menu', icon: 'Utensils' },
     { href: '/admin/billing', label: 'Billing', icon: 'CircleDollarSign' },
