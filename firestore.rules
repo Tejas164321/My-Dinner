@@ -1,83 +1,74 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isStudent() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
-    }
-
-    function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // Default deny all access to prevent accidental exposure
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Users Collection
+    // Users Collection:
+    // - Authenticated users can read their own data.
+    // - Students can read an admin's document to verify a secret code.
+    // - Admins can read any user document.
     match /users/{userId} {
-      // A user can read their own document
-      allow get: if isSignedIn() && isOwner(userId);
+      allow read: if request.auth != null && 
+                     (request.auth.uid == userId || 
+                      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+                      (exists(/databases/$(database)/documents/users/$(userId)) && 
+                       get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin'));
       
-      // A student can read an admin's profile to get the secret code during the join process
-      allow get: if isStudent() && get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
+      allow create: if request.auth.uid == userId;
+      allow update: if request.auth.uid == userId || 
+                       (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
 
-      // A user can update their own document.
-      allow update: if isSignedIn() && isOwner(userId);
-      
-      // An admin can read, update, or delete any user document.
-      allow get, update, delete: if isAdmin();
-      
-      // Anyone can create a user document (for signup).
-      allow create: if true;
+    // Messes Collection:
+    // - Any authenticated user can list/read the messes.
+    // - A user can create a mess document for themselves if their UID matches the document ID.
+    match /messes/{messId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth.uid == messId;
+      allow write: if false; // Disallow update/delete for now
     }
     
-    // Messes Collection - for public listing of messes
-    match /messes/{messId} {
-        // Any signed-in user can read the list of messes.
-        allow read: if isSignedIn();
-        // Only admins can create mess documents (and they must be the owner).
-        allow create: if isAdmin() && isOwner(messId);
-        // Only the owner admin can update their mess info.
-        allow update: if isAdmin() && isOwner(messId);
-    }
-
-    // Holidays Collection
+    // Holidays Collection:
+    // - Any authenticated user can read holidays.
+    // - Only admins can write/delete holidays.
     match /holidays/{holidayId} {
-      allow read: if isSignedIn();
-      // write includes create, update, delete
-      allow write: if isAdmin();
+        allow read: if request.auth != null;
+        allow write, delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Leaves Collection
+    // Leaves Collection:
+    // - Users can read and write their own leave documents.
+    // - Admins can read any leave document.
     match /leaves/{leaveId} {
-      allow create: if isStudent();
-      allow read, delete: if isStudent() && resource.data.studentId == request.auth.uid;
-      // Allows admin to query all leaves
-      allow list: if isAdmin();
+        allow read: if request.auth != null &&
+                        (request.auth.uid == resource.data.studentId ||
+                         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+        allow create: if request.auth.uid == request.resource.data.studentId;
+        allow delete: if request.auth.uid == resource.data.studentId;
+    }
+    
+    // Plan Change Requests Collection:
+    // - Students can create requests.
+    // - Admins can read and delete requests.
+    match /planChangeRequests/{requestId} {
+        allow create: if request.auth != null;
+        allow read, delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     // Menus Collection
-    match /menus/{menuId} {
-        allow read: if isSignedIn();
-        allow write: if isAdmin();
-    }
-    
-    // Plan Change Requests Collection
-    match /planChangeRequests/{requestId} {
-        allow create: if isStudent();
-        allow read, delete: if isAdmin();
+    // - Authenticated users can read.
+    // - Admins can write.
+     match /menus/{menuId} {
+        allow read: if request.auth != null;
+        allow write: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
