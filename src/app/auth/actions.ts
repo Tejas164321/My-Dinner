@@ -13,6 +13,7 @@ import type { AppUser } from '@/lib/data';
 interface ActionResult {
   success: boolean;
   error?: string;
+  status?: AppUser['status'];
 }
 
 // --- Student Actions ---
@@ -29,13 +30,14 @@ export async function studentLogin(prevState: any, formData: FormData): Promise<
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const userDocRef = doc(db, 'users', userCredential.user.uid);
     const userDoc = await getDoc(userDocRef);
+    const userData = userDoc.data();
 
-    if (!userDoc.exists() || userDoc.data()?.role !== 'student') {
+    if (!userDoc.exists() || userData?.role !== 'student') {
         await signOut(auth);
         return { success: false, error: 'Access denied. Not a valid student account.' };
     }
 
-    return { success: true };
+    return { success: true, status: userData?.status };
   } catch (error: any) {
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         return { success: false, error: "Invalid credentials. Please try again." };
@@ -72,7 +74,7 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
         
         await setDoc(doc(db, 'users', user.uid), newStudent);
 
-        return { success: true };
+        return { success: true, status: 'unaffiliated' };
     } catch (error: any) {
          if (error.code === 'auth/email-already-in-use') {
             return { success: false, error: 'This email is already registered.' };
