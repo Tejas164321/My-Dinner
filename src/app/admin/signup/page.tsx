@@ -1,8 +1,8 @@
+
 'use client';
 
 import { useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { adminSignup } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
@@ -23,18 +23,17 @@ function SubmitButton() {
 }
 
 export default function AdminSignupPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useFormState(adminSignup, { success: false });
 
   useEffect(() => {
     if (state.success) {
       toast({ title: 'Account Created', description: "Your admin account is ready. Welcome!" });
-      router.replace('/admin/dashboard');
+      // The layout will handle the redirect.
     } else if (state.error) {
       toast({ variant: 'destructive', title: 'Signup Failed', description: state.error });
     }
-  }, [state, router, toast]);
+  }, [state, toast]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">

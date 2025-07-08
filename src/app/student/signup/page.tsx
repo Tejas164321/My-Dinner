@@ -1,8 +1,8 @@
+
 'use client';
 
 import { useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { studentSignup } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
@@ -23,18 +23,17 @@ function SubmitButton() {
 }
 
 export default function StudentSignupPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useFormState(studentSignup, { success: false });
 
   useEffect(() => {
     if (state.success) {
       toast({ title: 'Account Created', description: "You've been signed up successfully." });
-      router.replace('/student/select-mess');
+      // The layout will handle the redirect.
     } else if (state.error) {
       toast({ variant: 'destructive', title: 'Signup Failed', description: state.error });
     }
-  }, [state, router, toast]);
+  }, [state, toast]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">

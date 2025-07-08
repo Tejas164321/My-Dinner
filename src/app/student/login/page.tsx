@@ -4,7 +4,6 @@
 import { useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { studentLogin } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,19 +24,16 @@ function SubmitButton() {
 
 export default function StudentLoginPage() {
   const { toast } = useToast();
-  const router = useRouter();
   const [state, formAction] = useFormState(studentLogin, { success: false });
 
   useEffect(() => {
     if (state.success) {
       toast({ title: 'Login Successful', description: 'Redirecting...' });
-      // A new or unaffiliated user is sent to select a mess.
-      // The main layout will then handle redirecting them to the dashboard if they are already active.
-      router.replace('/student/select-mess');
+      // The layout will handle the redirect.
     } else if (state.error) {
       toast({ variant: 'destructive', title: 'Login Failed', description: state.error });
     }
-  }, [state, toast, router]);
+  }, [state, toast]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
