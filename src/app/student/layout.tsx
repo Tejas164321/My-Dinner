@@ -7,12 +7,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { studentNavItems } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
-import { logout, cancelJoinRequest } from '@/app/auth/actions';
+import { logout } from '@/app/auth/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
 
 function StudentDashboardSkeleton() {
     return (
@@ -43,11 +46,20 @@ function PendingApprovalScreen({ onLogout }: { onLogout: () => void }) {
     const handleCancel = () => {
         if (!user) return;
         startTransition(async () => {
-            const result = await cancelJoinRequest(user.uid);
-            if (result.success) {
+            try {
+                const userRef = doc(db, 'users', user.uid);
+                await updateDoc(userRef, {
+                  status: 'unaffiliated',
+                  messId: null,
+                  messName: null,
+                  studentId: null,
+                  joinDate: null,
+                  messPlan: null,
+                });
                 toast({ title: 'Request Cancelled', description: 'You can now join a different mess.' });
-            } else {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            } catch (error: any) {
+                console.error("Error cancelling join request:", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to cancel request.' });
             }
         });
     };
@@ -164,5 +176,3 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             return <StudentDashboardSkeleton />;
     }
 }
-
-    

@@ -4,7 +4,6 @@
 import { redirect } from 'next/navigation';
 import {
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -53,13 +52,14 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
         return { success: false, error: 'An unknown error occurred. Please try again.' };
     }
     
-    return { success: true };
+    redirect('/student/login');
 }
 
-export async function submitJoinRequest(studentUid: string, messId: string, prevState: any, formData: FormData): Promise<ActionResult> {
+export async function submitJoinRequest(prevState: any, formData: FormData): Promise<ActionResult> {
+    const messId = formData.get('messId') as string;
     const secretCode = formData.get('secretCode') as string;
 
-    if (!studentUid || !messId || !secretCode) {
+    if (!messId || !secretCode) {
         return { success: false, error: 'Missing information. Please try again.' };
     }
 
@@ -68,53 +68,19 @@ export async function submitJoinRequest(studentUid: string, messId: string, prev
         const messAdminDoc = await getDoc(messAdminRef);
 
         if (!messAdminDoc.exists() || !messAdminDoc.data()?.secretCode) {
-            return { success: false, error: 'Invalid mess selected.' };
+            return { success: false, error: 'Invalid mess selected. The admin profile could not be found.' };
         }
 
         if (messAdminDoc.data()?.secretCode !== secretCode) {
             return { success: false, error: 'The secret code is incorrect.' };
         }
         
-        const studentId = `STU${studentUid.slice(-5).toUpperCase()}`;
-
-        const studentRef = doc(db, 'users', studentUid);
-        await updateDoc(studentRef, {
-            messId: messId,
-            messName: messAdminDoc.data()?.messName || 'Unnamed Mess',
-            status: 'pending_approval',
-            studentId: studentId,
-            joinDate: new Date().toISOString().split('T')[0],
-            messPlan: 'full_day'
-        });
-        
     } catch (error) {
-        console.error("Error submitting join request: ", error);
-        return { success: false, error: 'A server error occurred. Please try again later.' };
+        console.error("Error validating join request: ", error);
+        return { success: false, error: 'A server error occurred during validation. Please try again later.' };
     }
 
     return { success: true };
-}
-
-export async function cancelJoinRequest(userId: string): Promise<ActionResult> {
-  if (!userId) {
-    return { success: false, error: 'User ID is missing.' };
-  }
-
-  try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      status: 'unaffiliated',
-      messId: null,
-      messName: null,
-      studentId: null,
-      joinDate: null,
-      messPlan: null,
-    });
-    return { success: true };
-  } catch (error: any) {
-    console.error("Error cancelling join request:", error);
-    return { success: false, error: 'Failed to cancel request.' };
-  }
 }
 
 // --- Admin Actions ---
@@ -162,7 +128,7 @@ export async function adminSignup(prevState: any, formData: FormData): Promise<A
     return { success: false, error: 'An unknown error occurred. Please try again.' };
   }
   
-  return { success: true };
+  redirect('/admin/login');
 }
 
 // --- Universal Logout Action ---
