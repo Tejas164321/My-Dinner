@@ -81,41 +81,38 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             return; // Wait until auth state is confirmed
         }
 
-        const isPublicPage = pathname.startsWith('/student/login') ||
-                             pathname.startsWith('/student/signup');
-                             
-        const isJoiningProcessPage = isPublicPage || 
-                                     pathname.startsWith('/student/select-mess') || 
-                                     pathname.startsWith('/student/join-mess');
+        const isAuthPage = pathname.startsWith('/student/login') || pathname.startsWith('/student/signup');
+        const isJoiningProcessPage = pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess');
 
-        // Case 1: User is NOT logged in.
-        if (!user) {
-            // If they are not on a public page, redirect them to login.
-            if (!isPublicPage) {
-                router.replace('/student/login');
+        // Case 1: User is logged in
+        if (user) {
+            // A logged-in user should never be on a login/signup page. Redirect them away.
+            if (isAuthPage) {
+                if (user.status === 'unaffiliated') {
+                    router.replace('/student/select-mess');
+                } else {
+                    router.replace('/student/dashboard');
+                }
+                return; // Redirect initiated, stop further checks.
             }
-            // If they are on a public page, let them stay.
-            return;
-        }
-        
-        // Case 2: User IS logged in.
-        // Redirect based on their affiliation status.
-        if (user.status === 'unaffiliated') {
-            // If they are unaffiliated, they should be in the joining process.
-            // If they are on a page outside this process, redirect them.
-            if (!isJoiningProcessPage) {
+
+            // Handle routing for users who are already logged in but on the wrong pages.
+            if ((user.status === 'active' || user.status === 'suspended') && isJoiningProcessPage) {
+                // An active student shouldn't be on a joining page.
+                router.replace('/student/dashboard');
+            } else if (user.status === 'unaffiliated' && !isJoiningProcessPage) {
+                // An unaffiliated student MUST be on a joining page.
                 router.replace('/student/select-mess');
             }
-        } else if (user.status === 'active' || user.status === 'suspended') {
-            // If they are active or suspended, they should be on a dashboard page.
-            // If they land on a joining page, redirect them to their dashboard.
-            if (isJoiningProcessPage) {
-                router.replace('/student/dashboard');
+        
+        // Case 2: User is NOT logged in
+        } else {
+            // If the user is not logged in, they can only be on auth or joining pages.
+            const isAllowedPublicPage = isAuthPage || isJoiningProcessPage;
+            if (!isAllowedPublicPage) {
+                router.replace('/student/login');
             }
         }
-        // If user.status is 'pending_approval', the PendingApprovalScreen is shown,
-        // which is handled below. We don't need to redirect here.
-
     }, [user, loading, router, pathname]);
     
     const handleLogout = async () => {
@@ -128,23 +125,23 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
     }
 
     if (!user) {
-        // Render login/signup pages without the full layout.
+        // Render login/signup/joining pages without the full layout.
         return <>{children}</>;
     }
     
     // User is logged in, decide what to show based on their status
     switch (user.status) {
         case 'unaffiliated':
-            // Render the mess selection/joining pages
+            // Render the mess selection/joining pages which are handled as children.
             return <>{children}</>;
         
         case 'pending_approval':
-            // Show a dedicated pending screen, blocking access to other pages
+            // Show a dedicated pending screen, blocking access to other pages.
             return <PendingApprovalScreen onLogout={handleLogout} />;
             
         case 'active':
         case 'suspended':
-            // Show the full dashboard for active and suspended users
+            // Show the full dashboard for active and suspended users.
             const dashboardUser = {
                 name: user?.name || 'Student',
                 role: user?.messName || 'Student',
@@ -158,7 +155,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             );
 
         default:
-             // Fallback for any unexpected status
+             // Fallback for any unexpected status.
             return <StudentDashboardSkeleton />;
     }
 }
