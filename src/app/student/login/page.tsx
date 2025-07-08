@@ -37,7 +37,7 @@ export default function StudentLoginPage() {
       if (state.userStatus === 'unaffiliated') {
         router.push('/student/select-mess');
       } else {
-        router.push('/student');
+        router.push('/student/dashboard');
       }
     }
   }, [state, router, toast]);
@@ -78,3 +78,5 @@ export default function StudentLoginPage() {
     </main>
   );
 }
+
+    

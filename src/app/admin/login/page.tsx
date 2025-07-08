@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
     }
     if (state?.success) {
       toast({ title: 'Login Successful!' });
-      router.push('/admin');
+      router.push('/admin/dashboard');
     }
   }, [state, router, toast]);
 
@@ -74,3 +74,5 @@ export default function AdminLoginPage() {
     </main>
   );
 }
+
+    

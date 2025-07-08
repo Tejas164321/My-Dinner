@@ -2,7 +2,7 @@
 import { format, subDays, addDays, startOfDay } from 'date-fns';
 
 export const studentNavItems = [
-    { href: '/student', label: 'Dashboard', icon: 'LayoutDashboard' },
+    { href: '/student/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
     { href: '/student/leave', label: 'Apply for Leave', icon: 'CalendarDays' },
     { href: '/student/attendance', label: 'My Attendance', icon: 'UserCheck' },
     { href: '/student/bills', label: 'My Bills', icon: 'CircleDollarSign' },
@@ -11,7 +11,7 @@ export const studentNavItems = [
 ];
 
 export const adminNavItems = [
-    { href: '/admin', label: 'Dashboard', icon: 'LayoutDashboard' },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
     { href: '/admin/students', label: 'Students', icon: 'Users' },
     { href: '/admin/menu', label: 'Meal Menu', icon: 'Utensils' },
     { href: '/admin/billing', label: 'Billing', icon: 'CircleDollarSign' },
@@ -184,3 +184,5 @@ export const paymentReminders: PaymentReminder[] = [
 ];
 
 export const studentsData: Student[] = [];
+
+    

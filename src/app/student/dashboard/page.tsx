@@ -42,7 +42,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
-export default function StudentDashboard() {
+export default function StudentDashboardPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -247,7 +247,7 @@ export default function StudentDashboard() {
                   <UserX className="h-5 w-5 text-destructive" />
               </CardHeader>
               <CardContent>
-                  <div className="text-2xl font-bold">{currentMonthStats.absentDays} Days</div>
+                  <div className="text-2xl font-bold">{currentMonthStats.absentDays}</div>
                   <p className="text-xs text-muted-foreground">Days on leave or absent</p>
               </CardContent>
           </Card>

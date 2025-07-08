@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ComponentType, ReactNode } from 'react';
@@ -72,7 +73,7 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
       <nav className="flex flex-col items-start gap-3 px-2 py-4">
         {navItems.map((item) => {
           const Icon = iconMap[item.icon];
-          const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/student/dashboard' && pathname.startsWith(item.href));
+          const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && item.href !== '/student/dashboard' && pathname.startsWith(item.href));
           return (
             <Tooltip key={item.href}>
               <TooltipTrigger asChild>
@@ -164,7 +165,7 @@ export function DashboardLayout({ children, navItems, user, onLogout }: Dashboar
   const handleToggle = () => setIsCollapsed(!isCollapsed);
   const handleMobileNavClose = () => setIsMobileNavOpen(false);
 
-  const dashboardPath = user.role === 'Mess Manager' ? '/admin' : '/student/dashboard';
+  const dashboardPath = user.role === 'Mess Manager' ? '/admin/dashboard' : '/student/dashboard';
 
   return (
     <div className="flex h-screen w-full bg-background">
@@ -241,3 +242,5 @@ export function DashboardLayout({ children, navItems, user, onLogout }: Dashboar
     </div>
   );
 }
+
+    

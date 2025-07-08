@@ -100,7 +100,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             if (user.status === 'unaffiliated') {
                 router.replace('/student/select-mess');
             } else {
-                router.replace('/student');
+                router.replace('/student/dashboard');
             }
             return;
         }
@@ -113,7 +113,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
 
         // Case 4: An affiliated user is on a joining page. They should be on their dashboard.
         if (user.status !== 'unaffiliated' && isJoiningProcessPage) {
-            router.replace('/student');
+            router.replace('/student/dashboard');
             return;
         }
         
@@ -164,3 +164,5 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             return <StudentDashboardSkeleton />;
     }
 }
+
+    

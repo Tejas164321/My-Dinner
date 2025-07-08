@@ -57,7 +57,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
         if (user && user.role === 'admin') {
             // If they are on a login/signup page, they shouldn't be. Redirect to the dashboard.
             if (isAuthPage) {
-                router.replace('/admin');
+                router.replace('/admin/dashboard');
             }
         }
     }, [user, loading, router, pathname]);
@@ -99,3 +99,5 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     // Fallback: show skeleton while routing logic determines the correct view.
     return <AdminDashboardSkeleton />;
 }
+
+    
