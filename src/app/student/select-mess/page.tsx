@@ -1,6 +1,9 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { getMesses } from '@/app/auth/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, ChevronRight } from 'lucide-react';
+import { Building2, ChevronRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface Mess {
@@ -8,8 +11,18 @@ interface Mess {
     messName: string;
 }
 
-export default async function SelectMessPage() {
-    const messes: Mess[] = await getMesses();
+export default function SelectMessPage() {
+    const [messes, setMesses] = useState<Mess[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchMesses() {
+            const fetchedMesses = await getMesses();
+            setMesses(fetchedMesses);
+            setLoading(false);
+        }
+        fetchMesses();
+    }, []);
 
     return (
         <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
@@ -20,7 +33,12 @@ export default async function SelectMessPage() {
                     <CardDescription>Choose your mess facility from the list below to proceed.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {messes.length > 0 ? (
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
+                            <Loader2 className="h-8 w-8 mb-4 animate-spin" />
+                            <p>Loading available messes...</p>
+                        </div>
+                    ) : messes.length > 0 ? (
                         messes.map((mess) => (
                             <Link
                                 key={mess.id}

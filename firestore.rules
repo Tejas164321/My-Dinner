@@ -1,12 +1,42 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // This rule allows any authenticated user to read and write to the database.
-    // This is useful for getting started, but it's important to secure your
-    // database with more specific rules before going to production.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    
+    // Users can create their own document on signup, and can read/update their own data.
+    // Any authenticated user can get a list of users (for selecting a mess).
+    match /users/{userId} {
+      allow create, get, list: if request.auth != null;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      // Admins can manage all user documents
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Holidays can be read by anyone authenticated, but only written by admins.
+    match /holidays/{holidayId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Leaves can be created and read by the student who owns them.
+    // They can be deleted by the student.
+    // They can be read in a list by admins.
+    match /leaves/{leaveId} {
+        allow create: if request.auth != null && request.resource.data.studentId == request.auth.uid;
+        allow get, delete: if request.auth != null && resource.data.studentId == request.auth.uid;
+        allow list: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Menus can be read by anyone authenticated, but only written by admins.
+    match /menus/{menuId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Plan change requests can be created by the student.
+    // They can be read and deleted by admins.
+    match /planChangeRequests/{requestId} {
+      allow create: if request.auth != null;
+      allow read, delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
