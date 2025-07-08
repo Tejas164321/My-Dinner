@@ -1,4 +1,3 @@
-
 import { format, subDays, addDays, startOfDay } from 'date-fns';
 
 export const studentNavItems = [
@@ -88,11 +87,14 @@ export interface AppUser {
     email: string;
     name: string;
     role: 'admin' | 'student';
+    messName?: string;
+    secretCode?: string;
     studentId?: string;
     contact?: string;
     roomNo?: string;
     joinDate?: string;
-    status?: 'active' | 'suspended' | 'pending';
+    status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated';
+    messId?: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
 }
@@ -103,8 +105,10 @@ export interface Student extends AppUser {
     contact: string;
     roomNo: string;
     joinDate: string;
-    status: 'active' | 'suspended' | 'pending';
+    status: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated';
     messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
+    messId: string;
+    messName: string;
 }
 
 export const commonMenuItems = ['Dal', 'Rice', 'Chapatti', 'Salad', 'Raita', 'Pulav'];
