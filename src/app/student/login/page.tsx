@@ -37,16 +37,10 @@ export default function StudentLoginPage() {
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists() && userDoc.data()?.role === 'student') {
-        const userData = userDoc.data() as AppUser;
         toast({ title: 'Login Successful!' });
-        
-        // The layout file will handle the redirection based on status
-        // We just need to trigger a router push to make the layout re-evaluate
-        if (userData.status === 'unaffiliated' || userData.status === 'pending_approval') {
-          router.push('/student/select-mess');
-        } else {
-          router.push('/student/dashboard');
-        }
+        // The layout file is now the single source of truth for redirection.
+        // We just push to a protected route and let the layout handle the rest.
+        router.push('/student/dashboard');
       } else {
         await signOut(auth);
         toast({ variant: 'destructive', title: 'Access Denied', description: 'This is not a valid student account.' });
