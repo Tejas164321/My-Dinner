@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, FormEvent } from 'react';
+import { Suspense, useState, FormEvent } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { db } from '@/lib/firebase';
 
 function JoinMessContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const { toast } = useToast();
     const { user } = useAuth();
     
@@ -70,7 +71,7 @@ function JoinMessContent() {
             });
 
             toast({ title: 'Request Sent!', description: 'Your join request is pending admin approval.' });
-            // The layout's useEffect will handle the redirect to the pending screen.
+            router.push('/student/select-mess?tab=requests');
 
         } catch (error: any) {
             console.error("Error submitting join request:", error);

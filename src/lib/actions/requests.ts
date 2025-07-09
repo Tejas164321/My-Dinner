@@ -15,12 +15,31 @@ export async function approveStudent(userId: string) {
 }
 
 export async function rejectStudent(userId: string) {
-    // Note: This only deletes the Firestore user record. For a production app,
-    // you would also need to delete the user from Firebase Authentication using the Admin SDK,
-    // which is outside the scope of this implementation.
     const userRef = doc(db, USERS_COLLECTION, userId);
     await deleteDoc(userRef);
     revalidatePath('/admin/students');
+}
+
+export async function cancelJoinRequest(userId: string): Promise<{ success: boolean; error?: string }> {
+    if (!userId) {
+        return { success: false, error: 'User ID is missing.' };
+    }
+    try {
+        const userRef = doc(db, USERS_COLLECTION, userId);
+        await updateDoc(userRef, {
+          status: 'unaffiliated',
+          messId: null,
+          messName: null,
+          studentId: null,
+          joinDate: null,
+          messPlan: null,
+        });
+        revalidatePath('/student/select-mess');
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error cancelling join request:", error);
+        return { success: false, error: 'Failed to cancel request on the server.' };
+    }
 }
 
 export async function submitPlanChangeRequest(studentId: string, studentName: string, fromPlan: Student['messPlan'], toPlan: Student['messPlan']) {

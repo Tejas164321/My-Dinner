@@ -2,20 +2,13 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import React, { useEffect, useTransition } from 'react';
+import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { studentNavItems } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { logout } from '@/app/auth/actions';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-
 
 function StudentDashboardSkeleton() {
     return (
@@ -38,51 +31,6 @@ function StudentDashboardSkeleton() {
     )
 }
 
-function PendingApprovalScreen({ onLogout }: { onLogout: () => void }) {
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const [isCancelling, startTransition] = useTransition();
-
-    const handleCancel = () => {
-        if (!user) return;
-        startTransition(async () => {
-            try {
-                const userRef = doc(db, 'users', user.uid);
-                await updateDoc(userRef, {
-                  status: 'unaffiliated',
-                  messId: null,
-                  messName: null,
-                  studentId: null,
-                  joinDate: null,
-                  messPlan: null,
-                });
-                toast({ title: 'Request Cancelled', description: 'You can now join a different mess.' });
-            } catch (error: any) {
-                console.error("Error cancelling join request:", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Failed to cancel request.' });
-            }
-        });
-    };
-
-    return (
-        <main className="flex min-h-screen flex-col items-center justify-center p-4">
-            <Card className="max-w-md text-center">
-                <CardHeader>
-                    <CardTitle>Request Sent!</CardTitle>
-                    <CardDescription>Your request to join the mess is pending approval from the admin. Please check back later.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row gap-2 justify-center">
-                    <Button onClick={handleCancel} variant="destructive" disabled={isCancelling} className="w-full sm:w-auto">
-                        {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isCancelling ? 'Cancelling...' : 'Cancel Request'}
-                    </Button>
-                    <Button onClick={onLogout} variant="outline" className="w-full sm:w-auto">Log Out</Button>
-                </CardContent>
-            </Card>
-        </main>
-    );
-}
-
 export default function StudentDashboardLayout({ children }: { children: ReactNode }) {
     const { user, loading } = useAuth();
     const router = useRouter();
@@ -98,34 +46,33 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
 
         // Case 1: User is NOT logged in
         if (!user) {
-            // If the user is not logged in and not on an auth page, redirect them.
             if (!isAuthPage) {
                 router.replace('/student/login');
             }
-            return; // Stop further checks for non-logged-in users.
+            return;
         }
 
         // --- From this point, we know the user is logged in ---
         
-        // Case 2: A logged-in user is on an auth page. They should be redirected.
+        // Case 2: A logged-in user is on an auth page.
         if (isAuthPage) {
-            if (user.status === 'unaffiliated') {
+            if (user.status === 'unaffiliated' || user.status === 'pending_approval') {
                 router.replace('/student/select-mess');
             } else {
                 router.replace('/student/dashboard');
             }
             return;
         }
-
-        // Case 3: An unaffiliated user is on a protected page. They should be in the joining flow.
-        if (user.status === 'unaffiliated' && !isJoiningProcessPage) {
-            router.replace('/student/select-mess');
+        
+        // Case 3: An affiliated (active/suspended) user is on a joining page.
+        if ((user.status === 'active' || user.status === 'suspended') && isJoiningProcessPage) {
+            router.replace('/student/dashboard');
             return;
         }
 
-        // Case 4: An affiliated user is on a joining page. They should be on their dashboard.
-        if (user.status !== 'unaffiliated' && isJoiningProcessPage) {
-            router.replace('/student/dashboard');
+        // Case 4: An unaffiliated or pending user is on a protected page.
+        if ((user.status === 'unaffiliated' || user.status === 'pending_approval') && !isJoiningProcessPage) {
+            router.replace('/student/select-mess');
             return;
         }
         
@@ -140,8 +87,6 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
         return <StudentDashboardSkeleton />;
     }
 
-    // If we're on an auth page, the logic above will handle redirection if needed.
-    // For non-logged-in users, we show the auth page itself.
     if (!user) {
         return <>{children}</>;
     }
@@ -149,13 +94,11 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
     // User is logged in, decide what to show based on their status
     switch (user.status) {
         case 'unaffiliated':
-            // Render the mess selection/joining pages which are handled as children.
+        case 'pending_approval':
+            // These users should be interacting with the joining pages.
+            // The useEffect above ensures they are on the correct pages.
             return <>{children}</>;
         
-        case 'pending_approval':
-            // Show a dedicated pending screen, blocking access to other pages.
-            return <PendingApprovalScreen onLogout={handleLogout} />;
-            
         case 'active':
         case 'suspended':
             // Show the full dashboard for active and suspended users.
