@@ -15,9 +15,6 @@ import { Users, UserX, TrendingUp, KeyRound, Settings, Bell, Utensils, CalendarD
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
 import { Holiday, Leave, JoinRequest, PlanChangeRequest } from '@/lib/data';
-import { onHolidaysUpdate } from '@/lib/listeners/holidays';
-import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
-import { onJoinRequestsUpdate, onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
 import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -31,9 +28,7 @@ export default function AdminDashboardPage() {
 
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
   const [today, setToday] = useState<Date>();
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
-
+  
   useEffect(() => {
     const now = startOfDay(new Date());
     setToday(now);
@@ -42,52 +37,8 @@ export default function AdminDashboardPage() {
     if (currentHour >= 15) {
       setMealInfo({ title: "Today's Dinner Count", count: 105 });
     }
-
-    const holidaysUnsubscribe = onHolidaysUpdate(setHolidays);
-    const leavesUnsubscribe = onAllLeavesUpdate(setAllLeaves);
-
-    return () => {
-        holidaysUnsubscribe();
-        leavesUnsubscribe();
-    };
   }, []);
 
-  const { holidaysThisMonth, mealBreaksThisMonth } = useMemo(() => {
-    if (!today) return { holidaysThisMonth: 0, mealBreaksThisMonth: 0 };
-    
-    const currentMonthHolidays = holidays.filter(h => isSameMonth(h.date, today));
-    
-    const totalHolidays = currentMonthHolidays.length;
-    
-    const totalMealBreaks = currentMonthHolidays.reduce((acc, holiday) => {
-        if (holiday.type === 'full_day') {
-            return acc + 2;
-        }
-        return acc + 1;
-    }, 0);
-
-    return { holidaysThisMonth: totalHolidays, mealBreaksThisMonth: totalMealBreaks };
-  }, [today, holidays]);
-  
-  const onLeaveToday = useMemo(() => {
-    if (!today) return { lunch: 0, dinner: 0 };
-    
-    const leaves = allLeaves.filter(l => today && isToday(l.date));
-
-    let lunchOff = 0;
-    let dinnerOff = 0;
-
-    leaves.forEach(leave => {
-        if (leave.type === 'full_day' || leave.type === 'lunch_only') {
-            lunchOff++;
-        }
-        if (leave.type === 'full_day' || leave.type === 'dinner_only') {
-            dinnerOff++;
-        }
-    });
-
-    return { lunch: lunchOff, dinner: dinnerOff };
-  }, [today, allLeaves]);
 
   const handleCopyCode = () => {
     if (!user?.secretCode) return;
@@ -139,22 +90,18 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-muted-foreground">Estimated students for the meal</p>
           </CardContent>
         </Card>
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100 hover:-translate-y-1 hover:border-primary/50 transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Students on Leave Today</CardTitle>
-            <UserX className="h-5 w-5 text-destructive" />
-          </CardHeader>
-          <CardContent className="flex items-center justify-around pt-2">
-             <div className="text-center">
-                 <p className="text-2xl font-bold">{onLeaveToday.lunch}</p>
-                 <p className="text-xs text-muted-foreground flex items-center gap-1"><Sun className="h-3 w-3" /> Lunch</p>
-             </div>
-             <div className="text-center">
-                 <p className="text-2xl font-bold">{onLeaveToday.dinner}</p>
-                 <p className="text-xs text-muted-foreground flex items-center gap-1"><Moon className="h-3 w-3" /> Dinner</p>
-             </div>
-          </CardContent>
-        </Card>
+        <Link href="/admin/announcements" className="block transition-transform duration-300 hover:-translate-y-1">
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100 h-full hover:border-primary/50">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Announcements</CardTitle>
+                <Bell className="h-5 w-5 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">3</div>
+                <p className="text-xs text-muted-foreground">Recent announcements sent</p>
+              </CardContent>
+            </Card>
+        </Link>
         <Link href="/admin/students" className="block transition-transform duration-300 hover:-translate-y-1">
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200 h-full hover:border-primary/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -213,23 +160,18 @@ export default function AdminDashboardPage() {
                     </div>
                 </CardContent>
             </Card>
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-600">
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-600 flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                         <CardTitle>Holiday Management</CardTitle>
-                        <CardDescription>Stats for this month.</CardDescription>
+                        <CardDescription>Schedule mess holidays.</CardDescription>
                     </div>
                     <CalendarDays className="h-6 w-6 text-primary" />
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                        <p className="text-4xl font-bold">{holidaysThisMonth}</p>
-                        <p className="text-xs text-muted-foreground">Total Holidays</p>
-                    </div>
-                     <div>
-                        <p className="text-4xl font-bold">{mealBreaksThisMonth}</p>
-                        <p className="text-xs text-muted-foreground">Meal Breaks</p>
-                    </div>
+                <CardContent className="flex-grow flex items-center justify-center">
+                   <p className="text-sm text-muted-foreground text-center">
+                       Add one-day or long leaves for the entire mess.
+                   </p>
                 </CardContent>
                 <CardFooter>
                     <Button asChild className="w-full">
