@@ -129,8 +129,7 @@ function JoinMessContent() {
 
 export default function JoinMessPage() {
     return (
-        <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
-            <div className="absolute inset-0 grid-bg [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+        <main className="flex min-h-screen flex-col items-center justify-center p-4">
             <Suspense fallback={<div>Loading...</div>}>
                 <JoinMessContent />
             </Suspense>
