@@ -35,14 +35,16 @@ export function onJoinRequestsUpdate(callback: (requests: JoinRequest[]) => void
   return unsubscribe;
 }
 
-export function onPlanChangeRequestsUpdate(callback: (requests: PlanChangeRequest[]) => void) {
-  const q = query(collection(db, PLAN_CHANGE_REQUESTS_COLLECTION), orderBy("date", "desc"));
+export function onPlanChangeRequestsUpdate(messId: string, callback: (requests: PlanChangeRequest[]) => void) {
+  const q = query(collection(db, PLAN_CHANGE_REQUESTS_COLLECTION), where("messId", "==", messId));
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
     const requests = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     } as PlanChangeRequest));
+    // Sort on client since we can't order by a field different from the where filter without a composite index
+    requests.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     callback(requests);
   }, (error) => {
     console.error("Error listening to plan change requests:", error);

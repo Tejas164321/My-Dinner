@@ -47,13 +47,13 @@ export default function StudentSettingsPage() {
     };
     
     const handlePlanChangeRequest = async () => {
-        if (!user || !user.studentId) {
+        if (!user || !user.studentId || !user.messId) {
              toast({ variant: 'destructive', title: "Error", description: "User information is missing." });
              return;
         }
 
         try {
-            await submitPlanChangeRequest(user.studentId, user.name || 'Student', currentPlan, selectedPlan);
+            await submitPlanChangeRequest(user.studentId, user.name || 'Student', currentPlan, selectedPlan, user.messId);
             setIsRequestPending(true);
             toast({
                 title: "Request Submitted",

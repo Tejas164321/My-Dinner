@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -38,6 +37,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
 import { format, parseISO } from 'date-fns';
+import { useAuth } from '@/contexts/auth-context';
 
 interface StudentsTableProps {
     filterMonth: string;
@@ -185,6 +185,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     const searchParams = useSearchParams();
     const tab = searchParams.get('tab');
     
+    const { user } = useAuth();
     const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
     const [users, setUsers] = useState<Student[]>([]);
     const [planChangeRequests, setPlanChangeRequests] = useState<PlanChangeRequest[]>([]);
@@ -193,19 +194,26 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
 
     useEffect(() => {
         setIsLoading(true);
-        const unsubscribeUsers = onUsersUpdate(setUsers);
+        
+        let unsubscribeUsers: (() => void) | null = null;
+        let unsubscribePlans: (() => void) | null = null;
+
+        if (user) {
+            unsubscribeUsers = onUsersUpdate(user.uid, setUsers);
+            unsubscribePlans = onPlanChangeRequestsUpdate(user.uid, setPlanChangeRequests);
+        }
+
         const unsubscribeLeaves = onAllLeavesUpdate(setAllLeaves);
-        const unsubscribePlans = onPlanChangeRequestsUpdate(setPlanChangeRequests);
         
         const timer = setTimeout(() => setIsLoading(false), 1500);
 
         return () => {
-            unsubscribeUsers();
+            if (unsubscribeUsers) unsubscribeUsers();
+            if (unsubscribePlans) unsubscribePlans();
             unsubscribeLeaves();
-            unsubscribePlans();
             clearTimeout(timer);
         };
-    }, []);
+    }, [user]);
 
     const { activeStudents, suspendedStudents, pendingStudents } = useMemo(() => {
         const active: Student[] = [];

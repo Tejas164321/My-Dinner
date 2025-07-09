@@ -42,12 +42,13 @@ export async function cancelJoinRequest(userId: string): Promise<{ success: bool
     }
 }
 
-export async function submitPlanChangeRequest(studentId: string, studentName: string, fromPlan: Student['messPlan'], toPlan: Student['messPlan']) {
+export async function submitPlanChangeRequest(studentId: string, studentName: string, fromPlan: Student['messPlan'], toPlan: Student['messPlan'], messId: string) {
     await addDoc(collection(db, PLAN_CHANGE_REQUESTS_COLLECTION), {
         studentId,
         studentName,
         fromPlan,
         toPlan,
+        messId,
         date: new Date().toISOString(),
     });
     revalidatePath('/admin/students');

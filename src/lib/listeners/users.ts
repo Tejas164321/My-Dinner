@@ -1,8 +1,8 @@
 'use client';
 
-import { collection, onSnapshot, query, orderBy, DocumentData, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, DocumentData, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Student, AppUser } from '@/lib/data';
+import type { Student } from '@/lib/data';
 
 const USERS_COLLECTION = 'users';
 
@@ -26,11 +26,10 @@ const docToStudent = (doc: DocumentData): Student => {
 };
 
 
-export function onUsersUpdate(callback: (users: Student[]) => void) {
+export function onUsersUpdate(messId: string, callback: (users: Student[]) => void) {
   const q = query(
       collection(db, USERS_COLLECTION),
-      where("role", "==", "student"), 
-      orderBy("name", "asc")
+      where("messId", "==", messId)
   );
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -42,6 +41,8 @@ export function onUsersUpdate(callback: (users: Student[]) => void) {
         ...data,
       } as Student;
     });
+    // Sort on the client since we can't order by a field different from the where filter without a composite index
+    users.sort((a, b) => a.name.localeCompare(b.name));
     callback(users);
   }, (error) => {
     console.error("Error listening to user updates:", error);
