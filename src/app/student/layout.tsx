@@ -54,7 +54,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
 
         // --- From this point, we know the user is logged in ---
         
-        // Case 2: A logged-in user is on an auth page.
+        // Case 2: A logged-in user is on an auth page (login/signup). Redirect them away.
         if (isAuthPage) {
             if (user.status === 'unaffiliated' || user.status === 'pending_approval') {
                 router.replace('/student/select-mess');
@@ -64,13 +64,13 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             return;
         }
         
-        // Case 3: An affiliated (active/suspended) user is on a joining page.
+        // Case 3: An affiliated (active/suspended) user tries to access a joining page.
         if ((user.status === 'active' || user.status === 'suspended') && isJoiningProcessPage) {
             router.replace('/student/dashboard');
             return;
         }
 
-        // Case 4: An unaffiliated or pending user is on a protected page.
+        // Case 4: An unaffiliated or pending user tries to access a protected dashboard page.
         if ((user.status === 'unaffiliated' || user.status === 'pending_approval') && !isJoiningProcessPage) {
             router.replace('/student/select-mess');
             return;
@@ -78,44 +78,45 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
         
     }, [user, loading, router, pathname]);
     
-    const handleLogout = async () => {
-        await logout();
-        router.push('/');
-    };
-
+    // While loading, always show a skeleton to prevent any flash of incorrect content.
     if (loading) {
         return <StudentDashboardSkeleton />;
     }
 
-    if (!user) {
+    const isAuthPage = pathname.startsWith('/student/login') || pathname.startsWith('/student/signup');
+    const isJoiningProcessPage = pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess');
+
+    // If there is no user and we are on an auth page, render the auth page.
+    if (!user && isAuthPage) {
         return <>{children}</>;
     }
     
-    // User is logged in, decide what to show based on their status
-    switch (user.status) {
-        case 'unaffiliated':
-        case 'pending_approval':
-            // These users should be interacting with the joining pages.
-            // The useEffect above ensures they are on the correct pages.
-            return <>{children}</>;
-        
-        case 'active':
-        case 'suspended':
-            // Show the full dashboard for active and suspended users.
-            const dashboardUser = {
-                name: user?.name || 'Student',
-                role: user?.messName || 'Student',
-                email: user?.email || '',
-                avatarUrl: user?.avatarUrl,
-            };
-            return (
-                <DashboardLayout navItems={studentNavItems} user={dashboardUser} onLogout={handleLogout}>
-                    {children}
-                </DashboardLayout>
-            );
-
-        default:
-             // Fallback for any unexpected status.
-            return <StudentDashboardSkeleton />;
+    // If the user is in the joining process and on a joining page, render it.
+    if (user && (user.status === 'unaffiliated' || user.status === 'pending_approval') && isJoiningProcessPage) {
+        return <>{children}</>;
     }
+    
+    // If the user is fully active/suspended and on a protected dashboard page, render the full layout.
+    if (user && (user.status === 'active' || user.status === 'suspended') && !isAuthPage && !isJoiningProcessPage) {
+        const handleLogout = async () => {
+            await logout();
+            router.push('/');
+        };
+
+        const dashboardUser = {
+            name: user?.name || 'Student',
+            role: user?.messName || 'Student',
+            email: user?.email || '',
+            avatarUrl: user?.avatarUrl,
+        };
+        return (
+            <DashboardLayout navItems={studentNavItems} user={dashboardUser} onLogout={handleLogout}>
+                {children}
+            </DashboardLayout>
+        );
+    }
+
+    // In all other cases (e.g., a logged-in user on an auth page who is about to be redirected),
+    // show a skeleton to prevent flashing the login page.
+    return <StudentDashboardSkeleton />;
 }

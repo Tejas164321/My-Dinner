@@ -40,7 +40,9 @@ export default function StudentLoginPage() {
         const userData = userDoc.data() as AppUser;
         toast({ title: 'Login Successful!' });
         
-        if (userData.status === 'unaffiliated') {
+        // The layout file will handle the redirection based on status
+        // We just need to trigger a router push to make the layout re-evaluate
+        if (userData.status === 'unaffiliated' || userData.status === 'pending_approval') {
           router.push('/student/select-mess');
         } else {
           router.push('/student/dashboard');
