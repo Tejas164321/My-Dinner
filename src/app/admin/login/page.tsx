@@ -38,9 +38,11 @@ export default function AdminLoginPage() {
 
       if (userDoc.exists() && userDoc.data()?.role === 'admin') {
         toast({ title: 'Login Successful!' });
-        router.push('/admin/dashboard');
+        router.replace('/admin/dashboard');
       } else {
-        await signOut(auth); // Sign out the user if they are not an admin
+        // This case handles users who are in Firebase Auth but not in Firestore as an admin
+        // It could be a student trying to log in, or a failed/corrupted admin signup.
+        await signOut(auth); 
         toast({ variant: 'destructive', title: 'Access Denied', description: 'This account does not have admin privileges.' });
       }
     } catch (error: any) {
