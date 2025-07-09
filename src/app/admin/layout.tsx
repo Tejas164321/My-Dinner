@@ -37,37 +37,38 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
 
     useEffect(() => {
         if (loading) {
-            return; // Wait until the auth state is confirmed before making routing decisions.
+            return; // Wait until auth state is confirmed
         }
 
         const isAuthPage = pathname.startsWith('/admin/login') || pathname.startsWith('/admin/signup');
 
-        // If the user is not logged in or is not an admin...
-        if (!user || user.role !== 'admin') {
-            // and they are trying to access a protected page...
-            if (!isAuthPage) {
-                // redirect them to the login page.
-                router.replace('/admin/login');
+        // Case 1: User is a logged-in admin
+        if (user && user.role === 'admin') {
+            // If they are on an auth page, redirect them to the dashboard.
+            if (isAuthPage) {
+                router.replace('/admin/dashboard');
             }
-            // Otherwise, they are on the login/signup page, so let them stay.
+            // Otherwise, they are on a protected page, so let them stay.
             return;
         }
 
-        // If the user *is* a logged-in admin...
-        if (isAuthPage) {
-            // and they are on a login/signup page, they shouldn't be. Redirect to the dashboard.
-            router.replace('/admin/dashboard');
+        // Case 2: User is not an admin (logged out, or a different role)
+        // If they are trying to access a protected page, redirect them to the login page.
+        if (!isAuthPage) {
+            router.replace('/admin/login');
         }
+        // Otherwise, they are on an auth page, so let them stay.
+
     }, [user, loading, router, pathname]);
-    
-    // While loading, always show a skeleton to prevent any flash of incorrect content.
+
+    // Render logic based on auth state
     if (loading) {
         return <AdminDashboardSkeleton />;
     }
 
     const isAuthPage = pathname.startsWith('/admin/login') || pathname.startsWith('/admin/signup');
 
-    // If a user is logged in as an admin and on a protected page, render the dashboard.
+    // If a user is a logged-in admin and on a protected page, render the dashboard.
     if (user && user.role === 'admin' && !isAuthPage) {
         const dashboardUser = {
             name: user?.name || 'Admin',
@@ -83,12 +84,12 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
         );
     }
     
-    // If there is no user and we are on an auth page, render the auth page (login/signup).
-    if (!user && isAuthPage) {
+    // If we are on an auth page, and the logic has reached this point,
+    // it means the user is not a logged-in admin, so we should show the auth page.
+    if (isAuthPage) {
         return <>{children}</>;
     }
     
-    // In all other cases (e.g., a logged-in user on an auth page who is about to be redirected),
-    // show a skeleton to prevent flashing the login page.
+    // In all other transient cases (e.g., waiting for a redirect), show a skeleton.
     return <AdminDashboardSkeleton />;
 }
