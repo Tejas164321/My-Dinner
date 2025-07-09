@@ -3,13 +3,14 @@
 
 import { useEffect, useState, useTransition, Suspense, type FormEvent } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
 import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion } from 'lucide-react';
+import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -90,6 +91,11 @@ function SelectMessComponent() {
         fetchMesses();
     }, []);
 
+    const handleLogout = async () => {
+        await signOut(auth);
+        // The main student layout will handle redirecting to the login page
+    };
+
     const handleCancelRequest = () => {
         if (!user) return;
         startTransition(async () => {
@@ -108,9 +114,13 @@ function SelectMessComponent() {
 
     return (
         <Card className="w-full max-w-2xl z-10 animate-in fade-in-0 zoom-in-95 duration-500">
-            <CardHeader className="text-center">
+            <CardHeader className="text-center relative">
                 <CardTitle>Join a Mess</CardTitle>
                 <CardDescription>Select a mess to join or check the status of your existing request.</CardDescription>
+                <Button variant="ghost" size="icon" className="absolute top-4 right-4" onClick={handleLogout}>
+                    <LogOut className="h-5 w-5" />
+                    <span className="sr-only">Log out</span>
+                </Button>
             </CardHeader>
             <CardContent>
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
