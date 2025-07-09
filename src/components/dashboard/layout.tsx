@@ -131,12 +131,10 @@ function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLa
 }
 
 function LogoutButton({ isCollapsed, onLogout, onLinkClick }: { isCollapsed?: boolean, onLogout: () => Promise<void>, onLinkClick?: () => void }) {
-    const router = useRouter();
     const handleLogout = async () => {
         if (onLinkClick) onLinkClick();
         await onLogout();
-        // Redirect to home page after logout.
-        router.push('/');
+        // The redirection is now handled by the parent layout's useEffect hook.
     }
 
      return (
@@ -242,5 +240,3 @@ export function DashboardLayout({ children, navItems, user, onLogout }: Dashboar
     </div>
   );
 }
-
-    
