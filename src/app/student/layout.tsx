@@ -7,7 +7,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { studentNavItems } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
-import { logout } from '@/app/auth/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function StudentDashboardSkeleton() {
@@ -98,11 +97,6 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
     
     // If the user is fully active/suspended and on a protected dashboard page, render the full layout.
     if (user && (user.status === 'active' || user.status === 'suspended') && !isAuthPage && !isJoiningProcessPage) {
-        const handleLogout = async () => {
-            await logout();
-            // The redirection is now handled by the useEffect hook when the user state becomes null.
-        };
-
         const dashboardUser = {
             name: user?.name || 'Student',
             role: user?.messName || 'Student',
@@ -110,7 +104,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             avatarUrl: user?.avatarUrl,
         };
         return (
-            <DashboardLayout navItems={studentNavItems} user={dashboardUser} onLogout={handleLogout}>
+            <DashboardLayout navItems={studentNavItems} user={dashboardUser}>
                 {children}
             </DashboardLayout>
         );

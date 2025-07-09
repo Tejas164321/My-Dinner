@@ -7,7 +7,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { adminNavItems } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
-import { logout } from '@/app/auth/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function AdminDashboardSkeleton() {
@@ -70,11 +69,6 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
 
     // If a user is logged in as an admin and on a protected page, render the dashboard.
     if (user && user.role === 'admin' && !isAuthPage) {
-        const handleLogout = async () => {
-            await logout();
-            // The redirection is now handled by the useEffect hook when the user state becomes null.
-        };
-        
         const dashboardUser = {
             name: user?.name || 'Admin',
             role: user?.messName || 'Mess Manager',
@@ -83,7 +77,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
         };
         
         return (
-            <DashboardLayout navItems={adminNavItems} user={dashboardUser} onLogout={handleLogout}>
+            <DashboardLayout navItems={adminNavItems} user={dashboardUser}>
                 {children}
             </DashboardLayout>
         );

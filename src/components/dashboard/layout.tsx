@@ -4,7 +4,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +19,8 @@ import {
   TooltipContent,
 } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import {
   ChefHat,
   Settings,
@@ -62,7 +64,6 @@ interface DashboardLayoutProps {
   children: ReactNode;
   navItems: NavItem[];
   user: { name: string; role: string; email: string; avatarUrl?: string };
-  onLogout: () => Promise<void>;
 }
 
 function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[], isCollapsed: boolean, onLinkClick?: () => void }) {
@@ -130,10 +131,10 @@ function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLa
     )
 }
 
-function LogoutButton({ isCollapsed, onLogout, onLinkClick }: { isCollapsed?: boolean, onLogout: () => Promise<void>, onLinkClick?: () => void }) {
+function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onLinkClick?: () => void }) {
     const handleLogout = async () => {
         if (onLinkClick) onLinkClick();
-        await onLogout();
+        await signOut(auth);
         // The redirection is now handled by the parent layout's useEffect hook.
     }
 
@@ -156,7 +157,7 @@ function LogoutButton({ isCollapsed, onLogout, onLinkClick }: { isCollapsed?: bo
      )
 }
 
-export function DashboardLayout({ children, navItems, user, onLogout }: DashboardLayoutProps) {
+export function DashboardLayout({ children, navItems, user }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   
@@ -187,7 +188,7 @@ export function DashboardLayout({ children, navItems, user, onLogout }: Dashboar
           <NavContent navItems={navItems} isCollapsed={isCollapsed} />
         </div>
         <div className="mt-auto border-t p-2">
-           <LogoutButton isCollapsed={isCollapsed} onLogout={onLogout} />
+           <LogoutButton isCollapsed={isCollapsed} onLinkClick={handleMobileNavClose} />
         </div>
         <button
           onClick={handleToggle}
@@ -224,7 +225,7 @@ export function DashboardLayout({ children, navItems, user, onLogout }: Dashboar
                     <NavContent navItems={navItems} isCollapsed={false} onLinkClick={handleMobileNavClose} />
                 </div>
                 <div className="mt-auto border-t p-2">
-                    <LogoutButton isCollapsed={false} onLogout={onLogout} onLinkClick={handleMobileNavClose} />
+                    <LogoutButton isCollapsed={false} onLinkClick={handleMobileNavClose} />
                 </div>
             </SheetContent>
           </Sheet>

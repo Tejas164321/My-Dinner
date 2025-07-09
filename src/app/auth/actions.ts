@@ -4,7 +4,6 @@
 import { redirect } from 'next/navigation';
 import {
   createUserWithEmailAndPassword,
-  signOut,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -59,14 +58,3 @@ export async function studentSignup(prevState: any, formData: FormData): Promise
 // --- Admin Actions ---
 // This server action is no longer used for signup. The logic has been moved to the client-side
 // in src/app/admin/signup/page.tsx to handle authenticated Firestore writes correctly.
-
-
-// --- Universal Logout Action ---
-export async function logout(): Promise<ActionResult> {
-  try {
-    await signOut(auth);
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-  return { success: true };
-}
