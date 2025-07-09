@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useEffect, useState, useTransition, Suspense } from 'react';
+import { useEffect, useState, useTransition, Suspense, type FormEvent } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion } fr
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { cancelJoinRequest } from '@/lib/actions/requests';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,8 +31,31 @@ interface Mess {
     messName: string;
 }
 
+// Client-side action
+async function cancelJoinRequest(userId: string): Promise<{ success: boolean; error?: string }> {
+    if (!userId) {
+        return { success: false, error: 'User ID is missing.' };
+    }
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+          status: 'unaffiliated',
+          messId: null,
+          messName: null,
+          studentId: null,
+          joinDate: null,
+          messPlan: null,
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error cancelling join request:", error);
+        return { success: false, error: 'Failed to cancel request on the server.' };
+    }
+}
+
+
 function SelectMessComponent() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -133,7 +155,9 @@ function SelectMessComponent() {
                         </TabsContent>
 
                         <TabsContent value="requests" className="mt-4">
-                            {user?.status === 'pending_approval' ? (
+                            {authLoading ? (
+                                <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                            ) : user?.status === 'pending_approval' ? (
                                 <Card className="bg-secondary/50">
                                     <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                                         <div className="flex items-center gap-4">

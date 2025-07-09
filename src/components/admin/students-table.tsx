@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -10,7 +11,6 @@ import { Student, Leave, PlanChangeRequest, monthMap } from "@/lib/data";
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onUsersUpdate } from '@/lib/listeners/users';
 import { onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
-import { approveStudent, rejectStudent, approvePlanChangeRequest, rejectPlanChangeRequest, suspendStudent, deleteStudent, reactivateStudent } from '@/lib/actions/requests';
 import { Check, X, Trash2, UserX, Search, Utensils, Sun, Moon, RotateCcw } from "lucide-react";
 import {
   AlertDialog,
@@ -38,12 +38,64 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc, deleteDoc, writeBatch, query, collection, where, limit, getDocs } from 'firebase/firestore';
 
 interface StudentsTableProps {
     filterMonth: string;
     filterStatus: string;
     searchQuery: string;
     filterPlan: string;
+}
+
+// Client-side Firestore actions
+async function approveStudent(userId: string) {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { status: 'active' });
+}
+
+async function rejectStudent(userId: string) {
+    const userRef = doc(db, 'users', userId);
+    await deleteDoc(userRef);
+}
+
+async function suspendStudent(studentDocId: string) {
+    const userRef = doc(db, 'users', studentDocId);
+    await updateDoc(userRef, { status: 'suspended' });
+}
+
+async function reactivateStudent(studentDocId: string) {
+    const userRef = doc(db, 'users', studentDocId);
+    await updateDoc(userRef, { status: 'active' });
+}
+
+async function deleteStudent(studentDocId: string) {
+    const userRef = doc(db, 'users', studentDocId);
+    await deleteDoc(userRef);
+}
+
+async function approvePlanChangeRequest(requestId: string, studentId: string, toPlan: Student['messPlan']) {
+    const userQuery = query(collection(db, 'users'), where("studentId", "==", studentId), limit(1));
+    const userSnapshot = await getDocs(userQuery);
+
+    if (userSnapshot.empty) {
+        throw new Error("Student not found to approve plan change.");
+    }
+    
+    const userDoc = userSnapshot.docs[0];
+    const userRef = doc(db, 'users', userDoc.id);
+    const requestRef = doc(db, 'planChangeRequests', requestId);
+
+    const batch = writeBatch(db);
+    batch.update(userRef, { messPlan: toPlan });
+    batch.delete(requestRef);
+
+    await batch.commit();
+}
+
+async function rejectPlanChangeRequest(requestId: string) {
+    const requestRef = doc(db, 'planChangeRequests', requestId);
+    await deleteDoc(requestRef);
 }
 
 const planInfo = {

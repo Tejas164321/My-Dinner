@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,14 +10,29 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/auth-context';
-import { messInfo } from '@/lib/data';
+import { messInfo, type Student } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun, HelpCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { submitPlanChangeRequest } from '@/lib/actions/requests';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+// Client-side action
+async function submitPlanChangeRequest(studentUid: string, studentId: string, studentName: string, fromPlan: Student['messPlan'], toPlan: Student['messPlan'], messId: string) {
+    await addDoc(collection(db, 'planChangeRequests'), {
+        studentUid,
+        studentId,
+        studentName,
+        fromPlan,
+        toPlan,
+        messId,
+        date: new Date().toISOString(),
+    });
+}
+
 
 export default function StudentSettingsPage() {
     const { toast } = useToast();
@@ -47,13 +63,13 @@ export default function StudentSettingsPage() {
     };
     
     const handlePlanChangeRequest = async () => {
-        if (!user || !user.studentId || !user.messId) {
+        if (!user || !user.uid || !user.studentId || !user.messId) {
              toast({ variant: 'destructive', title: "Error", description: "User information is missing." });
              return;
         }
 
         try {
-            await submitPlanChangeRequest(user.studentId, user.name || 'Student', currentPlan, selectedPlan, user.messId);
+            await submitPlanChangeRequest(user.uid, user.studentId, user.name || 'Student', currentPlan, selectedPlan, user.messId);
             setIsRequestPending(true);
             toast({
                 title: "Request Submitted",
