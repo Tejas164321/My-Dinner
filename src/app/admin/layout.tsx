@@ -72,7 +72,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     if (user && user.role === 'admin' && !isAuthPage) {
         const handleLogout = async () => {
             await logout();
-            router.push('/');
+            // The redirection is now handled by the useEffect hook when the user state becomes null.
         };
         
         const dashboardUser = {

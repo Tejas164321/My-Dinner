@@ -100,7 +100,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
     if (user && (user.status === 'active' || user.status === 'suspended') && !isAuthPage && !isJoiningProcessPage) {
         const handleLogout = async () => {
             await logout();
-            router.push('/');
+            // The redirection is now handled by the useEffect hook when the user state becomes null.
         };
 
         const dashboardUser = {
