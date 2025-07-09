@@ -12,12 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/auth-context';
 import { messInfo, type Student } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun, HelpCircle } from 'lucide-react';
+import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun, HelpCircle, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 // Client-side action
@@ -37,6 +37,7 @@ async function submitPlanChangeRequest(studentUid: string, studentId: string, st
 export default function StudentSettingsPage() {
     const { toast } = useToast();
     const { user } = useAuth();
+    const [isSaving, setIsSaving] = useState(false);
 
     // Profile Settings State
     const [name, setName] = useState(user?.name || '');
@@ -55,11 +56,25 @@ export default function StudentSettingsPage() {
     const [isRequestPending, setIsRequestPending] = useState(false);
 
 
-    const handleSaveChanges = () => {
-        toast({
-            title: "Profile Updated",
-            description: "Your changes have been saved successfully.",
-        });
+    const handleSaveChanges = async () => {
+        if (!user) return;
+        setIsSaving(true);
+        try {
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, {
+                name: name,
+                contact: contact,
+            });
+            toast({
+                title: "Profile Updated",
+                description: "Your changes have been saved successfully.",
+            });
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            toast({ variant: 'destructive', title: "Update Failed", description: "Could not save your changes. Please try again." });
+        } finally {
+            setIsSaving(false);
+        }
     };
     
     const handlePlanChangeRequest = async () => {
@@ -188,7 +203,10 @@ export default function StudentSettingsPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button onClick={handleSaveChanges}>Update Profile</Button>
+                            <Button onClick={handleSaveChanges} disabled={isSaving}>
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isSaving ? 'Saving...' : 'Update Profile'}
+                            </Button>
                         </CardFooter>
                     </Card>
                 </TabsContent>
