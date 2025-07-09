@@ -3,40 +3,32 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users Collection:
-    // - Authenticated users can read/update their own data.
-    // - Students can read an admin's document to verify a secret code.
-    // - Admins can read/update/delete any user document.
+    // Users Collection
     match /users/{userId} {
       allow read: if request.auth != null && 
-                     (request.auth.uid == userId || 
+                     (request.auth.uid == userId ||
                       (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
                       (exists(/databases/$(database)/documents/users/$(userId)) && 
                        get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin'));
       
       allow create: if request.auth.uid == userId;
-      allow update: if request.auth != null && 
-                       (request.auth.uid == userId || 
+      allow update: if request.auth.uid == userId || 
                        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
-      allow delete: if request.auth != null && 
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow delete: if request.auth != null &&
                        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Messes Collection:
-    // - Any authenticated user can list/read the messes.
-    // - A user can create a mess document for themselves if their UID matches the document ID (for admins).
+    // Messes Collection
     match /messes/{messId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == messId;
-      allow write: if false; // Disallow update/delete for now
+      allow create: if request.auth.uid == messId;
+      allow write: if false; 
     }
     
-    // Holidays Collection:
-    // - Any authenticated user can read holidays.
-    // - Only admins can write/delete holidays.
+    // Holidays Collection
     match /holidays/{holidayId} {
         allow read: if request.auth != null;
         allow write, delete: if request.auth != null &&
@@ -44,9 +36,7 @@ service cloud.firestore {
                                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Leaves Collection:
-    // - Users can read and write their own leave documents.
-    // - Admins can read any leave document.
+    // Leaves Collection
     match /leaves/{leaveId} {
         allow read: if request.auth != null &&
                         (request.auth.uid == resource.data.studentId ||
@@ -56,9 +46,7 @@ service cloud.firestore {
         allow delete: if request.auth != null && request.auth.uid == resource.data.studentId;
     }
     
-    // Plan Change Requests Collection:
-    // - Students can create requests.
-    // - Admins can read and delete requests.
+    // Plan Change Requests Collection
     match /planChangeRequests/{requestId} {
         allow create: if request.auth != null;
         allow read, delete: if request.auth != null &&
@@ -66,15 +54,12 @@ service cloud.firestore {
                                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Menus Collection
-    // - Anyone can read the menu data. This is public information.
-    // - Only admins can write/update the menu.
-    match /menus/{menuId} {
-        allow read: if true;
+    // Menus Collection - Allow public read, admin write
+     match /menus/{menuId} {
+        allow read: if true; // Public read access
         allow write: if request.auth != null &&
                        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }
-    

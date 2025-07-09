@@ -24,19 +24,15 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/auth-context';
-import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminDashboardPage() {
   const { user, loading } = useAuth();
-  const { toast } = useToast();
 
   const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
   const [today, setToday] = useState<Date>();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
-  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
-  const [planChangeRequests, setPlanChangeRequests] = useState<PlanChangeRequest[]>([]);
 
   useEffect(() => {
     const now = startOfDay(new Date());
@@ -49,14 +45,10 @@ export default function AdminDashboardPage() {
 
     const holidaysUnsubscribe = onHolidaysUpdate(setHolidays);
     const leavesUnsubscribe = onAllLeavesUpdate(setAllLeaves);
-    const joinRequestsUnsubscribe = onJoinRequestsUpdate(setJoinRequests);
-    const planChangeRequestsUnsubscribe = onPlanChangeRequestsUpdate(setPlanChangeRequests);
 
     return () => {
         holidaysUnsubscribe();
         leavesUnsubscribe();
-        joinRequestsUnsubscribe();
-        planChangeRequestsUnsubscribe();
     };
   }, []);
 
@@ -97,19 +89,10 @@ export default function AdminDashboardPage() {
     return { lunch: lunchOff, dinner: dinnerOff };
   }, [today, allLeaves]);
 
-  const combinedNotifications = useMemo(() => {
-    const jr = joinRequests.map(r => ({ ...r, type: 'join_request', dateObj: new Date(r.date) }));
-    const pcr = planChangeRequests.map(r => ({ ...r, type: 'plan_change', dateObj: new Date(r.date) }));
-    return [...jr, ...pcr].sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
-  }, [joinRequests, planChangeRequests]);
-
   const handleCopyCode = () => {
     if (!user?.secretCode) return;
     navigator.clipboard.writeText(user.secretCode);
-    toast({
-      title: "Copied to clipboard!",
-      description: "The secret code has been copied.",
-    });
+    alert("Secret code copied to clipboard!");
   };
 
   if (loading || !user) {
@@ -137,59 +120,12 @@ export default function AdminDashboardPage() {
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-         <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
-                     {combinedNotifications.length > 0 && (
-                        <Badge variant="destructive" className="absolute -top-2 -right-2 px-1.5 h-5 flex items-center justify-center rounded-full text-xs">
-                           {combinedNotifications.length}
-                        </Badge>
-                    )}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-96 p-0">
-                 <div className="flex flex-col">
-                    <div className="p-4 border-b">
-                        <h3 className="font-semibold">Notifications</h3>
-                        <p className="text-sm text-muted-foreground">You have {combinedNotifications.length} unread notifications.</p>
-                    </div>
-                    <ScrollArea className="h-96">
-                        <div className="p-2 space-y-2">
-                            {combinedNotifications.length > 0 ? combinedNotifications.map((notif, index) => (
-                                <Link
-                                  key={`${notif.type}-${notif.id}`}
-                                  href={notif.type === 'join_request' ? '/admin/students?tab=requests' : '/admin/students?tab=plan_requests'}
-                                  className="block p-2 rounded-lg hover:bg-secondary/50"
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div className="bg-secondary p-2 rounded-full mt-1">
-                                            {notif.type === 'join_request' ? <UserPlus className="h-4 w-4 text-primary" /> : <GitCompareArrows className="h-4 w-4 text-primary" />}
-                                        </div>
-                                        <div className="flex-1 space-y-1">
-                                            <p className="text-sm text-muted-foreground leading-snug">
-                                                <span className="font-semibold text-foreground">{notif.type === 'join_request' ? notif.name : notif.studentName}</span>
-                                                {notif.type === 'join_request' ? ` has requested to join your mess.` : ` has requested to change plan from `}
-                                                {notif.type === 'plan_change' && <><span className="font-semibold capitalize">{notif.fromPlan.replace('_', ' ')}</span> to <span className="font-semibold capitalize">{notif.toPlan.replace('_', ' ')}</span>.</>}
-                                            </p>
-                                             <p className="text-xs text-primary">Tap to review request</p>
-                                        </div>
-                                    </div>
-                                    {index < combinedNotifications.length - 1 && <Separator className="mt-3" />}
-                                </Link>
-                            )) : (
-                                <p className="text-sm text-muted-foreground text-center p-8">No new notifications.</p>
-                            )}
-                        </div>
-                    </ScrollArea>
-                    <div className="p-2 border-t text-center">
-                        <Button asChild variant="link" size="sm" className="w-full">
-                           <Link href="/admin/students">View all requests</Link>
-                        </Button>
-                    </div>
-                </div>
-            </PopoverContent>
-        </Popover>
+        <Button asChild variant="outline">
+            <Link href="/admin/students?tab=requests">
+                <Bell className="mr-2 h-4 w-4"/>
+                View Requests
+            </Link>
+        </Button>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -308,5 +244,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    
