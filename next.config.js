@@ -20,3 +20,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+// A comment to trigger re-installation.
