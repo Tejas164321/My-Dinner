@@ -16,7 +16,8 @@ import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, C
 import { Leave, Holiday } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
-import { deleteLeave } from '@/lib/actions/leaves';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/auth-context';
 import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay, getYear, getMonth } from 'date-fns';
 import Link from 'next/link';
@@ -186,7 +187,9 @@ export default function StudentDashboardPage() {
 
   const handleDeleteLeave = async (leaveId: string) => {
     try {
-      await deleteLeave(leaveId);
+      if (!leaveId) throw new Error("Leave ID is required.");
+      const docRef = doc(db, 'leaves', leaveId);
+      await deleteDoc(docRef);
       toast({ title: 'Leave Cancelled' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to cancel leave.' });

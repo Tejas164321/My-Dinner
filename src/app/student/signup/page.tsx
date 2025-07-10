@@ -1,42 +1,73 @@
 
 'use client';
 
-import { useEffect } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { studentSignup } from '@/app/auth/actions';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Creating Account...' : 'Create Account'}
-      <UserPlus className="ml-2" />
-    </Button>
-  );
-}
+import type { AppUser } from '@/lib/data';
 
 export default function StudentSignupPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [state, formAction] = useFormState(studentSignup, { success: false });
+  
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (state?.error) {
-      toast({ variant: 'destructive', title: 'Signup Failed', description: state.error });
+  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (!name || !email || !password) {
+      toast({ variant: 'destructive', title: 'Signup Failed', description: 'All fields are required.' });
+      setIsLoading(false);
+      return;
     }
-    if (state?.success) {
-      toast({ title: 'Account Created!', description: 'Please log in to continue.' });
-      router.push('/student/login');
+     if (password.length < 6) {
+        toast({ variant: 'destructive', title: 'Signup Failed', description: 'Password must be at least 6 characters long.' });
+        setIsLoading(false);
+        return;
     }
-  }, [state, toast, router]);
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        const newStudent: Partial<AppUser> = {
+            uid: user.uid,
+            name,
+            email,
+            role: 'student',
+            status: 'unaffiliated',
+            avatarUrl: `https://avatar.vercel.sh/${email}.png`,
+        };
+        
+        await setDoc(doc(db, 'users', user.uid), newStudent);
+
+        toast({ title: 'Account Created!', description: 'Please log in to continue.' });
+        router.push('/student/login');
+
+    } catch (error: any) {
+        let errorMessage = 'An unknown error occurred. Please try again.';
+        if (error.code === 'auth/email-already-in-use') {
+            errorMessage = 'This email is already registered.';
+        }
+        toast({ variant: 'destructive', title: 'Signup Failed', description: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4">
@@ -47,20 +78,23 @@ export default function StudentSignupPage() {
           <CardDescription>Enter your details to get started.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" name="name" placeholder="John Doe" required />
+              <Input id="name" name="name" placeholder="John Doe" required value={name} onChange={e => setName(e.target.value)} disabled={isLoading} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="student@university.edu" required />
+              <Input id="email" name="email" type="email" placeholder="student@university.edu" required value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+              <Input id="password" name="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
             </div>
-            <SubmitButton />
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="ml-2" />}
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}

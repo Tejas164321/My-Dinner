@@ -4,7 +4,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, isFuture, eachDayOfInterval, startOfDay } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
-
+import { collection, writeBatch, doc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -14,7 +15,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Leave, Holiday } from '@/lib/data';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
-import { addLeaves, deleteLeave, type LeavePayload } from '@/lib/actions/leaves';
 import { useAuth } from '@/contexts/auth-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -34,6 +34,8 @@ import {
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
 type LeaveType = 'one_day' | 'long_leave';
+
+export type LeavePayload = Omit<Leave, 'date' | 'id'> & { date: Date };
 
 export default function StudentLeavePage() {
   const { user } = useAuth();
@@ -101,7 +103,7 @@ export default function StudentLeavePage() {
       leavesToSubmit.push({ 
           studentId: user.uid, 
           name: reason, 
-          date: oneDayDate.toISOString(), 
+          date: oneDayDate, 
           type: oneDayType 
       });
     } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
@@ -117,7 +119,7 @@ export default function StudentLeavePage() {
          else if (longLeaveFromType === 'dinner_only') type = 'dinner_only';
          else if (longLeaveToType === 'lunch_only') type = 'lunch_only';
          else type = 'full_day';
-         leavesToSubmit.push({ studentId: user.uid, name: reason, date: dates[0].toISOString(), type });
+         leavesToSubmit.push({ studentId: user.uid, name: reason, date: dates[0], type });
       } else {
         leavesToSubmit = dates.map((date, index) => {
             let type: HolidayType = 'full_day';
@@ -127,7 +129,7 @@ export default function StudentLeavePage() {
             if (index === dates.length - 1) {
                 type = longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day';
             }
-            return { studentId: user.uid, name: reason, date: date.toISOString(), type };
+            return { studentId: user.uid, name: reason, date: date, type };
         });
       }
     } else {
@@ -137,7 +139,7 @@ export default function StudentLeavePage() {
 
     // Filter out dates that are already on leave
     const existingLeaveDates = new Set(leaves.map(l => format(l.date, 'yyyy-MM-dd')));
-    const uniqueNewLeaves = leavesToSubmit.filter(l => !existingLeaveDates.has(format(new Date(l.date), 'yyyy-MM-dd')));
+    const uniqueNewLeaves = leavesToSubmit.filter(l => !existingLeaveDates.has(format(l.date, 'yyyy-MM-dd')));
 
     if(uniqueNewLeaves.length === 0) {
         toast({ title: "Already Applied", description: "You have already applied for leave on the selected date(s)." });
@@ -145,7 +147,13 @@ export default function StudentLeavePage() {
     }
 
     try {
-        await addLeaves(uniqueNewLeaves);
+        const batch = writeBatch(db);
+        uniqueNewLeaves.forEach(leave => {
+            const leaveDocRef = doc(collection(db, 'leaves'));
+            batch.set(leaveDocRef, leave);
+        });
+        await batch.commit();
+
         toast({ title: "Success", description: "Your leave application has been submitted." });
         // Reset form
         setOneDayDate(today);
@@ -153,15 +161,21 @@ export default function StudentLeavePage() {
         setLongLeaveFromDate(undefined);
         setLongLeaveToDate(undefined);
     } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to apply for leave." });
+        console.error("Error adding leaves:", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to apply for leave. Check Firestore rules and network." });
     }
   };
 
   const handleDeleteLeave = async (leaveId: string) => {
     try {
-      await deleteLeave(leaveId);
+      if (!leaveId) {
+          throw new Error("A valid Leave ID is required for deletion.");
+      }
+      const docRef = doc(db, 'leaves', leaveId);
+      await deleteDoc(docRef);
       toast({ title: "Leave Cancelled", description: "Your leave has been successfully cancelled." });
     } catch (error) {
+      console.error("Error deleting leave:", error);
       toast({ variant: "destructive", title: "Error", description: "Failed to cancel leave." });
     }
   };

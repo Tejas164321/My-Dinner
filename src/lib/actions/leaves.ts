@@ -1,4 +1,4 @@
-'use server';
+
 
 import { collection, writeBatch, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -11,6 +11,8 @@ export type LeavePayload = Omit<Leave, 'date' | 'id'> & { date: string };
 
 /**
  * Adds an array of leave objects to Firestore using a batch write.
+ * THIS IS NOW A CLIENT-SIDE FUNCTION. The logic has been moved to src/app/student/leave/page.tsx
+ * to ensure Firebase client SDK handles authentication.
  */
 export async function addLeaves(leaves: LeavePayload[]): Promise<void> {
     try {
@@ -35,6 +37,8 @@ export async function addLeaves(leaves: LeavePayload[]): Promise<void> {
 
 /**
  * Deletes a leave from Firestore based on its unique document ID.
+ * THIS IS NOW A CLIENT-SIDE FUNCTION. The logic has been moved to src/app/student/leave/page.tsx
+ * and src/app/student/dashboard/page.tsx
  */
 export async function deleteLeave(leaveId: string): Promise<void> {
   try {
