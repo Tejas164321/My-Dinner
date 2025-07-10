@@ -4,6 +4,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, isFuture, eachDayOfInterval, startOfDay } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
+import { doc, getDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { onHolidaysUpdate } from '@/lib/listeners/holidays';
+import type { Holiday } from '@/lib/data';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -13,9 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Holiday } from '@/lib/data';
-import { addHolidays, deleteHoliday } from '@/lib/actions/holidays';
-import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,8 @@ import {
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
 type LeaveType = 'one_day' | 'long_leave';
+
+const HOLIDAYS_COLLECTION = 'holidays';
 
 export default function HolidaysPage() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -83,12 +86,12 @@ export default function HolidaysPage() {
         return;
     }
 
-    let holidaysToSubmit: Omit<Holiday, 'date'> & { date: string }[] = [];
+    let holidaysToSubmit: Omit<Holiday, 'date'> & { date: Date }[] = [];
 
     if (leaveType === 'one_day' && oneDayDate) {
         holidaysToSubmit.push({ 
             name: newHolidayName, 
-            date: oneDayDate.toISOString(), 
+            date: oneDayDate, 
             type: oneDayType 
         });
     } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
@@ -108,7 +111,7 @@ export default function HolidaysPage() {
             if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') type = 'full_day';
             else if (longLeaveFromType === 'dinner_only') type = 'dinner_only';
             else if (longLeaveToType === 'lunch_only') type = 'lunch_only';
-            holidaysToSubmit.push({ name: newHolidayName, date: dates[0].toISOString(), type });
+            holidaysToSubmit.push({ name: newHolidayName, date: dates[0], type });
         } else {
             holidaysToSubmit = dates.map((date, index) => {
                 let type: HolidayType = 'full_day';
@@ -118,7 +121,7 @@ export default function HolidaysPage() {
                 if (index === dates.length - 1) {
                     type = longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day';
                 }
-                return { name: newHolidayName, date: date.toISOString(), type };
+                return { name: newHolidayName, date: date, type };
             });
         }
     } else {
@@ -131,11 +134,25 @@ export default function HolidaysPage() {
     }
 
     try {
-        await addHolidays(holidaysToSubmit);
+        const batch = writeBatch(db);
+        for (const holiday of holidaysToSubmit) {
+            const dateKey = format(holiday.date, 'yyyy-MM-dd');
+            const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                toast({ variant: 'destructive', title: 'Holiday Exists', description: `A holiday for ${dateKey} already exists.`});
+                return; // Stop if any holiday already exists
+            }
+            batch.set(docRef, holiday);
+        }
+
+        await batch.commit();
         toast({
             title: "Success",
             description: "Holiday(s) have been added successfully.",
         });
+
         // Reset form
         setNewHolidayName('');
         setOneDayDate(today);
@@ -144,6 +161,7 @@ export default function HolidaysPage() {
         setLongLeaveToDate(undefined);
         setLongLeaveFromType('dinner_only');
         setLongLeaveToType('lunch_only');
+
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({
@@ -156,7 +174,9 @@ export default function HolidaysPage() {
 
   const handleDeleteHoliday = async (dateToDelete: Date) => {
     try {
-      await deleteHoliday(dateToDelete.toISOString());
+      const dateKey = format(dateToDelete, 'yyyy-MM-dd');
+      const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
+      await deleteDoc(docRef);
       toast({
         title: "Success",
         description: "Holiday has been deleted.",

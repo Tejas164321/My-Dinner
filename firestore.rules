@@ -3,76 +3,77 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper Functions
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isUserId(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+    
+    function getUserData(userId) {
+        return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
     function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuth() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData(request.auth.uid).role == 'admin';
     }
 
-    function isSelf(userId) {
-      return request.auth.uid == userId;
+    function isStudent() {
+      return isAuth() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData(request.auth.uid).role == 'student';
     }
 
-    // Prevent a user from changing their own protected fields during an update
-    function userUnchangedProtectedFields() {
-      let futureData = request.resource.data;
-      let pastData = resource.data;
-      return futureData.role == pastData.role &&
-             futureData.email == pastData.email &&
-             futureData.studentId == pastData.studentId &&
-             futureData.messId == pastData.messId &&
-             futureData.messPlan == pastData.messPlan &&
-             futureData.joinDate == pastData.joinDate &&
-             futureData.secretCode == pastData.secretCode;
+    function isMessAdmin(messId) {
+        return isAdmin() && getUserData(request.auth.uid).messId == messId;
+    }
+    
+    function isStudentsAdmin(studentId) {
+        let studentData = getUserData(studentId);
+        return isAuth() && request.auth.uid == studentData.messId;
     }
 
-    // --- Collections ---
-
-    match /users/{userId} {
-      allow read: if isAdmin() || isSelf(userId) || get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
-      allow create: if isSelf(userId); // For new user signup
-      allow delete: if isAdmin();
-
-      // Granular update rules
-      allow update: if
-        // 1. Admin can update any user record.
-        isAdmin() ||
-        // 2. A student is updating their own non-critical info (e.g., name, contact, avatar).
-        (isSelf(userId) && userUnchangedProtectedFields()) ||
-        // 3. A student is joining a mess (specific state transition)
-        (isSelf(userId) && resource.data.status == 'unaffiliated' && request.resource.data.status == 'pending_approval') ||
-        // 4. A student is cancelling a join request (specific state transition)
-        (isSelf(userId) && resource.data.status == 'pending_approval' && request.resource.data.status == 'unaffiliated');
-    }
-
+    // MESSES: Publicly readable list, only admins can create their own.
     match /messes/{messId} {
-      allow read: if request.auth != null;
-      allow create: if isSelf(messId); // Admin creates their own mess doc on signup
+      allow read: if true;
+      allow create: if isAdmin() && isUserId(messId);
+      allow update: if isUserId(messId) && isAdmin(); // Admin can update their own mess details
+      allow delete: if false; // Disallow deleting messes for data integrity
     }
 
-    match /holidays/{holidayId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+    // USERS: Signup, self-management, and admin management rules.
+    match /users/{userId} {
+      allow create: if isUserId(userId);
+      allow read: if isUserId(userId) || isAdmin(); // Read own data or if any admin
+      allow update: if isUserId(userId) || isStudentsAdmin(userId); // Update own data, or if you are their admin
+      allow delete: if isStudentsAdmin(userId);
     }
 
-    match /leaves/{leaveId} {
-      allow read: if isSelf(resource.data.studentId) || isAdmin();
-      allow create: if isSelf(request.resource.data.studentId);
-      allow delete: if isSelf(resource.data.studentId);
+    // MENUS: Any authenticated user can read, only admins can write.
+    match /menus/{dateKey} {
+      allow read: if isAuth(); // Any logged-in user can read the menu
+      allow write: if isAdmin(); // Only admins can create/update menus
     }
 
-    match /planChangeRequests/{requestId} {
-      allow create: if isSelf(request.resource.data.studentUid);
-      allow read, delete: if isAdmin();
-    }
-
-    match /menus/{menuId} {
+    // HOLIDAYS: Publicly readable, admin-only write access.
+    match /holidays/{dateKey} {
       allow read: if true;
       allow write: if isAdmin();
     }
     
-     match /announcements/{announcementId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+    // LEAVES: Students can manage their own. Admins can read all for their mess.
+    match /leaves/{leaveId} {
+      // Students can manage their own leaves. Their admin can also view/delete them.
+      allow read: if isUserId(resource.data.studentId) || isStudentsAdmin(resource.data.studentId);
+      allow create: if isStudent() && isUserId(request.resource.data.studentId);
+      allow delete: if isUserId(resource.data.studentId) || isStudentsAdmin(resource.data.studentId);
+    }
+    
+    // PLAN CHANGE REQUESTS: Students create. Admins read/delete for their mess.
+    match /planChangeRequests/{requestId} {
+      allow read: if isMessAdmin(resource.data.messId);
+      allow create: if isStudent() && isUserId(request.resource.data.studentUid);
+      allow delete: if isMessAdmin(resource.data.messId);
     }
   }
 }

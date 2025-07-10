@@ -1,6 +1,4 @@
 
-'use server';
-
 import { collection, deleteDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Holiday } from '@/lib/data';
@@ -12,7 +10,7 @@ type HolidayPayload = Omit<Holiday, 'date'> & { date: string };
 
 /**
  * Adds an array of holiday objects to Firestore.
- * This is a server action that handles data validation and creation.
+ * This is a client-side function that relies on the user's auth state.
  */
 export async function addHolidays(holidays: HolidayPayload[]): Promise<void> {
     const holidayDates = new Set<string>();
@@ -60,7 +58,7 @@ export async function addHolidays(holidays: HolidayPayload[]): Promise<void> {
 
 /**
  * Deletes a holiday from Firestore based on its date.
- * Accepts a date string for server action compatibility.
+ * Accepts a date string for compatibility.
  */
 export async function deleteHoliday(dateString: string): Promise<void> {
   try {

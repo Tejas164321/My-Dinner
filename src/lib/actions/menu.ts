@@ -1,5 +1,3 @@
-'use server';
-
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -34,6 +32,7 @@ export async function getMenuForDate(dateKey: string): Promise<DailyMenu | null>
 
 /**
  * Saves or updates the menu for a specific date in Firestore.
+ * This is a client-side function that relies on the user's auth state.
  * @param dateKey The date in 'YYYY-MM-DD' format.
  * @param menu The daily menu object to save.
  */
