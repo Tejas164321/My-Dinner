@@ -1,24 +1,36 @@
-
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { pastAnnouncements, Announcement, paymentReminders, PaymentReminder } from '@/lib/data';
-import { Bell, Rss, ShieldAlert } from 'lucide-react';
+import { Announcement, paymentReminders, PaymentReminder } from '@/lib/data';
+import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
+import { Bell, Rss, ShieldAlert, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 type Notification = (Announcement & { type: 'announcement' }) | (PaymentReminder & { type: 'reminder' });
 
 export default function StudentNotificationsPage() {
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        setIsLoading(true);
+        const unsubscribe = onAnnouncementsUpdate((updatedAnnouncements) => {
+            setAnnouncements(updatedAnnouncements);
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const combinedNotifications = useMemo(() => {
-        const announcements: Notification[] = pastAnnouncements.map(ann => ({ ...ann, type: 'announcement' }));
+        const liveAnnouncements: Notification[] = announcements.map(ann => ({ ...ann, type: 'announcement' }));
         const reminders: Notification[] = paymentReminders.map(rem => ({ ...rem, type: 'reminder' }));
 
-        const allNotifications = [...announcements, ...reminders];
+        const allNotifications = [...liveAnnouncements, ...reminders];
 
         return allNotifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, []);
+    }, [announcements]);
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -38,7 +50,11 @@ export default function StudentNotificationsPage() {
                 </CardHeader>
                 <CardContent>
                      <div className="space-y-6">
-                        {combinedNotifications.length > 0 ? (
+                        {isLoading ? (
+                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                            </div>
+                        ) : combinedNotifications.length > 0 ? (
                             combinedNotifications.map((item) => (
                                 <div key={`${item.type}-${item.id}`} className={`p-5 bg-secondary/50 rounded-lg relative group border-l-4 ${item.type === 'announcement' ? 'border-primary/50' : 'border-destructive/50'}`}>
                                     <div className="flex items-start gap-4">

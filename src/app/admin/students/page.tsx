@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StudentsTable } from '@/components/admin/students-table';
 import {
   Select,
@@ -11,12 +12,30 @@ import {
 } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { format, subMonths, startOfMonth } from 'date-fns';
 
 export default function AdminStudentsPage() {
-  const [month, setMonth] = useState('october');
+  const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date()));
   const [status, setStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [plan, setPlan] = useState('all');
+  
+  const monthOptions = useMemo(() => {
+      const options = [];
+      const today = new Date();
+      for (let i = 0; i < 6; i++) {
+          const date = startOfMonth(subMonths(today, i));
+          options.push({
+              value: format(date, 'yyyy-MM-dd'),
+              label: format(date, 'MMMM yyyy'),
+          });
+      }
+      return options;
+  }, []);
+
+  const handleMonthChange = (value: string) => {
+      setCurrentMonth(new Date(value));
+  };
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -32,15 +51,16 @@ export default function AdminStudentsPage() {
               className="pl-9 w-[250px]"
             />
           </div>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[140px]">
+          <Select value={format(currentMonth, 'yyyy-MM-dd')} onValueChange={handleMonthChange}>
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="october">October</SelectItem>
-              <SelectItem value="september">September</SelectItem>
-              <SelectItem value="august">August</SelectItem>
-              <SelectItem value="july">July</SelectItem>
+              {monthOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
            <Select value={status} onValueChange={setStatus}>
@@ -66,7 +86,7 @@ export default function AdminStudentsPage() {
           </Select>
         </div>
       </div>
-      <StudentsTable filterMonth={month} filterStatus={status} searchQuery={searchQuery} filterPlan={plan} />
+      <StudentsTable filterMonth={currentMonth} filterStatus={status} searchQuery={searchQuery} filterPlan={plan} />
     </div>
   );
 }

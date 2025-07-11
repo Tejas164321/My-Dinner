@@ -1,4 +1,5 @@
 
+
 import { format, subDays, addDays, startOfDay } from 'date-fns';
 
 export const studentNavItems = [
@@ -16,7 +17,7 @@ export const adminNavItems = [
     { href: '/admin/menu', label: 'Meal Menu', icon: 'Utensils' },
     { href: '/admin/billing', label: 'Billing', icon: 'CircleDollarSign' },
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
-    { href: '/admin/announcements', label: 'Announcements', icon: 'Bell' },
+    { href: '/admin/announcements', label: 'Announcements', icon: 'Megaphone' },
     { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
 ];
 
@@ -46,13 +47,6 @@ export const revenueData = [
     { month: 'Jun', revenue: 290000 },
     { month: 'Jul', revenue: 285450 },
 ];
-
-export const monthMap: { [key: string]: Date } = {
-  'july': new Date(2023, 6, 1),
-  'august': new Date(2023, 7, 1),
-  'september': new Date(2023, 8, 1),
-  'october': new Date(2023, 9, 1),
-};
 
 export interface BillDetails {
     totalMeals: number;
@@ -184,5 +178,3 @@ export const paymentReminders: PaymentReminder[] = [
 ];
 
 export const studentsData: Student[] = [];
-
-    

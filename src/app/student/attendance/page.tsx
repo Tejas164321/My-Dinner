@@ -10,7 +10,7 @@ import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from "@/lib/listeners/leaves";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, subMonths } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, Utensils, Percent, UserX, Sun, Moon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StudentAttendancePage() {
     const { user } = useAuth();
-    const [month, setMonth] = useState<Date>(new Date(2023, 9, 1));
+    const [month, setMonth] = useState<Date>(startOfDay(new Date()));
     const [holidays, setHolidays] = useState<Holiday[]>([]);
     const [leaves, setLeaves] = useState<Leave[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -43,12 +43,18 @@ export default function StudentAttendancePage() {
         };
     }, [user]);
     
-    const monthOptions = [
-        { value: '2023-10', label: 'October 2023' },
-        { value: '2023-09', label: 'September 2023' },
-        { value: '2023-08', label: 'August 2023' },
-        { value: '2023-07', label: 'July 2023' },
-    ];
+    const monthOptions = useMemo(() => {
+        const options = [];
+        const today = new Date();
+        for (let i = 0; i < 6; i++) {
+            const date = subMonths(today, i);
+            options.push({
+                value: format(date, 'yyyy-MM'),
+                label: format(date, 'MMMM yyyy'),
+            });
+        }
+        return options;
+    }, []);
 
     const monthlyStats = useMemo(() => {
         if (!user || isLoading) {
@@ -228,7 +234,7 @@ export default function StudentAttendancePage() {
                 <h1 className="text-2xl font-bold tracking-tight">My Attendance</h1>
                  <Select
                     value={format(month, 'yyyy-MM')}
-                    onValueChange={(value) => setMonth(startOfDay(new Date(value)))}
+                    onValueChange={(value) => setMonth(startOfDay(new Date(`${value}-01`)))}
                 >
                     <SelectTrigger className="w-[200px]">
                         <SelectValue placeholder="Select month" />

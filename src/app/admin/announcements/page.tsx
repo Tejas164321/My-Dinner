@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Bell, Megaphone, Trash2, History } from 'lucide-react';
-import { pastAnnouncements as initialAnnouncements, Announcement } from '@/lib/data';
+import { Bell, Megaphone, Trash2, History, Loader2 } from 'lucide-react';
+import type { Announcement } from '@/lib/data';
+import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import {
@@ -21,30 +22,64 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
+import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function AnnouncementsPage() {
+    const { user } = useAuth();
+    const { toast } = useToast();
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
-    const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSending, setIsSending] = useState(false);
 
-    const handleSendAnnouncement = () => {
-        if (!title || !message) return;
+    useEffect(() => {
+        setIsLoading(true);
+        const unsubscribe = onAnnouncementsUpdate((updatedAnnouncements) => {
+            setAnnouncements(updatedAnnouncements);
+            setIsLoading(false);
+        });
 
-        const newAnnouncement: Announcement = {
-            id: new Date().toISOString(),
-            title,
-            message,
-            date: format(new Date(), 'yyyy-MM-dd'),
-        };
+        return () => unsubscribe();
+    }, []);
 
-        setAnnouncements([newAnnouncement, ...announcements]);
-        setTitle('');
-        setMessage('');
+    const handleSendAnnouncement = async () => {
+        if (!title || !message || !user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Title and message cannot be empty.' });
+            return;
+        }
+
+        setIsSending(true);
+        try {
+            await addDoc(collection(db, 'announcements'), {
+                title,
+                message,
+                messId: user.uid,
+                date: new Date().toISOString(),
+            });
+
+            toast({ title: 'Success', description: 'Announcement has been sent.' });
+            setTitle('');
+            setMessage('');
+        } catch (error) {
+            console.error("Error sending announcement:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to send announcement.' });
+        } finally {
+            setIsSending(false);
+        }
     };
 
-    const handleDelete = (id: string) => {
-        setAnnouncements(announcements.filter(ann => ann.id !== id));
+    const handleDelete = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, 'announcements', id));
+            toast({ title: 'Announcement Deleted' });
+        } catch (error) {
+            console.error("Error deleting announcement:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete announcement.' });
+        }
     };
 
     return (
@@ -68,6 +103,7 @@ export default function AnnouncementsPage() {
                                     placeholder="e.g., Special Dinner Menu" 
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
+                                    disabled={isSending}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -78,13 +114,14 @@ export default function AnnouncementsPage() {
                                     className="min-h-[120px]"
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
+                                    disabled={isSending}
                                 />
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button onClick={handleSendAnnouncement} className="w-full">
-                                <Megaphone className="mr-2 h-4 w-4" />
-                                Send Announcement
+                            <Button onClick={handleSendAnnouncement} className="w-full" disabled={isSending}>
+                                {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Megaphone className="mr-2 h-4 w-4" />}
+                                {isSending ? 'Sending...' : 'Send Announcement'}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -104,7 +141,11 @@ export default function AnnouncementsPage() {
                         <CardContent className="flex-grow p-2 pt-0">
                             <ScrollArea className="h-96">
                                 <div className="p-4 pt-0 space-y-4">
-                                    {announcements.length > 0 ? (
+                                    {isLoading ? (
+                                        <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                                            <Loader2 className="h-6 w-6 animate-spin" />
+                                        </div>
+                                    ) : announcements.length > 0 ? (
                                         announcements.map((ann) => (
                                             <div key={ann.id} className="p-4 bg-secondary/50 rounded-lg relative group">
                                                 <div className="flex items-start gap-4">

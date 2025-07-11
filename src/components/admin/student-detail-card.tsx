@@ -49,6 +49,10 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        setMonth(initialMonth);
+    }, [initialMonth]);
     
     const paidAmount = currentData.bill.payments.reduce((sum, p) => sum + p.amount, 0);
     const remainingBill = currentData.bill.total - paidAmount;

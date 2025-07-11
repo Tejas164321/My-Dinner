@@ -36,7 +36,8 @@ import {
   PanelLeft,
   ChevronsLeft,
   MessageSquare,
-  LayoutDashboard
+  LayoutDashboard,
+  Megaphone,
 } from 'lucide-react';
 
 
@@ -48,6 +49,7 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   CircleDollarSign,
   CalendarDays,
   Bell,
+  Megaphone,
   UserCheck,
   LifeBuoy,
   MessageSquare,

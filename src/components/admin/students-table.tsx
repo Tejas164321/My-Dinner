@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -7,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Student, Leave, PlanChangeRequest, monthMap } from "@/lib/data";
+import { Student, Leave, PlanChangeRequest } from "@/lib/data";
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onUsersUpdate } from '@/lib/listeners/users';
 import { onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
@@ -42,7 +43,7 @@ import { db } from '@/lib/firebase';
 import { doc, updateDoc, deleteDoc, writeBatch, query, collection, where, limit, getDocs } from 'firebase/firestore';
 
 interface StudentsTableProps {
-    filterMonth: string;
+    filterMonth: Date;
     filterStatus: string;
     searchQuery: string;
     filterPlan: string;
@@ -114,7 +115,7 @@ const getDummyBillForStudent = (student: Student) => {
     }
 };
 
-const StudentRowCard = ({ student, month, initialDate, showActions, leaves }: { student: Student, month: string, initialDate: Date, showActions: boolean, leaves: Leave[] }) => {
+const StudentRowCard = ({ student, initialDate, showActions, leaves }: { student: Student, initialDate: Date, showActions: boolean, leaves: Leave[] }) => {
     const dummyBill = getDummyBillForStudent(student);
     const billDisplay = dummyBill.due > 0 ? `₹${dummyBill.due.toLocaleString()}` : '₹0';
     const currentPlan = planInfo[student.messPlan];
@@ -307,8 +308,6 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
             });
     }, [activeStudents, filterStatus, searchQuery, filterPlan]);
     
-    const initialDate = useMemo(() => monthMap[filterMonth], [filterMonth]);
-
     const formatPlanName = (plan: string) => {
         return plan.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
@@ -333,8 +332,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                    <StudentRowCard 
                                         key={student.id} 
                                         student={student} 
-                                        month={filterMonth} 
-                                        initialDate={initialDate} 
+                                        initialDate={filterMonth} 
                                         showActions={true} 
                                         leaves={allLeaves.filter(l => l.studentId === student.id)}
                                     />
@@ -441,8 +439,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                 <StudentRowCard 
                                         key={student.id} 
                                         student={student} 
-                                        month={filterMonth} 
-                                        initialDate={initialDate} 
+                                        initialDate={filterMonth} 
                                         showActions={false}
                                         leaves={allLeaves.filter(l => l.studentId === student.id)}
                                     />
