@@ -21,6 +21,8 @@ const planInfo = {
     dinner_only: { icon: Moon, text: 'Dinner Only', color: 'text-purple-400' }
 };
 
+const CHARGE_PER_MEAL = 65; // This could be moved to mess settings later
+
 interface StudentDetailCardProps {
     student: Student;
     leaves: Leave[];
@@ -31,12 +33,6 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
     const [month, setMonth] = useState<Date>(initialMonth);
     const [today, setToday] = useState<Date | undefined>();
     const [holidays, setHolidays] = useState<Holiday[]>([]);
-
-    // Dummy data for billing as it's not implemented for admin detail view yet
-    const currentData = { 
-        bill: { total: 3380, payments: [{ amount: 3380, date: '2023-10-05' }], details: { totalMeals: 52, chargePerMeal: 65, fullDays: 26, halfDays: 0, absentDays: 1, holidays: 4, totalDaysInMonth: 31 } }, 
-        status: 'Paid' 
-    };
 
     useEffect(() => {
         const now = new Date();
@@ -53,29 +49,18 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
     useEffect(() => {
         setMonth(initialMonth);
     }, [initialMonth]);
-    
-    const paidAmount = currentData.bill.payments.reduce((sum, p) => sum + p.amount, 0);
-    const remainingBill = currentData.bill.total - paidAmount;
 
-    const { presentMeals, absentMeals, holidayMeals } = useMemo(() => {
+    const monthData = useMemo(() => {
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
+        const daysInMonth = getDaysInMonth(month);
 
-        const studentLeaves = leaves.filter(leave => 
-            new Date(leave.date).getFullYear() === year &&
-            new Date(leave.date).getMonth() === monthIndex
-        );
+        const studentLeaves = leaves.filter(leave => isSameMonth(leave.date, month));
+        const monthHolidays = holidays.filter(holiday => isSameMonth(holiday.date, month));
 
-        const monthHolidays = holidays.filter(holiday => 
-            new Date(holiday.date).getFullYear() === year &&
-            new Date(holiday.date).getMonth() === monthIndex
-        );
-
-        let pMeals = 0;
-        let aMeals = 0;
-        let hMeals = 0;
-
-        const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
+        let presentMeals = 0;
+        let absentMeals = 0;
+        let holidayMeals = 0;
 
         for (let i = 1; i <= daysInMonth; i++) {
             const day = new Date(year, monthIndex, i);
@@ -96,23 +81,38 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
             }
 
             if (student.messPlan === 'full_day' || student.messPlan === 'lunch_only') {
-                if (lunchStatus === 'available') pMeals++;
-                else if (lunchStatus === 'leave') aMeals++;
-                else if (lunchStatus === 'holiday') hMeals++;
+                if (lunchStatus === 'available') presentMeals++;
+                else if (lunchStatus === 'leave') absentMeals++;
+                else if (lunchStatus === 'holiday') holidayMeals++;
             }
             if (student.messPlan === 'full_day' || student.messPlan === 'dinner_only') {
-                if (dinnerStatus === 'available') pMeals++;
-                else if (dinnerStatus === 'leave') aMeals++;
-                else if (dinnerStatus === 'holiday') hMeals++;
+                if (dinnerStatus === 'available') presentMeals++;
+                else if (dinnerStatus === 'leave') absentMeals++;
+                else if (dinnerStatus === 'holiday') holidayMeals++;
             }
         }
         
+        const totalBill = presentMeals * CHARGE_PER_MEAL;
+        // Mocking payments for now, as this data isn't stored yet
+        const payments = [];
+        const paidAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+        const remainingBill = totalBill - paidAmount;
+        const status = remainingBill <= 0 ? 'Paid' : 'Due';
+
         return {
-            presentMeals: pMeals,
-            absentMeals: aMeals,
-            holidayMeals: hMeals
+            presentMeals,
+            absentMeals,
+            holidayMeals,
+            bill: {
+                total: totalBill,
+                payments,
+                paidAmount,
+                remaining: remainingBill,
+                details: { totalMeals: presentMeals, chargePerMeal: CHARGE_PER_MEAL }
+            },
+            status
         };
-    }, [month, student.id, student.messPlan, holidays, leaves]);
+    }, [month, student, holidays, leaves]);
     
     const {
         holidayDays,
@@ -203,7 +203,6 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
-    const status = remainingBill <= 0 ? 'Paid' : 'Due';
 
     return (
         <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full relative">
@@ -222,7 +221,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 {currentPlan.text}
                             </Badge>
                         </div>
-                        <Badge variant={status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{status}</Badge>
+                        <Badge variant={monthData.status === 'Paid' ? 'secondary' : 'destructive'} className={cn("capitalize text-sm h-7", monthData.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{monthData.status}</Badge>
                     </CardContent>
                 </Card>
                 
@@ -235,7 +234,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 <UserCheck className="h-4 w-4 text-green-400" />
                             </CardHeader>
                             <CardContent className="p-3 pt-0">
-                                <div className="text-2xl font-bold">{presentMeals}</div>
+                                <div className="text-2xl font-bold">{monthData.presentMeals}</div>
                                 <p className="text-xs text-muted-foreground">Meals</p>
                             </CardContent>
                         </Card>
@@ -245,7 +244,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 <UserX className="h-4 w-4 text-destructive" />
                             </CardHeader>
                             <CardContent className="p-3 pt-0">
-                                <div className="text-2xl font-bold">{absentMeals}</div>
+                                <div className="text-2xl font-bold">{monthData.absentMeals}</div>
                                 <p className="text-xs text-muted-foreground">Meals</p>
                             </CardContent>
                         </Card>
@@ -255,7 +254,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 <CalendarDays className="h-4 w-4 text-blue-400" />
                             </CardHeader>
                             <CardContent className="p-3 pt-0">
-                                <div className="text-2xl font-bold">{holidayMeals}</div>
+                                <div className="text-2xl font-bold">{monthData.holidayMeals}</div>
                                 <p className="text-xs text-muted-foreground">Meals</p>
                             </CardContent>
                         </Card>
@@ -268,26 +267,26 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm p-4 pt-2 flex-grow">
                         <div className="space-y-2">
-                             {currentData.bill.details && (
+                             {monthData.bill.details && (
                                 <div className="flex justify-between items-center">
                                     <p className="text-muted-foreground flex items-center gap-2">
                                         <Utensils className="h-4 w-4" /> Billable Meals
                                     </p>
-                                    <p>{currentData.bill.details.totalMeals} meals x ₹{currentData.bill.details.chargePerMeal.toLocaleString()}</p>
+                                    <p>{monthData.bill.details.totalMeals} meals x ₹{monthData.bill.details.chargePerMeal.toLocaleString()}</p>
                                 </div>
                              )}
                             <Separator />
                             <div className="flex justify-between items-center font-semibold text-base">
                                 <p>Total Bill Amount</p>
-                                <p>₹{currentData.bill.total.toLocaleString()}</p>
+                                <p>₹{monthData.bill.total.toLocaleString()}</p>
                             </div>
                         </div>
                         
-                        {currentData.bill.payments.length > 0 && (
+                        {monthData.bill.payments.length > 0 && (
                             <div className="pt-1">
                                 <p className="font-medium text-foreground/80 mb-1.5">Payments Received:</p>
                                 <div className="space-y-1 pl-2 border-l-2 border-dashed">
-                                {currentData.bill.payments.map((payment, index) => (
+                                {monthData.bill.payments.map((payment, index) => (
                                     <div key={index} className="flex justify-between items-center text-green-400">
                                         <p className="text-muted-foreground text-xs">
                                             ✔ Payment on {format(new Date(payment.date), 'MMM do, yyyy')}
@@ -301,7 +300,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                         <Separator/>
                         <div className="flex justify-between items-center font-semibold text-base">
                             <span className="text-foreground">Remaining Due:</span>
-                            <span className={cn(remainingBill > 0 ? 'text-destructive' : 'text-foreground')}>₹{remainingBill.toLocaleString()}</span>
+                            <span className={cn(monthData.bill.remaining > 0 ? 'text-destructive' : 'text-foreground')}>₹{monthData.bill.remaining.toLocaleString()}</span>
                         </div>
                     </CardContent>
                     <CardFooter className="p-4 pt-0">
@@ -325,15 +324,15 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                         </div>
                          <div className="flex items-center gap-3">
                             <Home className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
-                            <span className="text-muted-foreground">{student.roomNo}</span>
+                            <span className="text-muted-foreground">{student.roomNo || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
-                            <span className="text-muted-foreground">{student.contact}</span>
+                            <span className="text-muted-foreground">{student.contact || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <CalendarIcon className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
-                            <span className="text-muted-foreground">Joined: {student.joinDate}</span>
+                            <span className="text-muted-foreground">Joined: {student.joinDate ? format(new Date(student.joinDate), 'PPP') : 'N/A'}</span>
                         </div>
                     </CardContent>
                 </Card>

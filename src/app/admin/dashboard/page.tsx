@@ -11,42 +11,101 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserX, TrendingUp, KeyRound, Settings, Bell, Utensils, CalendarDays, Moon, Sun, UserPlus, GitCompareArrows, Check, X, Copy } from 'lucide-react';
+import { Users, UserX, TrendingUp, KeyRound, Settings, Bell, Utensils, CalendarDays, Moon, Sun, UserPlus, GitCompareArrows, Check, X, Copy, Megaphone } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { Holiday, Leave, JoinRequest, PlanChangeRequest } from '@/lib/data';
-import { isSameMonth, isToday, startOfDay, format } from 'date-fns';
+import { Holiday, Leave, JoinRequest, PlanChangeRequest, AppUser, Announcement } from '@/lib/data';
+import { isSameDay, startOfDay, format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { onUsersUpdate } from '@/lib/listeners/users';
+import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
+import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
 
 export default function AdminDashboardPage() {
-  const { user, loading } = useAuth();
+  const { user: adminUser, loading: authLoading } = useAuth();
 
-  const [mealInfo, setMealInfo] = useState({ title: "Today's Lunch Count", count: 112 });
-  const [today, setToday] = useState<Date>();
+  const [students, setStudents] = useState<AppUser[]>([]);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   
-  useEffect(() => {
-    const now = startOfDay(new Date());
-    setToday(now);
+  const [studentsLoading, setStudentsLoading] = useState(true);
+  const [leavesLoading, setLeavesLoading] = useState(true);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  
+  const isLoading = authLoading || studentsLoading || leavesLoading || announcementsLoading;
 
-    const currentHour = new Date().getHours();
+  useEffect(() => {
+    if (!adminUser) return;
+    
+    setStudentsLoading(true);
+    setLeavesLoading(true);
+    setAnnouncementsLoading(true);
+
+    const unsubscribeUsers = onUsersUpdate(adminUser.uid, (updatedUsers) => {
+        setStudents(updatedUsers.filter(u => u.status === 'active'));
+        setStudentsLoading(false);
+    });
+    
+    const unsubscribeLeaves = onAllLeavesUpdate(setLeaves);
+        setLeavesLoading(false);
+    
+
+    const unsubscribeAnnouncements = onAnnouncementsUpdate(adminUser.uid, (updatedAnnouncements) => {
+        setAnnouncements(updatedAnnouncements);
+        setAnnouncementsLoading(false);
+    });
+
+    return () => {
+        unsubscribeUsers();
+        unsubscribeLeaves();
+        unsubscribeAnnouncements();
+    };
+  }, [adminUser]);
+
+
+  const mealInfo = useMemo(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const today = startOfDay(now);
+    
+    const todaysLeaves = leaves.filter(l => isSameDay(l.date, today));
+    
+    let title: string;
+    let mealType: 'lunch' | 'dinner';
+
     if (currentHour >= 15) {
-      setMealInfo({ title: "Today's Dinner Count", count: 105 });
+      title = "Today's Dinner Count";
+      mealType = 'dinner';
+    } else {
+      title = "Today's Lunch Count";
+      mealType = 'lunch';
     }
-  }, []);
+    
+    const leavesForThisMeal = todaysLeaves.filter(l => 
+        l.type === 'full_day' || 
+        (mealType === 'lunch' && l.type === 'lunch_only') ||
+        (mealType === 'dinner' && l.type === 'dinner_only')
+    ).length;
+
+    const count = students.length - leavesForThisMeal;
+
+    return { title, count };
+
+  }, [students, leaves]);
 
 
   const handleCopyCode = () => {
-    if (!user?.secretCode) return;
-    navigator.clipboard.writeText(user.secretCode);
+    if (!adminUser?.secretCode) return;
+    navigator.clipboard.writeText(adminUser.secretCode);
     alert("Secret code copied to clipboard!");
   };
 
-  if (loading || !user) {
+  if (isLoading || !adminUser) {
       return (
           <div className="space-y-6">
               <Skeleton className="h-8 w-64" />
@@ -93,24 +152,24 @@ export default function AdminDashboardPage() {
         <Link href="/admin/announcements" className="block transition-transform duration-300 hover:-translate-y-1">
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100 h-full hover:border-primary/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Announcements</CardTitle>
-                <Bell className="h-5 w-5 text-primary" />
+                <CardTitle className="text-sm font-medium">Total Announcements</CardTitle>
+                <Megaphone className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3</div>
-                <p className="text-xs text-muted-foreground">Recent announcements sent</p>
+                <div className="text-2xl font-bold">{announcements.length}</div>
+                <p className="text-xs text-muted-foreground">Total announcements sent</p>
               </CardContent>
             </Card>
         </Link>
         <Link href="/admin/students" className="block transition-transform duration-300 hover:-translate-y-1">
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200 h-full hover:border-primary/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                <CardTitle className="text-sm font-medium">Active Students</CardTitle>
                 <Users className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">125</div>
-                <p className="text-xs text-muted-foreground">+5 since last month</p>
+                <div className="text-2xl font-bold">{students.length}</div>
+                <p className="text-xs text-muted-foreground">Total active students</p>
               </CardContent>
             </Card>
         </Link>
@@ -147,7 +206,7 @@ export default function AdminDashboardPage() {
                 <CardContent>
                     <div className="relative flex items-center justify-center p-4 bg-secondary/50 rounded-lg">
                         <p className="text-4xl font-bold tracking-widest text-center font-mono">
-                            {user.secretCode}
+                            {adminUser.secretCode}
                         </p>
                         <Button
                             variant="ghost"

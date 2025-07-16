@@ -1,27 +1,46 @@
+
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Announcement, paymentReminders, PaymentReminder } from '@/lib/data';
 import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
 import { Bell, Rss, ShieldAlert, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/auth-context';
 
 type Notification = (Announcement & { type: 'announcement' }) | (PaymentReminder & { type: 'reminder' });
 
 export default function StudentNotificationsPage() {
+    const { user } = useAuth();
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const initialLoadDone = useRef(false);
 
     useEffect(() => {
+        if (!user) {
+            setIsLoading(false);
+            return;
+        }
+
         setIsLoading(true);
-        const unsubscribe = onAnnouncementsUpdate((updatedAnnouncements) => {
+        const unsubscribe = onAnnouncementsUpdate(user.messId, (updatedAnnouncements) => {
+            // Only play sound for new announcements after the initial load
+            if (initialLoadDone.current && updatedAnnouncements.length > announcements.length) {
+                audioRef.current?.play().catch(e => console.error("Error playing audio:", e));
+            }
             setAnnouncements(updatedAnnouncements);
             setIsLoading(false);
+            
+            // Set initial load flag after the first data fetch
+            if (!initialLoadDone.current) {
+                initialLoadDone.current = true;
+            }
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [user, announcements]); // Rerun effect if announcements state changes to compare lengths
 
     const combinedNotifications = useMemo(() => {
         const liveAnnouncements: Notification[] = announcements.map(ann => ({ ...ann, type: 'announcement' }));
@@ -83,6 +102,8 @@ export default function StudentNotificationsPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <audio ref={audioRef} src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3" preload="auto" className="sr-only"></audio>
         </div>
     );
 }

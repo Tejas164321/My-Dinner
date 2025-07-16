@@ -89,7 +89,7 @@ export interface AppUser {
     roomNo?: string;
     joinDate?: string;
     status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated';
-    messId?: string;
+    messId: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
 }
@@ -112,6 +112,7 @@ export interface Holiday {
     date: Date;
     name: string;
     type: 'full_day' | 'lunch_only' | 'dinner_only';
+    messId: string;
 }
 
 export interface Leave {
@@ -138,6 +139,7 @@ export interface Announcement {
     title: string;
     message: string;
     date: string;
+    messId: string;
 }
 
 export const pastAnnouncements: Announcement[] = [
@@ -146,18 +148,21 @@ export const pastAnnouncements: Announcement[] = [
         title: 'Diwali Celebration Dinner',
         message: 'A special dinner will be served on the occasion of Diwali. Please join us for the celebration!',
         date: '2023-11-10',
+        messId: 'dummy'
     },
     {
         id: '2',
         title: 'Mess Closure for Maintenance',
         message: 'The mess will be closed for regular maintenance on Sunday from 9 AM to 5 PM. Please make alternate arrangements.',
         date: '2023-11-05',
+        messId: 'dummy'
     },
     {
         id: '3',
         title: 'Feedback Form for October',
         message: 'Your feedback is valuable to us. Please fill out the feedback form for the month of October. Link is available on the student dashboard.',
         date: '2023-10-30',
+        messId: 'dummy'
     }
 ];
 

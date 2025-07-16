@@ -51,7 +51,7 @@ export default function StudentDashboardPage() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [today, setToday] = useState<Date | undefined>();
   
-  const [displayedMenu, setDisplayedMenu] = useState<DailyMenu>({ lunch: [], dinner: [] });
+  const [displayedMenu, setDisplayedMenu] = useState<Omit<DailyMenu, 'messId'>>({ lunch: [], dinner: [] });
   const [isMenuLoading, setIsMenuLoading] = useState(false);
   
   const [leavesLoading, setLeavesLoading] = useState(true);
@@ -67,34 +67,35 @@ export default function StudentDashboardPage() {
     setLeavesLoading(true);
     setHolidaysLoading(true);
 
-    let leavesUnsubscribe: (() => void) | null = null;
-    if (user) {
-        leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
-          setLeaves(updatedLeaves);
-          setLeavesLoading(false);
-        });
-    } else {
+    if (!user) {
         setLeavesLoading(false);
-    }
+        setHolidaysLoading(false);
+        return;
+    };
     
-    const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
+    const leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
+      setLeaves(updatedLeaves);
+      setLeavesLoading(false);
+    });
+    
+    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
         setHolidays(updatedHolidays);
         setHolidaysLoading(false);
     });
     
     return () => {
-        if(leavesUnsubscribe) leavesUnsubscribe();
+        leavesUnsubscribe();
         holidaysUnsubscribe();
     };
   }, [user]);
 
   useEffect(() => {
-      if (!selectedDate) return;
+      if (!selectedDate || !user?.messId) return;
 
       const fetchMenu = async () => {
           setIsMenuLoading(true);
           const dateKey = formatDateKey(selectedDate);
-          const menu = await getMenuForDate(dateKey);
+          const menu = await getMenuForDate(user.messId, dateKey);
           setDisplayedMenu({
               lunch: menu?.lunch || ['Not set'],
               dinner: menu?.dinner || ['Not set'],
@@ -103,7 +104,7 @@ export default function StudentDashboardPage() {
       };
 
       fetchMenu();
-  }, [selectedDate]);
+  }, [selectedDate, user?.messId]);
 
 
   const currentMonthStats = useMemo(() => {

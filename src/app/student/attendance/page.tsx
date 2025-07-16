@@ -24,13 +24,15 @@ export default function StudentAttendancePage() {
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        setIsLoading(true);
-        let leavesUnsubscribe: (() => void) | null = null;
-        if (user) {
-            leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
+        if (!user) {
+            setIsLoading(false);
+            return;
         }
+        setIsLoading(true);
+        
+        const leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
 
-        const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
+        const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
             setHolidays(updatedHolidays);
             if(user) { // Only finish loading once both listeners are active
                 setIsLoading(false);
@@ -38,7 +40,7 @@ export default function StudentAttendancePage() {
         });
         
         return () => {
-            if (leavesUnsubscribe) leavesUnsubscribe();
+            leavesUnsubscribe();
             holidaysUnsubscribe();
         };
     }, [user]);

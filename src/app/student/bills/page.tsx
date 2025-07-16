@@ -122,17 +122,20 @@ export default function StudentBillsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(true);
-    let leavesUnsubscribe: (() => void) | null = null;
-    if (user) {
-        leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
+    if (!user) {
+        setIsLoading(false);
+        return;
     }
-    const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
+    setIsLoading(true);
+    
+    const leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
+
+    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
         setHolidays(updatedHolidays);
         if(user) setIsLoading(false);
     });
     return () => {
-        if (leavesUnsubscribe) leavesUnsubscribe();
+        leavesUnsubscribe();
         holidaysUnsubscribe();
     };
   }, [user]);

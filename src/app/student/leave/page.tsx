@@ -60,21 +60,21 @@ export default function StudentLeavePage() {
     setToday(now);
     setOneDayDate(now);
 
-    setLeavesLoading(true);
-    let leavesUnsubscribe: (() => void) | null = null;
-    if (user) {
-        leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
-            setLeaves(updatedLeaves);
-            setLeavesLoading(false);
-        });
-    } else {
-      setLeavesLoading(false);
+    if (!user) {
+        setLeavesLoading(false);
+        return;
     }
 
-    const holidaysUnsubscribe = onHolidaysUpdate(setHolidays);
+    setLeavesLoading(true);
+    const leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
+        setLeaves(updatedLeaves);
+        setLeavesLoading(false);
+    });
+    
+    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, setHolidays);
     
     return () => {
-        if (leavesUnsubscribe) leavesUnsubscribe();
+        leavesUnsubscribe();
         holidaysUnsubscribe();
     };
   }, [user]);

@@ -2,53 +2,107 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // HELPER FUNCTIONS
+    function isSignedIn() {
+      return request.auth != null;
+    }
     
-    // Checks if the user making the request is an admin for a given mess.
-    function isAdmin(messId) {
-      return request.auth.uid == messId && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function isStudent() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
     }
 
-    // MESSES: Publicly readable, only writable by the admin who owns it.
-    match /messes/{messId} {
-      allow read: if true;
-      allow write: if isAdmin(messId);
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
     }
 
-    // USERS: Can only be read/written by the user themselves, or by their mess admin.
+    // RULES
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId 
-                         || isAdmin(resource.data.messId);
+      // CREATE: Anyone can create their own user document (signup)
+      allow create: if isSignedIn() && isOwner(userId);
+      
+      // READ: Users can only read their own profile
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // UPDATE: Granular update rules
+      allow update: if isSignedIn() && isOwner(userId) &&
+        // Students can update their name, contact, or join a mess
+        (
+          (
+            isStudent() &&
+            request.resource.data.name == resource.data.name &&
+            request.resource.data.contact == resource.data.contact
+          ) ||
+          (
+            isStudent() &&
+            request.resource.data.messId != null &&
+            resource.data.messId == null 
+          ) ||
+          // Admin of the mess can update student status
+          (
+            isAdmin() &&
+            request.auth.uid == resource.data.messId &&
+            request.resource.data.status != resource.data.status
+          )
+        );
+        
+      // DELETE: Admin of the mess can remove a student
+      allow delete: if isAdmin() && request.auth.uid == resource.data.messId;
+    }
+
+    match /messes/{messId} {
+      // CREATE: Only an admin can create a mess, and it must be their own
+      allow create: if isAdmin() && isOwner(messId);
+      // READ: Any signed-in user can see the list of messes to join
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
     }
     
-    // MENUS: Readable by anyone, only writable by an admin.
-    match /menus/{menuId} {
-        allow read: if true;
-        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // ANNOUNCEMENTS: Readable by anyone, only create/delete by the owning admin.
-    match /announcements/{announcementId} {
-        allow read: if true;
-        allow create: if isAdmin(request.resource.data.messId);
-        allow delete: if isAdmin(resource.data.messId);
-    }
-
-    // LEAVES: Students can manage their own leaves. Admins can read all leaves for their mess.
     match /leaves/{leaveId} {
-        allow read, write: if request.auth.uid == resource.data.studentId;
-        // Future implementation could allow admins to read all leaves for their mess.
+        allow read: if isSignedIn();
+        // CREATE: Student can create their own leave
+        allow create: if isStudent() && request.resource.data.studentId == request.auth.uid;
+        // DELETE: Student can delete their own leave
+        allow delete: if isStudent() && resource.data.studentId == request.auth.uid;
     }
     
-    // HOLIDAYS: Readable by all, writable only by admins.
-    match /holidays/{holidayId} {
-      allow read: if true;
-      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    match /planChangeRequests/{reqId} {
+        allow read: if isAdmin();
+        // CREATE: Student can create their own request
+        allow create: if isStudent() && request.resource.data.studentUid == request.auth.uid;
+        // DELETE: Admin of the mess can delete (approve/reject) the request
+        allow delete: if isAdmin() && request.auth.uid == get(/databases/$(database)/documents/users/$(request.resource.data.studentUid)).data.messId;
     }
-
-    // PLAN CHANGE REQUESTS: Writable by students, readable/deletable by the relevant admin.
-    match /planChangeRequests/{requestId} {
-        allow create: if request.auth.uid == request.resource.data.studentUid;
-        allow read, delete: if isAdmin(resource.data.messId);
+    
+    match /announcements/{announcementId} {
+        // READ: Student can only read announcements for their mess
+        allow read: if isSignedIn() && getUserData(request.auth.uid).messId == resource.data.messId;
+        // WRITE: Only the admin of the mess can create/delete announcements
+        allow write: if isAdmin() && request.auth.uid == resource.data.messId;
+    }
+    
+    match /menus/{menuId} {
+       // menuId is formatted as: {messId}_{YYYY-MM-DD}
+       // READ: Student can read menus for their mess
+       allow read: if isSignedIn() && getUserData(request.auth.uid).messId == resource.data.messId;
+       // WRITE: Admin can only write menus for their own mess
+       allow write: if isAdmin() && request.auth.uid == resource.data.messId;
+    }
+    
+    match /holidays/{holidayId} {
+       // holidayId is formatted as: {messId}_{YYYY-MM-DD}
+       // READ: Student can read holidays for their mess
+       allow read: if isSignedIn() && getUserData(request.auth.uid).messId == resource.data.messId;
+       // WRITE: Admin can write holidays for their own mess
+       allow write: if isAdmin() && request.auth.uid == resource.data.messId;
     }
   }
 }

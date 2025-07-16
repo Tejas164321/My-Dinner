@@ -8,6 +8,7 @@ import { doc, getDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import type { Holiday } from '@/lib/data';
+import { useAuth } from '@/contexts/auth-context';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ type LeaveType = 'one_day' | 'long_leave';
 const HOLIDAYS_COLLECTION = 'holidays';
 
 export default function HolidaysPage() {
+  const { user: adminUser } = useAuth();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -62,14 +64,16 @@ export default function HolidaysPage() {
     setToday(now);
     setOneDayDate(now);
 
+    if (!adminUser) return;
+    
     setIsLoading(true);
-    const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
+    const unsubscribe = onHolidaysUpdate(adminUser.uid, (updatedHolidays) => {
         setHolidays(updatedHolidays);
         setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [adminUser]);
 
   const upcomingHolidays = useMemo(() => {
     if (!today) return [];
@@ -77,6 +81,10 @@ export default function HolidaysPage() {
   }, [holidays, today]);
 
   const handleAddHoliday = async () => {
+    if (!adminUser) {
+        toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to add holidays.' });
+        return;
+    }
     if (!newHolidayName) {
         toast({
             variant: "destructive",
@@ -92,7 +100,8 @@ export default function HolidaysPage() {
         holidaysToSubmit.push({ 
             name: newHolidayName, 
             date: oneDayDate, 
-            type: oneDayType 
+            type: oneDayType,
+            messId: adminUser.uid,
         });
     } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
         if (longLeaveToDate < longLeaveFromDate) {
@@ -111,7 +120,7 @@ export default function HolidaysPage() {
             if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') type = 'full_day';
             else if (longLeaveFromType === 'dinner_only') type = 'dinner_only';
             else if (longLeaveToType === 'lunch_only') type = 'lunch_only';
-            holidaysToSubmit.push({ name: newHolidayName, date: dates[0], type });
+            holidaysToSubmit.push({ name: newHolidayName, date: dates[0], type, messId: adminUser.uid });
         } else {
             holidaysToSubmit = dates.map((date, index) => {
                 let type: HolidayType = 'full_day';
@@ -121,7 +130,7 @@ export default function HolidaysPage() {
                 if (index === dates.length - 1) {
                     type = longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day';
                 }
-                return { name: newHolidayName, date: date, type };
+                return { name: newHolidayName, date: date, type, messId: adminUser.uid };
             });
         }
     } else {
@@ -136,12 +145,12 @@ export default function HolidaysPage() {
     try {
         const batch = writeBatch(db);
         for (const holiday of holidaysToSubmit) {
-            const dateKey = format(holiday.date, 'yyyy-MM-dd');
+            const dateKey = `${holiday.messId}_${format(holiday.date, 'yyyy-MM-dd')}`;
             const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                toast({ variant: 'destructive', title: 'Holiday Exists', description: `A holiday for ${dateKey} already exists.`});
+                toast({ variant: 'destructive', title: 'Holiday Exists', description: `A holiday for ${format(holiday.date, 'yyyy-MM-dd')} already exists.`});
                 return; // Stop if any holiday already exists
             }
             batch.set(docRef, holiday);
@@ -173,8 +182,9 @@ export default function HolidaysPage() {
   };
 
   const handleDeleteHoliday = async (dateToDelete: Date) => {
+    if (!adminUser) return;
     try {
-      const dateKey = format(dateToDelete, 'yyyy-MM-dd');
+      const dateKey = `${adminUser.uid}_${format(dateToDelete, 'yyyy-MM-dd')}`;
       const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
       await deleteDoc(docRef);
       toast({

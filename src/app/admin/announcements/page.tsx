@@ -28,7 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth-context';
 
 export default function AnnouncementsPage() {
-    const { user } = useAuth();
+    const { user: adminUser } = useAuth();
     const { toast } = useToast();
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
@@ -37,17 +37,18 @@ export default function AnnouncementsPage() {
     const [isSending, setIsSending] = useState(false);
 
     useEffect(() => {
+        if (!adminUser) return;
         setIsLoading(true);
-        const unsubscribe = onAnnouncementsUpdate((updatedAnnouncements) => {
+        const unsubscribe = onAnnouncementsUpdate(adminUser.uid, (updatedAnnouncements) => {
             setAnnouncements(updatedAnnouncements);
             setIsLoading(false);
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [adminUser]);
 
     const handleSendAnnouncement = async () => {
-        if (!title || !message || !user) {
+        if (!title || !message || !adminUser) {
             toast({ variant: 'destructive', title: 'Error', description: 'Title and message cannot be empty.' });
             return;
         }
@@ -57,7 +58,7 @@ export default function AnnouncementsPage() {
             await addDoc(collection(db, 'announcements'), {
                 title,
                 message,
-                messId: user.uid,
+                messId: adminUser.uid,
                 date: new Date().toISOString(),
             });
 

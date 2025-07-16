@@ -16,10 +16,12 @@ import { Calendar } from '@/components/ui/calendar';
 import type { DailyMenu } from '@/lib/actions/menu';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/contexts/auth-context';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 export function MenuSchedule() {
+    const { user: adminUser } = useAuth();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
     const [isEditing, setIsEditing] = useState<false | 'lunch' | 'dinner'>(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -35,12 +37,17 @@ export function MenuSchedule() {
     const [newLunchItem, setNewLunchItem] = useState('');
     const [newDinnerItem, setNewDinnerItem] = useState('');
     
-    const [history, setHistory] = useState<{ date: string; menu: DailyMenu }[]>([]);
+    const [history, setHistory] = useState<{ date: string; menu: Omit<DailyMenu, 'messId'> }[]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
     useEffect(() => {
         setSelectedDate(startOfDay(new Date()));
         
+        if (!adminUser) {
+            setIsHistoryLoading(false);
+            return;
+        }
+
         const fetchHistory = async () => {
             setIsHistoryLoading(true);
             const today = startOfDay(new Date());
@@ -51,7 +58,7 @@ export function MenuSchedule() {
             ];
             const historyPromises = pastDates.map(async (date) => {
                 const dateKey = formatDateKey(date);
-                const menu = await getMenuForDate(dateKey);
+                const menu = await getMenuForDate(adminUser.uid, dateKey);
                 if (menu && (menu.lunch.length > 0 || menu.dinner.length > 0)) {
                    return { date: format(date, 'PPP'), menu };
                 }
@@ -63,15 +70,15 @@ export function MenuSchedule() {
         };
 
         fetchHistory();
-    }, []);
+    }, [adminUser]);
 
     useEffect(() => {
-        if (!selectedDate) return;
+        if (!selectedDate || !adminUser) return;
         
         const fetchMenu = async () => {
             setIsLoading(true);
             const dateKey = formatDateKey(selectedDate);
-            const menuForDay = await getMenuForDate(dateKey);
+            const menuForDay = await getMenuForDate(adminUser.uid, dateKey);
             
             const lunch = menuForDay?.lunch || [];
             const dinner = menuForDay?.dinner || [];
@@ -85,7 +92,7 @@ export function MenuSchedule() {
         };
 
         fetchMenu();
-    }, [selectedDate]);
+    }, [selectedDate, adminUser]);
     
     const handleEdit = (meal: 'lunch' | 'dinner') => {
         setTempLunchItems([...lunchItems]);
@@ -94,12 +101,12 @@ export function MenuSchedule() {
     };
 
     const handleSave = async () => {
-        if (!selectedDate || isSaving) return;
+        if (!selectedDate || isSaving || !adminUser) return;
 
         setIsSaving(true);
         const dateKey = formatDateKey(selectedDate);
         
-        let menuData: DailyMenu;
+        let menuData: Omit<DailyMenu, 'messId'>;
 
         if (isEditing === 'lunch') {
             menuData = { lunch: tempLunchItems, dinner: dinnerItems };
@@ -111,7 +118,7 @@ export function MenuSchedule() {
         }
         
         try {
-            await saveMenuForDate(dateKey, menuData);
+            await saveMenuForDate(adminUser.uid, dateKey, menuData);
             
             setLunchItems(menuData.lunch);
             setDinnerItems(menuData.dinner);
