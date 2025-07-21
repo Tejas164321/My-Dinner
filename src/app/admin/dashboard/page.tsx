@@ -11,20 +11,17 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserX, TrendingUp, KeyRound, Settings, Bell, Utensils, CalendarDays, Moon, Sun, UserPlus, GitCompareArrows, Check, X, Copy, Megaphone } from 'lucide-react';
+import { Users, TrendingUp, Bell, Utensils, CalendarDays, Megaphone } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { Holiday, Leave, JoinRequest, PlanChangeRequest, AppUser, Announcement } from '@/lib/data';
-import { isSameDay, startOfDay, format } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { Holiday, Leave, AppUser, Announcement } from '@/lib/data';
+import { isSameDay, startOfDay } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { onUsersUpdate } from '@/lib/listeners/users';
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
+import { PendingPaymentsCard } from '@/components/admin/pending-payments-card';
 
 export default function AdminDashboardPage() {
   const { user: adminUser, loading: authLoading } = useAuth();
@@ -99,13 +96,6 @@ export default function AdminDashboardPage() {
 
   }, [students, leaves]);
 
-
-  const handleCopyCode = () => {
-    if (!adminUser?.secretCode) return;
-    navigator.clipboard.writeText(adminUser.secretCode);
-    alert("Secret code copied to clipboard!");
-  };
-
   if (isLoading || !adminUser) {
       return (
           <div className="space-y-6">
@@ -117,7 +107,9 @@ export default function AdminDashboardPage() {
                   <Skeleton className="h-28 w-full" />
               </div>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <Skeleton className="h-96 w-full lg:col-span-2" />
+                  <div className="hidden lg:block lg:col-span-2">
+                     <Skeleton className="h-[600px] w-full" />
+                  </div>
                   <div className="space-y-6">
                     <Skeleton className="h-48 w-full" />
                     <Skeleton className="h-48 w-full" />
@@ -189,37 +181,12 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="hidden lg:block lg:col-span-2">
            <MenuSchedule />
         </div>
         
         <div className="lg:col-span-1 flex flex-col gap-6">
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-500">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Your Mess Secret Code</CardTitle>
-                            <CardDescription>Share this with students to join.</CardDescription>
-                        </div>
-                        <KeyRound className="h-6 w-6 text-primary" />
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="relative flex items-center justify-center p-4 bg-secondary/50 rounded-lg">
-                        <p className="text-4xl font-bold tracking-widest text-center font-mono">
-                            {adminUser.secretCode}
-                        </p>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-2 top-1/2 -translate-y-1/2"
-                            onClick={handleCopyCode}
-                        >
-                            <Copy className="h-5 w-5" />
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+            <PendingPaymentsCard />
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-600 flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
