@@ -8,10 +8,13 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
-  Sheet,
-  SheetContent,
-  SheetTrigger
-} from '@/components/ui/sheet';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Tooltip,
   TooltipProvider,
@@ -105,6 +108,36 @@ function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[
   );
 }
 
+function BottomNav({ navItems, onLinkClick }: { navItems: NavItem[]; onLinkClick?: () => void }) {
+  const pathname = usePathname();
+  // Display the first 5 items, or a curated list if needed
+  const mainNavItems = navItems.slice(0, 5);
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t bg-card/95 backdrop-blur-sm md:hidden">
+      {mainNavItems.map((item) => {
+        const Icon = iconMap[item.icon];
+        const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && item.href !== '/student/dashboard' && pathname.startsWith(item.href));
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex h-full w-full flex-col items-center justify-center gap-1 transition-colors",
+              isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-accent/50"
+            )}
+            onClick={onLinkClick}
+          >
+            {Icon && <Icon className="h-5 w-5" />}
+            <span className="text-[10px] font-medium">{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+
 function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLayoutProps['user'], isCollapsed?: boolean, onLinkClick?: () => void }) {
     const profileLink = user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings';
     
@@ -161,12 +194,17 @@ function LogoutButton({ isCollapsed, onLinkClick }: { isCollapsed?: boolean, onL
 
 export function DashboardLayout({ children, navItems, user }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   
   const handleToggle = () => setIsCollapsed(!isCollapsed);
-  const handleMobileNavClose = () => setIsMobileNavOpen(false);
 
   const dashboardPath = user.role === 'Mess Manager' ? '/admin/dashboard' : '/student/dashboard';
+  const settingsPath = user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings';
+  const notificationsPath = user.role === 'Mess Manager' ? '/admin/announcements' : '/student/notifications';
+  
+  const handleLogout = async () => {
+      await signOut(auth);
+      // The redirection is now handled by the parent layout's useEffect hook.
+  }
 
   return (
     <div className="flex h-screen w-full bg-background">
@@ -190,11 +228,11 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
           <NavContent navItems={navItems} isCollapsed={isCollapsed} />
         </div>
         <div className="mt-auto border-t p-2">
-           <LogoutButton isCollapsed={isCollapsed} onLinkClick={handleMobileNavClose} />
+           <LogoutButton isCollapsed={isCollapsed} />
         </div>
         <button
           onClick={handleToggle}
-          className="absolute top-1/2 -translate-y-1/2 -right-3 z-10 flex h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground"
+          className="absolute top-1/2 -translate-y-1/2 -right-3 z-10 hidden h-12 w-6 cursor-pointer items-center justify-center rounded-sm border bg-secondary/80 text-muted-foreground/80 backdrop-blur-sm transition-all hover:bg-accent hover:text-accent-foreground md:flex"
         >
           <ChevronsLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
           <span className="sr-only">{isCollapsed ? "Expand" : "Collapse"}</span>
@@ -204,41 +242,59 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
       {/* --- Mobile Header & Main Content --- */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="sticky top-0 flex h-16 items-center justify-between gap-4 border-b bg-card/80 px-4 z-30 backdrop-blur-sm md:hidden">
-          <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0">
-                <PanelLeft className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
+            <Link href={dashboardPath} className="flex items-center gap-2 text-lg font-semibold">
+                <div className="rounded-md bg-primary/10 p-1.5 text-primary">
+                    <ChefHat className="h-5 w-5" />
+                </div>
+                <span className="font-bold">Messo</span>
+            </Link>
+          
+          <div className="flex items-center gap-2">
+            {user.role !== 'Mess Manager' && (
+              <Button asChild variant="ghost" size="icon" className="h-10 w-10">
+                <Link href={notificationsPath}>
+                  <Bell className="h-5 w-5" />
+                  <span className="sr-only">Notifications</span>
+                </Link>
               </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0 w-64 bg-card/80 backdrop-blur-sm border-r">
-                <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
-                  <Link href={dashboardPath} className="flex items-center gap-3 text-lg font-semibold" onClick={handleMobileNavClose}>
-                    <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
-                      <ChefHat className="h-6 w-6" />
-                    </div>
-                    <span className="font-bold">Messo</span>
-                  </Link>
-                </div>
-                <div className="border-b p-2">
-                    <UserProfileLink user={user} isCollapsed={false} onLinkClick={handleMobileNavClose} />
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                    <NavContent navItems={navItems} isCollapsed={false} onLinkClick={handleMobileNavClose} />
-                </div>
-                <div className="mt-auto border-t p-2">
-                    <LogoutButton isCollapsed={false} onLinkClick={handleMobileNavClose} />
-                </div>
-            </SheetContent>
-          </Sheet>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Avatar className="h-10 w-10">
+                           <AvatarImage src={user.avatarUrl} alt={user.name} />
+                           <AvatarFallback>{user.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                  </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{user.name}</p>
+                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                      </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                      <Link href={settingsPath}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Profile & Settings</span>
+                      </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                       <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                  </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-          <Link href={dashboardPath} className="flex items-center gap-3 text-lg font-semibold">
-            <span className="font-bold">Dashboard</span>
-          </Link>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 pb-20 sm:p-6 lg:p-8 md:pb-8">
             {children}
         </main>
+        <BottomNav navItems={navItems} />
       </div>
     </div>
   );

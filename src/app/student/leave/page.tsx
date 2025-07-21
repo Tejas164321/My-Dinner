@@ -186,7 +186,7 @@ export default function StudentLeavePage() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-      <div>
+      <div className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">Apply for Leave</h1>
       </div>
 

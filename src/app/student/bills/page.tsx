@@ -229,7 +229,7 @@ export default function StudentBillsPage() {
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div className="flex flex-wrap justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
+        <h1 className="text-2xl font-bold tracking-tight hidden md:block">My Bills</h1>
         
         <Dialog>
           <DialogTrigger asChild>
@@ -292,7 +292,7 @@ export default function StudentBillsPage() {
                 key={bill.id}
                 className="hover:border-primary/50 transition-all duration-150 group"
               >
-                <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+                <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap">
                   <Dialog>
                     <DialogTrigger asChild>
                       <div className="flex items-center gap-4 flex-1 cursor-pointer min-w-[200px]">
@@ -329,8 +329,8 @@ export default function StudentBillsPage() {
                     </DialogContent>
                   </Dialog>
 
-                  <div className="flex items-center gap-4">
-                     <div className="flex flex-col items-center justify-center w-32">
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
+                     <div className="flex flex-col items-center justify-center flex-1">
                        <p className="text-xl font-bold">
                         ₹{bill.totalAmount.toLocaleString()}
                       </p>
@@ -344,7 +344,7 @@ export default function StudentBillsPage() {
                         Due: ₹{dueAmount.toLocaleString()}
                       </Badge>
                     </div>
-                    <Button onClick={() => handleOpenPaymentDialog(bill)} disabled={dueAmount <= 0}>
+                    <Button className="flex-1" onClick={() => handleOpenPaymentDialog(bill)} disabled={dueAmount <= 0}>
                         <Wallet className="mr-2 h-4 w-4" /> Pay Now
                     </Button>
                   </div>

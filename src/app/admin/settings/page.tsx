@@ -163,7 +163,7 @@ function SettingsPageContent() {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> Profile</TabsTrigger>
                     <TabsTrigger value="general"><Info className="mr-2 h-4 w-4" /> General</TabsTrigger>
                     <TabsTrigger value="billing"><DollarSign className="mr-2 h-4 w-4" /> Billing</TabsTrigger>
@@ -177,12 +177,12 @@ function SettingsPageContent() {
                             <CardDescription>Update your personal information and manage your account.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-8">
-                            <div className="flex items-center gap-6">
+                            <div className="flex flex-col sm:flex-row items-center gap-6">
                                 <Avatar className="w-24 h-24 border-4 border-primary/20">
                                     <AvatarImage src={adminUser.avatarUrl} alt={adminUser.name} />
                                     <AvatarFallback>{adminUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                 </Avatar>
-                                <div className="space-y-2">
+                                <div className="space-y-2 text-center sm:text-left">
                                     <h3 className="text-2xl font-semibold">{profileName}</h3>
                                     <p className="text-muted-foreground">{adminUser.role}</p>
                                     <Button variant="outline">Upload New Photo</Button>

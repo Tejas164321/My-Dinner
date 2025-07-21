@@ -51,9 +51,10 @@ export default function AdminDashboardPage() {
         setStudentsLoading(false);
     });
     
-    const unsubscribeLeaves = onAllLeavesUpdate(setLeaves);
+    const unsubscribeLeaves = onAllLeavesUpdate((updatedLeaves) => {
+        setLeaves(updatedLeaves);
         setLeavesLoading(false);
-    
+    });
 
     const unsubscribeAnnouncements = onAnnouncementsUpdate(adminUser.uid, (updatedAnnouncements) => {
         setAnnouncements(updatedAnnouncements);
@@ -109,7 +110,7 @@ export default function AdminDashboardPage() {
       return (
           <div className="space-y-6">
               <Skeleton className="h-8 w-64" />
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
                   <Skeleton className="h-28 w-full" />
                   <Skeleton className="h-28 w-full" />
                   <Skeleton className="h-28 w-full" />
@@ -128,7 +129,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-      <div className="flex justify-between items-center">
+      <div className="flex-wrap justify-between items-center gap-4 hidden md:flex">
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
         <Button asChild variant="outline">
             <Link href="/admin/students?tab=requests">
@@ -138,7 +139,7 @@ export default function AdminDashboardPage() {
         </Button>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+       <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
         <Card className="animate-in fade-in-0 zoom-in-95 duration-500 hover:-translate-y-1 hover:border-primary/50 transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{mealInfo.title}</CardTitle>
@@ -146,7 +147,7 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mealInfo.count}</div>
-            <p className="text-xs text-muted-foreground">Estimated students for the meal</p>
+            <p className="text-xs text-muted-foreground truncate">Estimated students for the meal</p>
           </CardContent>
         </Card>
         <Link href="/admin/announcements" className="block transition-transform duration-300 hover:-translate-y-1">
@@ -157,7 +158,7 @@ export default function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{announcements.length}</div>
-                <p className="text-xs text-muted-foreground">Total announcements sent</p>
+                <p className="text-xs text-muted-foreground truncate">Total announcements sent</p>
               </CardContent>
             </Card>
         </Link>
@@ -169,7 +170,7 @@ export default function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{students.length}</div>
-                <p className="text-xs text-muted-foreground">Total active students</p>
+                <p className="text-xs text-muted-foreground truncate">Total active students</p>
               </CardContent>
             </Card>
         </Link>
@@ -181,13 +182,13 @@ export default function AdminDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">₹2,85,450</div>
-                <p className="text-xs text-muted-foreground">+12% from last month</p>
+                <p className="text-xs text-muted-foreground truncate">+12% from last month</p>
               </CardContent>
             </Card>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
            <MenuSchedule />
         </div>

@@ -28,10 +28,14 @@ const BillRow = ({ student, month }: { student: Student, month: string }) => {
                 <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-                <p className="font-semibold">{student.name}</p>
-                <p className="text-sm text-muted-foreground">Due: <span className="font-medium text-destructive">₹{dueAmount.toLocaleString()}</span></p>
+                <p className="font-semibold text-sm md:text-base">{student.name}</p>
+                <p className="text-xs text-muted-foreground">{student.studentId}</p>
             </div>
-            <Button size="sm" variant="outline"><Bell className="h-4 w-4 mr-1.5" /> Remind</Button>
+             <div className="text-right">
+                <p className="font-medium text-destructive text-sm md:text-base">₹{dueAmount.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Due</p>
+            </div>
+            <Button size="sm" variant="outline"><Bell className="h-4 w-4 md:mr-1.5" /> <span className="hidden md:inline">Remind</span></Button>
         </div>
     )
 };
@@ -56,7 +60,7 @@ export function BillingTable({ filterMonth }: BillingTableProps) {
                         <CardDescription>Students with outstanding dues for {filterMonth.charAt(0).toUpperCase() + filterMonth.slice(1)}.</CardDescription>
                     </div>
                     {dueStudents.length > 0 && (
-                        <Button variant="outline">
+                        <Button variant="outline" size="sm">
                             <Bell className="h-4 w-4 mr-1.5" /> Remind All
                         </Button>
                     )}

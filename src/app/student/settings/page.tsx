@@ -123,7 +123,7 @@ export default function StudentSettingsPage() {
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-                 <TabsList className="grid w-full grid-cols-4">
+                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> My Profile</TabsTrigger>
                     <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" /> Notifications</TabsTrigger>
                     <TabsTrigger value="meal-plan"><Utensils className="mr-2 h-4 w-4" /> Meal Plan</TabsTrigger>
@@ -137,7 +137,7 @@ export default function StudentSettingsPage() {
                             <CardDescription>Update your personal information and manage your account.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-8">
-                            <div className="flex items-center gap-8">
+                            <div className="flex flex-col sm:flex-row items-center gap-8">
                                 <div className="relative flex-shrink-0">
                                     <Avatar className="w-24 h-24 border-4 border-primary/20">
                                         <AvatarImage src={user.avatarUrl} alt={name} />
@@ -148,15 +148,15 @@ export default function StudentSettingsPage() {
                                         <span className="sr-only">Upload New Photo</span>
                                     </Button>
                                 </div>
-                                <div className="space-y-1.5">
+                                <div className="space-y-1.5 text-center sm:text-left">
                                     <h3 className="text-2xl font-semibold">{name}</h3>
                                     <p className="text-muted-foreground">Student</p>
                                     <div className="space-y-1 pt-2 text-sm text-muted-foreground">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 justify-center sm:justify-start">
                                             <span className="font-semibold text-foreground">Student ID:</span>
                                             <span>{user.studentId}</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 justify-center sm:justify-start">
                                             <span className="font-semibold text-foreground">Joined:</span>
                                             <span>{user.joinDate}</span>
                                         </div>

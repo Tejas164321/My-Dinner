@@ -36,8 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { getMenuForDate } from '@/lib/actions/menu';
-import type { DailyMenu } from '@/lib/actions/menu';
+import { getMenuForDateAction, type DailyMenu } from '@/lib/actions/student-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
@@ -67,7 +66,7 @@ export default function StudentDashboardPage() {
     setLeavesLoading(true);
     setHolidaysLoading(true);
 
-    if (!user || !user.uid || !user.messId) {
+    if (!user) {
         setLeavesLoading(false);
         setHolidaysLoading(false);
         return;
@@ -78,8 +77,9 @@ export default function StudentDashboardPage() {
       setLeavesLoading(false);
     });
     
-    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
-        setHolidays(updatedHolidays);
+    const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
+        const messHolidays = updatedHolidays.filter(h => h.messId === user?.messId);
+        setHolidays(messHolidays);
         setHolidaysLoading(false);
     });
     
@@ -95,7 +95,7 @@ export default function StudentDashboardPage() {
       const fetchMenu = async () => {
           setIsMenuLoading(true);
           const dateKey = formatDateKey(selectedDate);
-          const menu = await getMenuForDate(user.messId, dateKey);
+          const menu = await getMenuForDateAction(user.messId, dateKey);
           setDisplayedMenu({
               lunch: menu?.lunch || ['Not set'],
               dinner: menu?.dinner || ['Not set'],
@@ -206,53 +206,49 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-      <div>
+      <div className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user?.name?.split(' ')[0]}!</h1>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+       <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
           <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">This Month's Attendance</CardTitle>
+                  <CardTitle className="text-sm font-medium">Attendance</CardTitle>
                   <Percent className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
                   <div className="text-2xl font-bold">{currentMonthStats.attendance}</div>
-                  <p className="text-xs text-muted-foreground">Based on attended days</p>
+                  <p className="text-xs text-muted-foreground truncate">This month</p>
               </CardContent>
           </Card>
           <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-100">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Meals Taken</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Meals</CardTitle>
                   <Utensils className="h-5 w-5 text-primary" />
               </CardHeader>
               <CardContent>
                   <div className="text-2xl font-bold">{currentMonthStats.totalMeals}</div>
-                  <p className="text-xs text-muted-foreground">Meals attended this month</p>
+                  <p className="text-xs text-muted-foreground truncate">This month</p>
               </CardContent>
           </Card>
           <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Present</CardTitle>
-                  <CalendarCheck className="h-5 w-5 text-green-400" />
+                <CardTitle className="text-sm font-medium">Present</CardTitle>
+                <CalendarCheck className="h-5 w-5 text-green-400" />
               </CardHeader>
               <CardContent>
-                  <div className="text-2xl font-bold">{currentMonthStats.presentDays} Days</div>
-                   {user?.messPlan === 'full_day' ? (
-                     <p className="text-xs text-muted-foreground">{currentMonthStats.fullDays} full & {currentMonthStats.halfDays} half days</p>
-                  ) : (
-                      <p className="text-xs text-muted-foreground">Days attended this month</p>
-                  )}
+                <div className="text-2xl font-bold">{currentMonthStats.presentDays}</div>
+                <p className="text-xs text-muted-foreground truncate">Days</p>
               </CardContent>
           </Card>
           <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Absent</CardTitle>
+                  <CardTitle className="text-sm font-medium">Absent</CardTitle>
                   <UserX className="h-5 w-5 text-destructive" />
               </CardHeader>
               <CardContent>
                   <div className="text-2xl font-bold">{currentMonthStats.absentDays}</div>
-                  <p className="text-xs text-muted-foreground">Days on leave or absent</p>
+                  <p className="text-xs text-muted-foreground truncate">Days</p>
               </CardContent>
           </Card>
       </div>
@@ -274,7 +270,7 @@ export default function StudentDashboardPage() {
                     <PopoverTrigger asChild>
                       <Button
                         variant={"outline"}
-                        className={cn("w-[240px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                        className={cn("w-full sm:w-[240px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
                       >
                         <Calendar className="mr-2 h-4 w-4" />
                         {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
@@ -290,7 +286,7 @@ export default function StudentDashboardPage() {
                     </PopoverContent>
                   </Popover>
               </div>
-              <CardDescription>Select a date to view the menu for that day.</CardDescription>
+              <CardDescription className="pt-2">Select a date to view the menu for that day.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6 md:grid-cols-2">
               <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">

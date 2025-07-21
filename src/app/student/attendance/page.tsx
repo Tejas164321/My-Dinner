@@ -233,12 +233,12 @@ export default function StudentAttendancePage() {
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
             <div className="flex flex-wrap items-center justify-between gap-4">
-                <h1 className="text-2xl font-bold tracking-tight">My Attendance</h1>
+                <h1 className="text-2xl font-bold tracking-tight hidden md:block">My Attendance</h1>
                  <Select
                     value={format(month, 'yyyy-MM')}
                     onValueChange={(value) => setMonth(startOfDay(new Date(`${value}-01`)))}
                 >
-                    <SelectTrigger className="w-[200px]">
+                    <SelectTrigger className="w-full md:w-[200px]">
                         <SelectValue placeholder="Select month" />
                     </SelectTrigger>
                     <SelectContent>

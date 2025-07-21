@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,25 +18,23 @@ import type { DailyMenu } from '@/lib/actions/menu';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/auth-context';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
+
+type MealType = 'lunch' | 'dinner';
 
 export function MenuSchedule() {
     const { user: adminUser } = useAuth();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-    const [isEditing, setIsEditing] = useState<false | 'lunch' | 'dinner'>(false);
+    const [isEditing, setIsEditing] = useState<false | MealType>(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
-    const [lunchItems, setLunchItems] = useState<string[]>([]);
-    const [dinnerItems, setDinnerItems] = useState<string[]>([]);
-    
-    const [tempLunchItems, setTempLunchItems] = useState<string[]>([]);
-    const [tempDinnerItems, setTempDinnerItems] = useState<string[]>([]);
-
-    const [newLunchItem, setNewLunchItem] = useState('');
-    const [newDinnerItem, setNewDinnerItem] = useState('');
+    const [menu, setMenu] = useState<{ lunch: string[], dinner: string[] }>({ lunch: [], dinner: [] });
+    const [tempMenu, setTempMenu] = useState<{ lunch: string[], dinner: string[] }>({ lunch: [], dinner: [] });
+    const [newItem, setNewItem] = useState('');
     
     const [history, setHistory] = useState<{ date: string; menu: Omit<DailyMenu, 'messId'> }[]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(true);
@@ -51,16 +50,12 @@ export function MenuSchedule() {
         const fetchHistory = async () => {
             setIsHistoryLoading(true);
             const today = startOfDay(new Date());
-            const pastDates = [
-                subDays(today, 1),
-                subDays(today, 2),
-                subDays(today, 3),
-            ];
+            const pastDates = [ subDays(today, 1), subDays(today, 2), subDays(today, 3) ];
             const historyPromises = pastDates.map(async (date) => {
                 const dateKey = formatDateKey(date);
-                const menu = await getMenuForDate(adminUser.uid, dateKey);
-                if (menu && (menu.lunch.length > 0 || menu.dinner.length > 0)) {
-                   return { date: format(date, 'PPP'), menu };
+                const menuData = await getMenuForDate(adminUser.uid, dateKey);
+                if (menuData && (menuData.lunch.length > 0 || menuData.dinner.length > 0)) {
+                   return { date: format(date, 'PPP'), menu: menuData };
                 }
                 return null;
             });
@@ -80,13 +75,13 @@ export function MenuSchedule() {
             const dateKey = formatDateKey(selectedDate);
             const menuForDay = await getMenuForDate(adminUser.uid, dateKey);
             
-            const lunch = menuForDay?.lunch || [];
-            const dinner = menuForDay?.dinner || [];
+            const fetchedMenu = {
+                lunch: menuForDay?.lunch || [],
+                dinner: menuForDay?.dinner || []
+            };
 
-            setLunchItems(lunch);
-            setDinnerItems(dinner);
-            setTempLunchItems(lunch);
-            setTempDinnerItems(dinner);
+            setMenu(fetchedMenu);
+            setTempMenu(fetchedMenu);
             setIsEditing(false); 
             setIsLoading(false);
         };
@@ -94,34 +89,26 @@ export function MenuSchedule() {
         fetchMenu();
     }, [selectedDate, adminUser]);
     
-    const handleEdit = (meal: 'lunch' | 'dinner') => {
-        setTempLunchItems([...lunchItems]);
-        setTempDinnerItems([...dinnerItems]);
+    const handleEdit = (meal: MealType) => {
+        setTempMenu({ ...menu });
         setIsEditing(meal);
     };
 
     const handleSave = async () => {
-        if (!selectedDate || isSaving || !adminUser) return;
+        if (!selectedDate || isSaving || !adminUser || !isEditing) return;
 
         setIsSaving(true);
         const dateKey = formatDateKey(selectedDate);
         
-        let menuData: Omit<DailyMenu, 'messId'>;
-
-        if (isEditing === 'lunch') {
-            menuData = { lunch: tempLunchItems, dinner: dinnerItems };
-        } else if (isEditing === 'dinner') {
-            menuData = { lunch: lunchItems, dinner: tempDinnerItems };
-        } else {
-            setIsSaving(false);
-            return;
-        }
+        const menuData: Omit<DailyMenu, 'messId'> = {
+            lunch: isEditing === 'lunch' ? tempMenu.lunch : menu.lunch,
+            dinner: isEditing === 'dinner' ? tempMenu.dinner : menu.dinner,
+        };
         
         try {
             await saveMenuForDate(adminUser.uid, dateKey, menuData);
             
-            setLunchItems(menuData.lunch);
-            setDinnerItems(menuData.dinner);
+            setMenu(menuData);
             setIsEditing(false);
 
             toast({
@@ -141,39 +128,37 @@ export function MenuSchedule() {
 
     const handleCancel = () => {
         setIsEditing(false);
+        setNewItem('');
     };
 
-    const handleAddItem = (meal: 'lunch' | 'dinner') => {
-        if (meal === 'lunch' && newLunchItem.trim()) {
-            setTempLunchItems(prev => [...prev, newLunchItem.trim()]);
-            setNewLunchItem('');
-        } else if (meal === 'dinner' && newDinnerItem.trim()) {
-            setTempDinnerItems(prev => [...prev, newDinnerItem.trim()]);
-            setNewDinnerItem('');
-        }
+    const handleAddItem = (meal: MealType) => {
+        if (!isEditing || !newItem.trim()) return;
+        setTempMenu(prev => ({
+            ...prev,
+            [meal]: [...prev[meal], newItem.trim()]
+        }));
+        setNewItem('');
     };
     
-    const handleRemoveItem = (meal: 'lunch' | 'dinner', index: number) => {
-        if (meal === 'lunch') {
-            setTempLunchItems(prev => prev.filter((_, i) => i !== index));
-        } else {
-            setTempDinnerItems(prev => prev.filter((_, i) => i !== index));
-        }
+    const handleRemoveItem = (meal: MealType, index: number) => {
+        if (!isEditing) return;
+        setTempMenu(prev => ({
+            ...prev,
+            [meal]: prev[meal].filter((_, i) => i !== index)
+        }));
     };
     
-    const handleAddCommonItem = (meal: 'lunch' | 'dinner', item: string) => {
-        if (meal === 'lunch') {
-            if (!tempLunchItems.includes(item)) {
-                setTempLunchItems(prev => [...prev, item]);
+    const handleAddCommonItem = (meal: MealType, item: string) => {
+        if (!isEditing) return;
+        setTempMenu(prev => {
+            if (!prev[meal].includes(item)) {
+                return { ...prev, [meal]: [...prev[meal], item] };
             }
-        } else {
-             if (!tempDinnerItems.includes(item)) {
-                setTempDinnerItems(prev => [...prev, item]);
-            }
-        }
+            return prev;
+        });
     };
 
-    const renderMenuTags = (items: string[], meal: 'lunch' | 'dinner') => (
+    const renderMenuTags = (items: string[], meal: MealType) => (
         <div className="flex flex-wrap gap-2 rounded-lg border bg-background/50 p-3 min-h-[120px]">
              {isLoading ? (
                 <div className="w-full space-y-2">
@@ -198,6 +183,66 @@ export function MenuSchedule() {
             )}
         </div>
     );
+
+    const renderEditControls = (meal: MealType) => (
+        <div className="space-y-4 pt-2">
+            <div className="space-y-3">
+                <div className="flex gap-2">
+                    <Input 
+                        placeholder="Add new item..." 
+                        value={newItem}
+                        onChange={e => setNewItem(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleAddItem(meal)}
+                    />
+                    <Button onClick={() => handleAddItem(meal)}><Plus className="h-4 w-4 mr-1"/> Add</Button>
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Common Items</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                        {commonMenuItems.map(item => (
+                            <Badge 
+                                key={item} 
+                                variant="outline" 
+                                onClick={() => handleAddCommonItem(meal, item)}
+                                className="cursor-pointer hover:bg-secondary py-1"
+                            >
+                                <Plus className="h-3 w-3 mr-1" /> {item}
+                            </Badge>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+    
+    const renderMealCardContent = (meal: MealType) => {
+        const currentItems = isEditing === meal ? tempMenu[meal] : menu[meal];
+        return (
+            <div className="flex-grow space-y-4">
+                {renderMenuTags(currentItems, meal)}
+                {isEditing === meal && renderEditControls(meal)}
+            </div>
+        );
+    };
+
+    const renderCardHeader = (meal: MealType) => (
+         <div className="flex justify-between items-center">
+            <CardTitle className="hidden lg:block">{meal === 'lunch' ? 'Lunch Menu' : 'Dinner Menu'}</CardTitle>
+            <div className={cn("flex w-full justify-end", isEditing && isEditing !== meal && "hidden", !isEditing && "lg:w-auto")}>
+                {isEditing === meal ? (
+                    <div className="flex gap-2 w-full lg:w-auto">
+                        <Button size="sm" variant="ghost" onClick={handleCancel} className="flex-1 lg:flex-none">Cancel</Button>
+                        <Button size="sm" onClick={handleSave} disabled={isSaving} className="flex-1 lg:flex-none">
+                            {isSaving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                            {isSaving ? 'Saving...' : 'Save'}
+                        </Button>
+                    </div>
+                ) : (
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(meal)}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
+                )}
+            </div>
+        </div>
+    );
     
     return (
         <div className="flex flex-col gap-8">
@@ -213,7 +258,7 @@ export function MenuSchedule() {
                     <PopoverTrigger asChild>
                     <Button
                         variant={"outline"}
-                        className={cn("w-[280px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                        className={cn("w-full sm:w-[280px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
                     >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
@@ -230,136 +275,40 @@ export function MenuSchedule() {
                 </Popover>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                {/* Lunch Card */}
+            {/* Desktop: Grid Layout */}
+            <div className="hidden lg:grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 <Card className="flex flex-col h-full">
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <CardTitle>Lunch Menu</CardTitle>
-                             {isEditing && isEditing !== 'lunch' ? null : (
-                                isEditing === 'lunch' ? (
-                                    <div className="flex gap-2">
-                                        <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
-                                        <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                                            {isSaving ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="h-4 w-4 mr-1" />
-                                                    Save
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <Button size="sm" variant="outline" onClick={() => handleEdit('lunch')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
-                                )
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-grow space-y-4">
-                        {renderMenuTags(isEditing === 'lunch' ? tempLunchItems : lunchItems, 'lunch')}
-                        {isEditing === 'lunch' && (
-                             <div className="space-y-4 pt-2">
-                                <div className="space-y-3">
-                                    <div className="flex gap-2">
-                                        <Input 
-                                            placeholder="Add new item..." 
-                                            value={newLunchItem}
-                                            onChange={e => setNewLunchItem(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && handleAddItem('lunch')}
-                                        />
-                                        <Button onClick={() => handleAddItem('lunch')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs text-muted-foreground">Common Items</Label>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {commonMenuItems.map(item => (
-                                                <Badge 
-                                                    key={item} 
-                                                    variant="outline" 
-                                                    onClick={() => handleAddCommonItem('lunch', item)}
-                                                    className="cursor-pointer hover:bg-secondary py-1"
-                                                >
-                                                    <Plus className="h-3 w-3 mr-1" /> {item}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
+                    <CardHeader>{renderCardHeader('lunch')}</CardHeader>
+                    <CardContent className="flex-grow flex flex-col">{renderMealCardContent('lunch')}</CardContent>
                 </Card>
-
-                {/* Dinner Card */}
                 <Card className="flex flex-col h-full">
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <CardTitle>Dinner Menu</CardTitle>
-                             {isEditing && isEditing !== 'dinner' ? null : (
-                                isEditing === 'dinner' ? (
-                                    <div className="flex gap-2">
-                                        <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
-                                        <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                                             {isSaving ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Save className="h-4 w-4 mr-1" />
-                                                    Save
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <Button size="sm" variant="outline" onClick={() => handleEdit('dinner')}><Pencil className="h-4 w-4 mr-1" /> Edit</Button>
-                                )
-                             )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="flex-grow space-y-4">
-                        {renderMenuTags(isEditing === 'dinner' ? tempDinnerItems : dinnerItems, 'dinner')}
-                         {isEditing === 'dinner' && (
-                             <div className="space-y-4 pt-2">
-                                <div className="space-y-3">
-                                    <div className="flex gap-2">
-                                        <Input 
-                                            placeholder="Add new item..." 
-                                            value={newDinnerItem}
-                                            onChange={e => setNewDinnerItem(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && handleAddItem('dinner')}
-                                        />
-                                        <Button onClick={() => handleAddItem('dinner')}><Plus className="h-4 w-4 mr-1"/> Add</Button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs text-muted-foreground">Common Items</Label>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {commonMenuItems.map(item => (
-                                                <Badge 
-                                                    key={item} 
-                                                    variant="outline" 
-                                                    onClick={() => handleAddCommonItem('dinner', item)}
-                                                    className="cursor-pointer hover:bg-secondary py-1"
-                                                >
-                                                    <Plus className="h-3 w-3 mr-1" /> {item}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
+                    <CardHeader>{renderCardHeader('dinner')}</CardHeader>
+                    <CardContent className="flex-grow flex flex-col">{renderMealCardContent('dinner')}</CardContent>
                 </Card>
             </div>
             
+            {/* Mobile: Tabs Layout */}
+            <div className="lg:hidden">
+                <Tabs defaultValue="lunch" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="lunch">Lunch</TabsTrigger>
+                        <TabsTrigger value="dinner">Dinner</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="lunch">
+                        <Card>
+                            <CardHeader>{renderCardHeader('lunch')}</CardHeader>
+                            <CardContent>{renderMealCardContent('lunch')}</CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="dinner">
+                        <Card>
+                            <CardHeader>{renderCardHeader('dinner')}</CardHeader>
+                            <CardContent>{renderMealCardContent('dinner')}</CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+            </div>
+
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">

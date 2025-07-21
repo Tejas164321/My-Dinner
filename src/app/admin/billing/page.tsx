@@ -54,14 +54,14 @@ export default function AdminBillingPage() {
   }, [month]);
 
   return (
-    <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+    <div className="flex flex-col gap-2 md:gap-6 animate-in fade-in-0 slide-in-from-top-5 duration-700">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="hidden md:block">
           <h1 className="text-2xl font-bold tracking-tight">Billing & Payments</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex w-full md:w-auto items-center gap-2">
           <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>
@@ -71,45 +71,47 @@ export default function AdminBillingPage() {
               <SelectItem value="july">July</SelectItem>
             </SelectContent>
           </Select>
-           <Button variant="outline"><FileDown /> Export Data</Button>
-           <Button>Generate Bills</Button>
+          <Button variant="outline" className="flex-shrink-0">
+            <FileDown className="h-4 w-4 mr-2"/>
+            Export
+          </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 md:gap-6">
         <Card className="transition-transform duration-300 hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue ({month.charAt(0).toUpperCase() + month.slice(1)})</CardTitle>
-            <DollarSign className="h-5 w-5 text-primary" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 md:h-5 w-4 md:w-5 text-primary" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Total payments received this month</p>
+          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Payments this month</p>
           </CardContent>
         </Card>
         <Card className="transition-transform duration-300 hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Dues ({month.charAt(0).toUpperCase() + month.slice(1)})</CardTitle>
-            <Receipt className="h-5 w-5 text-destructive" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">Pending Dues</CardTitle>
+            <Receipt className="h-4 md:h-5 w-4 md:w-5 text-destructive" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{stats.pendingDues.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Total outstanding amount from students</p>
+          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">₹{stats.pendingDues.toLocaleString()}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Outstanding amount</p>
           </CardContent>
         </Card>
         <Card className="transition-transform duration-300 hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Defaulters ({month.charAt(0).toUpperCase() + month.slice(1)})</CardTitle>
-            <Users className="h-5 w-5 text-destructive" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">Defaulters</CardTitle>
+            <Users className="h-4 md:h-5 w-4 md:w-5 text-destructive" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.defaulters}</div>
-            <p className="text-xs text-muted-foreground">Students with pending payments</p>
+          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">{stats.defaulters}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Students with dues</p>
           </CardContent>
         </Card>
       </div>
 
-       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div className="lg:col-span-3">
                 <Card>
                     <CardHeader>
