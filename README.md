@@ -39,3 +39,4 @@ test 1.0.0
 test 1.1.0
 test 1.1.1
 test 1.1.2
+test 1.2.2
