@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -43,7 +42,8 @@ export default function StudentSignupPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        const newStudent: Partial<AppUser> = {
+        // Create a clean user object. Other details will be added when they join a mess.
+        const newStudent: AppUser = {
             uid: user.uid,
             name,
             email,

@@ -24,7 +24,7 @@ export default function StudentAttendancePage() {
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        if (!user) {
+        if (!user || !user.uid || !user.messId) {
             setIsLoading(false);
             return;
         }

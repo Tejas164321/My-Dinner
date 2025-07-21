@@ -7,16 +7,14 @@ import type { Holiday } from '@/lib/data';
 const HOLIDAYS_COLLECTION = 'holidays';
 
 /**
- * Sets up a real-time listener for holiday updates for a specific mess.
+ * Sets up a real-time listener for ALL holiday updates.
  * This is a client-side function.
- * @param messId The ID of the mess to fetch holidays for.
  * @param callback The function to call with the updated holidays list.
  * @returns An unsubscribe function to clean up the listener.
  */
-export function onHolidaysUpdate(messId: string, callback: (holidays: Holiday[]) => void) {
+export function onHolidaysUpdate(callback: (holidays: Holiday[]) => void) {
   const q = query(
       collection(db, HOLIDAYS_COLLECTION),
-      where("messId", "==", messId),
       orderBy("date", "asc")
   );
 

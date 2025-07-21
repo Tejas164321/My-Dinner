@@ -1,51 +1,41 @@
 'use client';
 
-import { collection, onSnapshot, query, DocumentData, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
 
 const USERS_COLLECTION = 'users';
 
-const docToStudent = (doc: DocumentData): Student => {
-    const data = doc.data();
-    // A default student object to prevent crashes if data is malformed
-    const defaultStudent: Omit<Student, 'id'> = {
-        name: 'Unknown Student',
-        studentId: 'N/A',
-        joinDate: new Date().toISOString().split('T')[0],
-        email: 'unknown@example.com',
-        contact: 'N/A',
-        roomNo: 'N/A',
-        status: 'suspended',
-        messPlan: 'full_day',
-        role: 'student',
-        uid: doc.id,
-    };
+/**
+ * Sets up a real-time listener for all students relevant to a specific admin,
+ * including active, suspended, and pending students for their mess.
+ * @param messId The UID of the admin/mess to fetch users for.
+ * @param callback The function to call with the updated users list.
+ * @returns An unsubscribe function to clean up the listener.
+ */
+export function onUsersUpdate(messId: string, callback: (users: Student[]) => void): Unsubscribe {
+  if (!messId) {
+    console.warn("onUsersUpdate called without a messId.");
+    callback([]);
+    return () => {}; // Return an empty unsubscribe function
+  }
 
-    return { id: doc.id, ...defaultStudent, ...data };
-};
-
-
-export function onUsersUpdate(messId: string, callback: (users: Student[]) => void) {
+  // This query fetches ALL users who are either pending for this mess or already part of it.
   const q = query(
-      collection(db, USERS_COLLECTION),
-      where("messId", "==", messId)
+    collection(db, USERS_COLLECTION),
+    where("role", "==", "student")
   );
 
-  const unsubscribe = onSnapshot(q, (querySnapshot) => {
-    const users = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        uid: doc.id,
-        ...data,
-      } as Student;
-    });
-    // Sort on the client since we can't order by a field different from the where filter without a composite index
-    users.sort((a, b) => a.name.localeCompare(b.name));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const users = snapshot.docs
+      .map(doc => ({ uid: doc.id, ...doc.data() } as Student))
+      .filter(user => user.messId === messId); // Filter on the client side
+
+    users.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     callback(users);
+
   }, (error) => {
-    console.error("Error listening to user updates:", error);
+    console.error("Error listening to user updates for messId " + messId, error);
     callback([]);
   });
 

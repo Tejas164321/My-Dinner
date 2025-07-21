@@ -1,5 +1,3 @@
-
-
 import { format, subDays, addDays, startOfDay } from 'date-fns';
 
 export const studentNavItems = [
@@ -60,7 +58,7 @@ export interface BillDetails {
 }
 
 export interface JoinRequest {
-    id: string;
+    id: string; // This is the user's UID
     name: string;
     studentId: string;
     contact: string;
@@ -69,12 +67,14 @@ export interface JoinRequest {
 }
 
 export interface PlanChangeRequest {
-    id: string;
+    id: string; // Firestore document ID
+    studentUid: string;
     studentId: string;
     studentName: string;
     fromPlan: 'full_day' | 'lunch_only' | 'dinner_only';
     toPlan: 'full_day' | 'lunch_only' | 'dinner_only';
     date: string;
+    messId: string;
 }
 
 export interface AppUser {
@@ -89,7 +89,7 @@ export interface AppUser {
     roomNo?: string;
     joinDate?: string;
     status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated';
-    messId: string;
+    messId?: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
 }

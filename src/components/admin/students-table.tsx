@@ -1,8 +1,6 @@
-
-
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -12,7 +10,7 @@ import { Student, Leave, PlanChangeRequest } from "@/lib/data";
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onUsersUpdate } from '@/lib/listeners/users';
 import { onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
-import { Check, X, Trash2, UserX, Search, Utensils, Sun, Moon, RotateCcw } from "lucide-react";
+import { Check, X, Trash2, UserX, Search, Utensils, Sun, Moon, RotateCcw, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +38,7 @@ import { Skeleton } from '../ui/skeleton';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, deleteDoc, writeBatch, query, collection, where, limit, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 interface StudentsTableProps {
     filterMonth: Date;
@@ -75,16 +73,8 @@ async function deleteStudent(studentDocId: string) {
     await deleteDoc(userRef);
 }
 
-async function approvePlanChangeRequest(requestId: string, studentId: string, toPlan: Student['messPlan']) {
-    const userQuery = query(collection(db, 'users'), where("studentId", "==", studentId), limit(1));
-    const userSnapshot = await getDocs(userQuery);
-
-    if (userSnapshot.empty) {
-        throw new Error("Student not found to approve plan change.");
-    }
-    
-    const userDoc = userSnapshot.docs[0];
-    const userRef = doc(db, 'users', userDoc.id);
+async function approvePlanChangeRequest(requestId: string, studentUid: string, toPlan: Student['messPlan']) {
+    const userRef = doc(db, 'users', studentUid);
     const requestRef = doc(db, 'planChangeRequests', requestId);
 
     const batch = writeBatch(db);
@@ -106,11 +96,13 @@ const planInfo = {
 };
 
 const getDummyBillForStudent = (student: Student) => {
+    if (!student || !student.uid || !student.studentId) return { due: 0, attendance: 'N/A', status: 'Paid' };
     const base = student.messPlan === 'full_day' ? 3500 : 1800;
     const due = student.uid.charCodeAt(0) % 2 === 0 ? base : 0; // consistent dummy due
+    const attendancePercentage = student.studentId ? `${90 + parseInt(student.studentId.slice(-1), 16) % 10}%` : 'N/A';
     return {
         due,
-        attendance: `${90 + parseInt(student.studentId.slice(-1), 16) % 10}%`,
+        attendance: attendancePercentage,
         status: due > 0 ? 'Due' : 'Paid',
     }
 };
@@ -171,7 +163,7 @@ const StudentRowCard = ({ student, initialDate, showActions, leaves }: { student
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => suspendStudent(student.id)}>Suspend</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => suspendStudent(student.uid)}>Suspend</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -190,7 +182,7 @@ const StudentRowCard = ({ student, initialDate, showActions, leaves }: { student
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => deleteStudent(student.id)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Permanently</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => deleteStudent(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Permanently</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -212,7 +204,7 @@ const StudentRowCard = ({ student, initialDate, showActions, leaves }: { student
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => reactivateStudent(student.id)}>Reactivate</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => reactivateStudent(student.uid)}>Reactivate</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -243,28 +235,43 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     const [users, setUsers] = useState<Student[]>([]);
     const [planChangeRequests, setPlanChangeRequests] = useState<PlanChangeRequest[]>([]);
     
-    const [isLoading, setIsLoading] = useState(true);
+    const [isUsersLoading, setIsUsersLoading] = useState(true);
+    const [isPlansLoading, setIsPlansLoading] = useState(true);
+    const [isLeavesLoading, setIsLeavesLoading] = useState(true);
+
+    const isLoading = isUsersLoading || isPlansLoading || isLeavesLoading;
 
     useEffect(() => {
-        setIsLoading(true);
-        
-        let unsubscribeUsers: (() => void) | null = null;
-        let unsubscribePlans: (() => void) | null = null;
-
-        if (user) {
-            unsubscribeUsers = onUsersUpdate(user.uid, setUsers);
-            unsubscribePlans = onPlanChangeRequestsUpdate(user.uid, setPlanChangeRequests);
+        if (!user || !user.uid) {
+            setIsUsersLoading(false);
+            setIsPlansLoading(false);
+            setIsLeavesLoading(false);
+            return;
         }
-
-        const unsubscribeLeaves = onAllLeavesUpdate(setAllLeaves);
         
-        const timer = setTimeout(() => setIsLoading(false), 1500);
+        setIsUsersLoading(true);
+        setIsPlansLoading(true);
+        setIsLeavesLoading(true);
+
+        const unsubscribeUsers = onUsersUpdate(user.uid, (data) => {
+            setUsers(data);
+            setIsUsersLoading(false);
+        });
+
+        const unsubscribePlans = onPlanChangeRequestsUpdate(user.uid, (data) => {
+            setPlanChangeRequests(data);
+            setIsPlansLoading(false);
+        });
+        
+        const unsubscribeLeaves = onAllLeavesUpdate((data) => {
+            setAllLeaves(data);
+            setIsLeavesLoading(false);
+        });
 
         return () => {
-            if (unsubscribeUsers) unsubscribeUsers();
-            if (unsubscribePlans) unsubscribePlans();
+            unsubscribeUsers();
+            unsubscribePlans();
             unsubscribeLeaves();
-            clearTimeout(timer);
         };
     }, [user]);
 
@@ -272,6 +279,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         const active: Student[] = [];
         const suspended: Student[] = [];
         const pending: Student[] = [];
+        
         users.forEach(student => {
             if (student.status === 'suspended') {
                 suspended.push(student);
@@ -281,6 +289,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                 active.push(student);
             }
         });
+
         return { 
             activeStudents: active, 
             suspendedStudents: suspended, 
@@ -303,7 +312,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                 if (!searchQuery) return true;
                 const searchLower = searchQuery.toLowerCase();
                 const nameMatch = student.name.toLowerCase().includes(searchLower);
-                const idMatch = student.studentId.toLowerCase().includes(searchLower);
+                const idMatch = student.studentId && student.studentId.toLowerCase().includes(searchLower);
                 return nameMatch || idMatch;
             });
     }, [activeStudents, filterStatus, searchQuery, filterPlan]);
@@ -330,11 +339,11 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             ) : filteredActiveStudents.length > 0 ? (
                                 filteredActiveStudents.map((student) => (
                                    <StudentRowCard 
-                                        key={student.id} 
+                                        key={student.uid} 
                                         student={student} 
                                         initialDate={filterMonth} 
                                         showActions={true} 
-                                        leaves={allLeaves.filter(l => l.studentId === student.id)}
+                                        leaves={allLeaves.filter(l => l.studentId === student.uid)}
                                     />
                                 ))
                             ) : (
@@ -360,19 +369,19 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {isLoading && pendingStudents.length === 0 ? (
-                                        <TableRow><TableCell colSpan={4} className="text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                    {isLoading ? (
+                                        <TableRow><TableCell colSpan={4} className="text-center h-24"><Loader2 className="mx-auto animate-spin" /></TableCell></TableRow>
                                     ) : pendingStudents.length > 0 ? (
                                         pendingStudents.map((req) => (
-                                            <TableRow key={req.id}>
+                                            <TableRow key={req.uid}>
                                                 <TableCell className="font-medium">{req.name}</TableCell>
                                                 <TableCell>{req.email}</TableCell>
                                                 <TableCell>{req.joinDate ? format(parseISO(req.joinDate), 'MMM do, yyyy') : 'N/A'}</TableCell>
                                                 <TableCell className="text-right space-x-2">
-                                                    <Button onClick={() => approveStudent(req.id)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
+                                                    <Button onClick={() => approveStudent(req.uid)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
                                                         <Check className="h-4 w-4" />
                                                     </Button>
-                                                    <Button onClick={() => rejectStudent(req.id)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
+                                                    <Button onClick={() => rejectStudent(req.uid)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
                                                         <X className="h-4 w-4" />
                                                     </Button>
                                                 </TableCell>
@@ -399,8 +408,8 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                     {isLoading && planChangeRequests.length === 0 ? (
-                                        <TableRow><TableCell colSpan={5} className="text-center"><Skeleton className="h-8 w-full" /></TableCell></TableRow>
+                                     {isLoading ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center h-24"><Loader2 className="mx-auto animate-spin" /></TableCell></TableRow>
                                     ) : planChangeRequests.length > 0 ? (
                                         planChangeRequests.map((req) => (
                                             <TableRow key={req.id}>
@@ -411,9 +420,9 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                                 <TableCell>
                                                     <Badge>{formatPlanName(req.toPlan)}</Badge>
                                                 </TableCell>
-                                                <TableCell>{format(parseISO(req.date), 'MMM do, yyyy')}</TableCell>
+                                                <TableCell>{req.date ? format(parseISO(req.date), 'MMM do, yyyy') : 'N/A'}</TableCell>
                                                 <TableCell className="text-right space-x-2">
-                                                    <Button onClick={() => approvePlanChangeRequest(req.id, req.studentId, req.toPlan)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
+                                                    <Button onClick={() => approvePlanChangeRequest(req.id, req.studentUid, req.toPlan)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
                                                         <Check className="h-4 w-4" />
                                                     </Button>
                                                     <Button onClick={() => rejectPlanChangeRequest(req.id)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
@@ -437,11 +446,11 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             ) : suspendedStudents.length > 0 ? (
                                 suspendedStudents.map((student) => (
                                 <StudentRowCard 
-                                        key={student.id} 
+                                        key={student.uid} 
                                         student={student} 
                                         initialDate={filterMonth} 
                                         showActions={false}
-                                        leaves={allLeaves.filter(l => l.studentId === student.id)}
+                                        leaves={allLeaves.filter(l => l.studentId === student.uid)}
                                     />
                                 ))
                              ) : (

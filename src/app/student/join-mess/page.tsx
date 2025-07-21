@@ -18,7 +18,8 @@ function JoinMessContent() {
     const { toast } = useToast();
     const { user } = useAuth();
     
-    const messId = searchParams.get('messId');
+    // This is the admin's UID, which is also the ID of their user document.
+    const messAdminUid = searchParams.get('messId'); 
     const messName = searchParams.get('messName');
 
     const [secretCode, setSecretCode] = useState('');
@@ -28,7 +29,7 @@ function JoinMessContent() {
         e.preventDefault();
         setIsSubmitting(true);
 
-        if (!user || !messId || !messName) {
+        if (!user || !messAdminUid || !messName) {
             toast({ variant: 'destructive', title: 'Error', description: 'User or mess information is missing.' });
             setIsSubmitting(false);
             return;
@@ -41,9 +42,10 @@ function JoinMessContent() {
         }
 
         try {
-            // 1. Fetch the admin document to validate the code
-            const messAdminRef = doc(db, 'users', messId);
-            const messAdminDoc = await getDoc(messAdminRef);
+            // 1. Fetch the admin's user document to validate the secret code.
+            // Security rules must allow `get` on `/users/{adminId}` for this to work.
+            const messAdminUserRef = doc(db, 'users', messAdminUid);
+            const messAdminDoc = await getDoc(messAdminUserRef);
 
             if (!messAdminDoc.exists() || messAdminDoc.data()?.role !== 'admin') {
                 toast({ variant: 'destructive', title: 'Validation Failed', description: 'Invalid mess selected.' });
@@ -51,22 +53,24 @@ function JoinMessContent() {
                 return;
             }
 
-            // 2. Compare the secret code
+            // 2. Compare the secret code from the admin's user document.
             if (messAdminDoc.data()?.secretCode !== secretCode) {
                 toast({ variant: 'destructive', title: 'Incorrect Code', description: 'The secret code you entered is incorrect.' });
                 setIsSubmitting(false);
                 return;
             }
 
-            // 3. If code is correct, update the student's document
+            // 3. If the code is correct, update the student's OWN user document.
+            // The security rules must allow this specific update.
             const studentId = `STU${user.uid.slice(-5).toUpperCase()}`;
             const studentRef = doc(db, 'users', user.uid);
+            
             await updateDoc(studentRef, {
-                messId: messId,
+                messId: messAdminUid, // This is the admin's UID
                 messName: messName,
                 status: 'pending_approval',
                 studentId: studentId,
-                joinDate: new Date().toISOString().split('T')[0],
+                joinDate: new Date().toISOString(),
                 messPlan: 'full_day'
             });
 
@@ -76,16 +80,16 @@ function JoinMessContent() {
         } catch (error: any) {
             console.error("Error submitting join request:", error);
             if (error.code === 'permission-denied') {
-                 toast({ variant: 'destructive', title: 'Permission Error', description: 'You do not have permission to perform this action.' });
+                 toast({ variant: 'destructive', title: 'Permission Error', description: 'Your request was blocked by security rules. Please try again or contact support.' });
             } else {
-                toast({ variant: 'destructive', title: 'Request Failed', description: 'A server error occurred. Please try again later.' });
+                toast({ variant: 'destructive', title: 'Request Failed', description: 'An unknown server error occurred. Please try again later.' });
             }
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (!messId || !messName) {
+    if (!messAdminUid || !messName) {
         return (
              <Card className="w-full max-w-md z-10"><CardContent className="p-6 text-center text-destructive">Invalid Mess Information. Please go back and select a mess.</CardContent></Card>
         )

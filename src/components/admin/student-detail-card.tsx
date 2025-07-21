@@ -39,9 +39,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         now.setHours(0, 0, 0, 0);
         setToday(now);
 
-        const unsubscribe = onHolidaysUpdate((updatedHolidays) => {
-            setHolidays(updatedHolidays);
-        });
+        const unsubscribe = onHolidaysUpdate(setHolidays);
 
         return () => unsubscribe();
     }, []);

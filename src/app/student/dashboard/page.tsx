@@ -67,7 +67,7 @@ export default function StudentDashboardPage() {
     setLeavesLoading(true);
     setHolidaysLoading(true);
 
-    if (!user) {
+    if (!user || !user.uid || !user.messId) {
         setLeavesLoading(false);
         setHolidaysLoading(false);
         return;
@@ -459,5 +459,3 @@ export default function StudentDashboardPage() {
     </div>
   );
 }
-
-    

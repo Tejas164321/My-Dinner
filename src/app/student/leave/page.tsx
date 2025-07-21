@@ -60,7 +60,7 @@ export default function StudentLeavePage() {
     setToday(now);
     setOneDayDate(now);
 
-    if (!user) {
+    if (!user || !user.uid || !user.messId) {
         setLeavesLoading(false);
         return;
     }

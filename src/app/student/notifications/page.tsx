@@ -8,6 +8,8 @@ import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
 import { Bell, Rss, ShieldAlert, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 
 type Notification = (Announcement & { type: 'announcement' }) | (PaymentReminder & { type: 'reminder' });
 
@@ -19,7 +21,7 @@ export default function StudentNotificationsPage() {
     const initialLoadDone = useRef(false);
 
     useEffect(() => {
-        if (!user) {
+        if (!user || !user.messId) {
             setIsLoading(false);
             return;
         }

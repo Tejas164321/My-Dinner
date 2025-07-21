@@ -43,6 +43,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { format, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, subMonths } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
 
 const CHARGE_PER_MEAL = 65;
 
@@ -122,7 +124,7 @@ export default function StudentBillsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !user.uid || !user.messId) {
         setIsLoading(false);
         return;
     }
