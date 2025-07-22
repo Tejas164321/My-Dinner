@@ -219,7 +219,7 @@ export default function StudentAttendancePage() {
                     <Skeleton className="h-8 w-48" />
                     <Skeleton className="h-10 w-48" />
                 </div>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-4">
                     <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-24 w-full" />
@@ -251,7 +251,7 @@ export default function StudentAttendancePage() {
                 </Select>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Attendance ({format(month, 'MMMM')})</CardTitle>
@@ -259,7 +259,7 @@ export default function StudentAttendancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{monthlyStats.attendancePercent}</div>
-                        <p className="text-xs text-muted-foreground">Based on days attended this month</p>
+                        <p className="text-xs text-muted-foreground">This month's attendance</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -269,7 +269,7 @@ export default function StudentAttendancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{monthlyStats.totalMeals}</div>
-                        <p className="text-xs text-muted-foreground">Meals attended this month</p>
+                        <p className="text-xs text-muted-foreground">Meals this month</p>
                     </CardContent>
                 </Card>
                  <Card>
@@ -279,7 +279,7 @@ export default function StudentAttendancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{monthlyStats.presentDays} Days</div>
-                        <p className="text-xs text-muted-foreground">Days you were marked present</p>
+                        <p className="text-xs text-muted-foreground">Days present this month</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -289,7 +289,7 @@ export default function StudentAttendancePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{monthlyStats.absentDays}</div>
-                        <p className="text-xs text-muted-foreground">Days you were on leave</p>
+                        <p className="text-xs text-muted-foreground">Days absent this month</p>
                     </CardContent>
                 </Card>
             </div>
@@ -298,7 +298,7 @@ export default function StudentAttendancePage() {
                 <CardHeader>
                     <CardTitle>Attendance Calendar for {format(month, 'MMMM yyyy')}</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col lg:flex-row lg:items-center lg:justify-center gap-8">
+                <CardContent className="flex flex-col items-center justify-center gap-8 lg:flex-row">
                     <Calendar
                         month={month}
                         onMonthChange={setMonth}
@@ -329,12 +329,12 @@ export default function StudentAttendancePage() {
                         className="p-3"
                         showOutsideDays={false}
                     />
-                    <div className="flex flex-wrap lg:flex-col gap-x-6 gap-y-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-chart-2" />Full Day Present</div>
-                        <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-chart-3" />Half Day Present / Leave</div>
-                        <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-destructive" />Full Day Leave</div>
-                        <div className="flex items-center gap-2"><span className="h-4 w-4 shrink-0 rounded-full bg-primary/40" />Holiday</div>
-                        <div className="flex items-center gap-2"><Badge variant="outline" className="border-accent text-accent">Today</Badge><span>Current Date</span></div>
+                    <div className="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground lg:w-auto lg:flex-col lg:items-start lg:justify-start lg:gap-y-4">
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-chart-2" />Present</div>
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-chart-3" />Half Day</div>
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-destructive" />Leave</div>
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-primary/40" />Holiday</div>
+                        <div className="flex items-center gap-2"><Badge variant="outline" className="h-5 border-accent text-accent">Today</Badge>Today</div>
                     </div>
                 </CardContent>
             </Card>

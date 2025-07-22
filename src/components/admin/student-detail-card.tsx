@@ -206,8 +206,8 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
     const PlanIcon = currentPlan.icon;
 
     return (
-        <Card className="w-full h-full bg-card/95 backdrop-blur-xl border-border p-4 md:p-6 overflow-y-auto">
-            <div className="flex flex-col gap-4 md:gap-6">
+        <Card className="w-full h-full bg-card/95 backdrop-blur-xl border-0 overflow-hidden">
+            <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 h-full overflow-y-auto">
                 {/* --- Profile Section --- */}
                  <div className="flex flex-col md:flex-row items-center gap-4">
                      <Avatar className="w-16 h-16 md:w-20 md:h-20 border-4 border-primary/20">
@@ -354,3 +354,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         </Card>
     );
 }
+
+    
+
+    

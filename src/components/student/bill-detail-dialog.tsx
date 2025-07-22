@@ -1,25 +1,19 @@
 
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import type { DayContentProps } from 'react-day-picker';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Bill, Holiday, Leave } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
-import { Utensils, FileDown, Wallet, CalendarCheck2 } from 'lucide-react';
+import { Utensils, FileDown, Wallet, X, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { DialogClose } from '@/components/ui/dialog';
 
 const monthMap: { [key: string]: number } = {
   January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
@@ -79,13 +73,15 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
         if (leaveType === 'full_day') {
           flDays.push(day);
         } else {
+          // any partial leave is a half day
           hpDays.push(day);
         }
       } else {
+        // present days
         if (student.messPlan === 'full_day') {
           fpDays.push(day);
         } else {
-          hpDays.push(day); // Half-day plan users are always 'half_present'
+          hpDays.push(day);
         }
       }
     });
@@ -135,8 +131,7 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
       case 'Paid':
         return {
           variant: 'secondary',
-          className:
-            'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80',
+          className: 'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80',
         };
       case 'Due':
         return { variant: 'destructive', className: '' };
@@ -148,169 +143,147 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
   const statusInfo = getStatusInfo(dueAmount > 0 ? 'Due' : 'Paid');
 
   return (
-    <Card className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 w-full relative bg-card/95 backdrop-blur-xl border-border">
-      {/* --- Left Column: Billing Details --- */}
-      <div className="lg:col-span-3 flex flex-col gap-6">
-        <Card className="flex flex-col h-full">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>
-                  Bill for {bill.month} {bill.year}
-                </CardTitle>
-                <CardDescription>
-                  Generated on: {bill.generationDate}
-                </CardDescription>
-              </div>
-              <Badge
-                variant={statusInfo.variant as any}
-                className={cn(
-                  'capitalize text-sm h-7 w-28 justify-center',
-                  statusInfo.className
-                )}
-              >
-                {dueAmount > 0 ? 'Due' : 'Paid'}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 flex-grow">
-            <div className="space-y-3 rounded-lg border p-4 h-full">
-              <h4 className="font-semibold text-foreground">Calculation & Payments</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <p className="text-muted-foreground flex items-center gap-2">
-                    <Utensils /> Total Meals Taken
-                  </p>
-                  <p>{bill.details.totalMeals} meals x ₹{bill.details.chargePerMeal.toLocaleString()}</p>
+    <Card className="w-full h-full bg-card/95 backdrop-blur-xl border-0 p-4 md:p-6 overflow-hidden">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-full">
+            {/* --- Left Column: Billing & Attendance Summary --- */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+                 {/* Header */}
+                <div className="pr-8">
+                    <CardTitle className="text-xl">Bill for {bill.month} {bill.year}</CardTitle>
                 </div>
-                <Separator />
-                <div className="flex justify-between items-center font-semibold text-lg">
-                  <p>Total Bill Amount</p>
-                  <p>₹{bill.totalAmount.toLocaleString()}</p>
-                </div>
-                 {bill.payments.length > 0 && (
-                    <div className="pt-2">
-                        <p className="font-medium text-foreground/90 mb-2">Payments Received:</p>
-                        <div className="space-y-1.5 pl-2 border-l-2 border-dashed">
-                        {bill.payments.map((payment, index) => (
-                            <div key={index} className="flex justify-between items-center text-green-400">
-                                <p className="text-muted-foreground">
-                                    <span className="text-green-400 font-mono text-xs">✔</span> Payment on {format(new Date(payment.date), 'MMM do, yyyy')}
-                                </p>
-                                <p>- ₹{payment.amount.toLocaleString()}</p>
+
+                {/* Billing Details */}
+                <div className="space-y-3">
+                    <h3 className="font-semibold text-base">Billing Summary</h3>
+                    <div className="space-y-3 text-sm p-3 md:p-4 border rounded-lg bg-secondary/30">
+                        <div className="flex justify-between items-center">
+                            <p className="text-muted-foreground">Billable Meals</p>
+                            <p>{bill.details.totalMeals} meals x ₹{bill.details.chargePerMeal.toLocaleString()}</p>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between items-center font-semibold text-lg">
+                            <p>Total Bill</p>
+                            <p>₹{bill.totalAmount.toLocaleString()}</p>
+                        </div>
+                        {bill.payments.length > 0 && (
+                            <div className="pt-2">
+                                <p className="font-medium text-foreground/90 mb-2">Payments:</p>
+                                <div className="space-y-1.5 pl-2 border-l-2 border-dashed">
+                                {bill.payments.map((payment, index) => (
+                                    <div key={index} className="flex justify-between items-center text-green-400">
+                                        <p className="text-muted-foreground">
+                                            <span className="text-green-400 font-mono text-xs">✔</span> on {format(new Date(payment.date), 'MMM do')}
+                                        </p>
+                                        <p>- ₹{payment.amount.toLocaleString()}</p>
+                                    </div>
+                                ))}
+                                </div>
                             </div>
-                        ))}
+                        )}
+                        <div className="flex justify-between items-center pt-1">
+                            <p className="text-muted-foreground">Total Paid</p>
+                            <p className="text-green-400">- ₹{paidAmount.toLocaleString()}</p>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between items-center font-semibold text-lg">
+                            <div className="flex items-center gap-2">
+                                <p>Final Due</p>
+                                <Badge variant={statusInfo.variant as any} className={cn('capitalize', statusInfo.className)}>
+                                    {dueAmount > 0 ? 'Due' : 'Paid'}
+                                </Badge>
+                            </div>
+                            <p className={cn(dueAmount > 0 ? 'text-destructive' : 'text-foreground')}>
+                                ₹{dueAmount.toLocaleString()}
+                            </p>
                         </div>
                     </div>
-                )}
-                 <div className="flex justify-between items-center pt-1">
-                    <p className="text-muted-foreground">Total Paid</p>
-                    <p className="text-green-400">- ₹{paidAmount.toLocaleString()}</p>
                 </div>
-                <Separator />
-                <div className="flex justify-between items-center font-semibold text-lg">
-                  <p>Final Due Amount</p>
-                  <p className={cn(dueAmount > 0 ? 'text-destructive' : 'text-foreground')}>
-                    ₹{dueAmount.toLocaleString()}
-                  </p>
+
+                 {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-4 mt-auto">
+                    <Button variant="outline" className="w-full">
+                        <FileDown /> Download Bill
+                    </Button>
+                    {dueAmount > 0 && (
+                        <Button className="w-full" onClick={() => onPayNow(bill)}>
+                            <Wallet /> Pay Now
+                        </Button>
+                    )}
                 </div>
-              </div>
             </div>
-          </CardContent>
-          <CardFooter className="gap-2">
-            <Button variant="outline" className="w-full">
-              <FileDown /> Download Bill
-            </Button>
-            {dueAmount > 0 && (
-              <Button className="w-full" onClick={() => onPayNow(bill)}>
-                  <Wallet /> Pay Now
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-      </div>
-
-      {/* --- Right Column: Attendance Details --- */}
-      <div className="lg:col-span-2 flex flex-col gap-6 relative">
-        <Card className="flex-1 flex flex-col">
-            <CardHeader className="p-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                    <CalendarCheck2 className="h-5 w-5" />
-                    Attendance for {bill.month}
-                </CardTitle>
-                 <CardDescription>
-                    {bill.details.totalDaysInMonth} total days in the month.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 flex flex-col flex-grow">
-                {/* Attendance Summary Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                    <div>
-                        <p className="text-2xl font-bold text-green-400">{bill.details.fullDays}</p>
-                        <p className="text-xs text-muted-foreground">Full Days</p>
+            
+            {/* --- Right Column: Calendar --- */}
+            <div className="lg:col-span-3 flex flex-col gap-4">
+                 <h3 className="font-semibold text-base">Attendance Details</h3>
+                 <div className="p-3 border rounded-lg bg-secondary/30 flex flex-col flex-1">
+                    {/* Attendance Summary Stats */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                        <div>
+                            <p className="text-2xl font-bold text-green-400">{bill.details.fullDays}</p>
+                            <p className="text-xs text-muted-foreground">Full Days</p>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-yellow-400">{bill.details.halfDays}</p>
+                            <p className="text-xs text-muted-foreground">Half Days</p>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-blue-400">{bill.details.holidays}</p>
+                            <p className="text-xs text-muted-foreground">Holidays</p>
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-destructive">{bill.details.absentDays}</p>
+                            <p className="text-xs text-muted-foreground">Absent</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-2xl font-bold text-yellow-400">{bill.details.halfDays}</p>
-                        <p className="text-xs text-muted-foreground">Half Days</p>
+                    
+                    <Separator className="my-3"/>
+                    
+                    {/* Calendar */}
+                    <div className="flex-grow flex items-center justify-center p-0">
+                         <Calendar
+                            month={monthDate}
+                            modifiers={{
+                                holiday: holidayDays,
+                                full_leave: fullLeaveDays,
+                                half_present: halfPresentDays,
+                                full_present: fullPresentDays,
+                            }}
+                            components={{ DayContent: CustomDayContent }}
+                            modifiersClassNames={{
+                                holiday: 'bg-primary/40 text-primary-foreground',
+                                full_leave: 'bg-destructive text-destructive-foreground',
+                                half_present: 'bg-chart-3 text-primary-foreground',
+                                full_present: 'bg-chart-2 text-primary-foreground',
+                            }}
+                            classNames={{
+                                months: 'w-full',
+                                month: 'w-full space-y-4',
+                                head_cell: 'text-muted-foreground w-full font-normal text-[0.8rem]',
+                                cell: 'h-9 w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center',
+                                day: 'h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center',
+                                day_today: 'bg-accent text-accent-foreground rounded-full',
+                                day_selected: 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                            }}
+                            className="p-0"
+                            showOutsideDays={false}
+                            disabled
+                        />
                     </div>
-                    <div>
-                        <p className="text-2xl font-bold text-blue-400">{bill.details.holidays}</p>
-                        <p className="text-xs text-muted-foreground">Holidays</p>
+                    {/* Legend */}
+                    <div className="p-0 pt-3 mt-auto">
+                        <div className="flex w-full items-center justify-center gap-x-3 gap-y-2 text-xs text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Present</div>
+                            <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
+                            <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
+                            <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-2xl font-bold text-destructive">{bill.details.absentDays}</p>
-                        <p className="text-xs text-muted-foreground">Absent</p>
-                    </div>
-                </div>
-
-                <Separator className="my-4"/>
-
-                {/* Calendar */}
-                <div className="flex-grow flex items-center justify-center p-0">
-                    <Calendar
-                        month={monthDate}
-                        modifiers={{
-                            holiday: holidayDays,
-                            full_leave: fullLeaveDays,
-                            half_present: halfPresentDays,
-                            full_present: fullPresentDays,
-                        }}
-                        components={{ DayContent: CustomDayContent }}
-                        modifiersClassNames={{
-                            holiday: 'bg-primary/40 text-primary-foreground',
-                            full_leave: 'bg-destructive text-destructive-foreground',
-                            half_present: 'bg-chart-3 text-primary-foreground',
-                            full_present: 'bg-chart-2 text-primary-foreground',
-                        }}
-                        classNames={{
-                            months: 'w-full',
-                            month: 'w-full space-y-4',
-                            head_cell:
-                            'text-muted-foreground w-full font-normal text-sm',
-                            cell: 'h-9 w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center',
-                            day: 'h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center',
-                            day_today: 'bg-accent text-accent-foreground rounded-full',
-                            day_selected:
-                            'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-                        }}
-                        className="p-0"
-                        showOutsideDays={false}
-                        disabled
-                    />
-                </div>
-                
-                {/* Legend */}
-                <div className="p-0 pt-4 mt-auto">
-                    <div className="flex w-full items-center justify-center gap-4 text-xs text-muted-foreground flex-wrap">
-                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Present</div>
-                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
-                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
-                        <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-      </div>
+                 </div>
+            </div>
+        </div>
     </Card>
   );
 }
+
+    

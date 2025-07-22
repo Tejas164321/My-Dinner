@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -26,6 +27,7 @@ import {
   DialogTrigger,
   DialogClose,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -36,7 +38,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import { BillDetailDialog } from '@/components/student/bill-detail-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -229,7 +231,7 @@ export default function StudentBillsPage() {
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div className="flex flex-wrap justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold tracking-tight hidden md:block">My Bills</h1>
+        <h1 className="text-2xl font-bold tracking-tight">My Bills</h1>
         
         <Dialog>
           <DialogTrigger asChild>
@@ -275,116 +277,74 @@ export default function StudentBillsPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Billing History</CardTitle>
-          <CardDescription>
-            A record of all your past and present mess bills. Click on a bill to
-            view details.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {dynamicallyGeneratedBills.map((bill) => {
-            const paidAmount = getPaidAmount(bill);
-            const dueAmount = bill.totalAmount - paidAmount;
+        <CardContent className="p-0">
+          <div className="space-y-3 sm:p-4">
+            {dynamicallyGeneratedBills.map((bill) => {
+              const paidAmount = getPaidAmount(bill);
+              const dueAmount = bill.totalAmount - paidAmount;
+              const billDate = new Date(bill.year, getMonth(new Date(bill.month + " 1, 2000")));
 
-            return (
-              <Card
-                key={bill.id}
-                className="hover:border-primary/50 transition-all duration-150 group"
-              >
-                <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <div className="flex items-center gap-4 flex-1 cursor-pointer min-w-[200px]">
-                        <div className="bg-secondary/50 p-3 rounded-lg">
-                          <Receipt className="h-6 w-6 text-primary" />
+              return (
+                <Dialog key={bill.id}>
+                  <div className="p-3 flex items-center gap-3 border-b sm:border sm:rounded-lg hover:bg-secondary/30 transition-all duration-150 group">
+                      <DialogTrigger asChild>
+                        <div className="flex-1 flex items-center gap-3 cursor-pointer">
+                              <div className="p-2.5 rounded-full bg-secondary/80 group-hover:bg-secondary border group-hover:border-primary/20 transition-colors">
+                                  <Receipt className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="flex-1 flex justify-between items-center">
+                                  <div>
+                                      <h3 className="font-semibold text-base truncate">{format(billDate, 'MMM')} {bill.year}</h3>
+                                      <p className="text-xs text-muted-foreground">Total: ₹{bill.totalAmount.toLocaleString()}</p>
+                                  </div>
+                              </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-lg">
-                            {bill.month} {bill.year}
-                          </p>
-                           <p className="text-sm text-muted-foreground">
-                            Paid:{' '}
-                            <span
-                              className={cn(
-                                paidAmount > 0
-                                  ? 'text-green-400'
-                                  : 'text-muted-foreground'
-                              )}
-                            >
-                              ₹{paidAmount.toLocaleString()}
-                            </span>
-                          </p>
-                        </div>
+                      </DialogTrigger>
+
+                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                          <Badge variant={dueAmount > 0 ? 'destructive' : 'secondary'} className={cn('text-xs', dueAmount <= 0 && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>
+                              Due: ₹{dueAmount.toLocaleString()}
+                          </Badge>
+                          <Button size="sm" onClick={() => handleOpenPaymentDialog(bill)} disabled={dueAmount <= 0} className="h-8 px-2.5 text-xs sm:px-3 sm:text-sm">
+                            <Wallet className="mr-1.5 h-3.5 w-3.5" /> <span className="hidden sm:inline">Pay</span>
+                          </Button>
                       </div>
-                    </DialogTrigger>
-                     <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none">
-                       <DialogHeader className="sr-only">
-                         <DialogTitle>Bill Details: {bill.month} {bill.year}</DialogTitle>
-                         <DialogDescription>
-                             A detailed breakdown of your bill for {bill.month} {bill.year}, including attendance and payment history.
-                         </DialogDescription>
-                       </DialogHeader>
-                      <BillDetailDialog bill={bill} onPayNow={() => handleOpenPaymentDialog(bill)} leaves={leaves} holidays={holidays} />
-                    </DialogContent>
-                  </Dialog>
-
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
-                     <div className="flex flex-col items-center justify-center flex-1">
-                       <p className="text-xl font-bold">
-                        ₹{bill.totalAmount.toLocaleString()}
-                      </p>
-                       <Badge
-                        variant={dueAmount > 0 ? 'destructive' : 'secondary'}
-                        className={cn(
-                          'text-sm font-normal h-7 w-full justify-center mt-1',
-                          dueAmount <= 0 && 'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80'
-                        )}
-                      >
-                        Due: ₹{dueAmount.toLocaleString()}
-                      </Badge>
                     </div>
-                    <Button className="flex-1" onClick={() => handleOpenPaymentDialog(bill)} disabled={dueAmount <= 0}>
-                        <Wallet className="mr-2 h-4 w-4" /> Pay Now
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+
+                  <DialogContent className="p-0 w-[90vw] max-w-[500px] md:max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <BillDetailDialog bill={bill} onPayNow={() => handleOpenPaymentDialog(bill)} leaves={leaves} holidays={holidays} />
+                  </DialogContent>
+                </Dialog>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
       {/* Payment Method Dialog */}
-      <AlertDialog
+      <Dialog
         open={!!selectedBill && !isCashPaymentOpen && !isConfirmingPayment}
         onOpenChange={(open) => !open && handleClosePaymentDialogs()}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Choose Payment Method</AlertDialogTitle>
-            <AlertDialogDescription>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Choose Payment Method</DialogTitle>
+            <DialogDescription>
               You have a due amount of ₹{dueBillForDialog.toLocaleString()} for
               the {selectedBill?.month} bill. How would you like to pay?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
             <Button variant="outline" disabled>
               <CreditCard /> Pay Online (Coming Soon)
             </Button>
             <Button onClick={() => setIsCashPaymentOpen(true)}>
               <Banknote /> Pay with Cash
             </Button>
-          </AlertDialogFooter>
-          <AlertDialogCancel
-            className="w-full mt-2"
-            onClick={handleClosePaymentDialogs}
-          >
-            Cancel
-          </AlertDialogCancel>
-        </AlertDialogContent>
-      </AlertDialog>
-
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       {/* Cash Payment Dialog */}
       <Dialog
         open={isCashPaymentOpen && !isConfirmingPayment}
@@ -418,7 +378,7 @@ export default function StudentBillsPage() {
               />
             </div>
           </div>
-          <CardFooter className="flex-col sm:flex-row p-0 gap-2">
+          <DialogFooter className="flex-col sm:flex-row p-0 gap-2 pt-4">
             <Button
               variant="secondary"
               className="w-full sm:w-auto"
@@ -433,7 +393,7 @@ export default function StudentBillsPage() {
             >
               Submit Payment
             </Button>
-          </CardFooter>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       
@@ -459,3 +419,4 @@ export default function StudentBillsPage() {
     </div>
   );
 }
+

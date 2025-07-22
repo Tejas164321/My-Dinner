@@ -199,7 +199,6 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
 
   const dashboardPath = user.role === 'Mess Manager' ? '/admin/dashboard' : '/student/dashboard';
   const settingsPath = user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings';
-  const notificationsPath = user.role === 'Mess Manager' ? '/admin/announcements' : '/student/notifications';
   
   const handleLogout = async () => {
       await signOut(auth);
@@ -250,14 +249,6 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
             </Link>
           
           <div className="flex items-center gap-2">
-            {user.role !== 'Mess Manager' && (
-              <Button asChild variant="ghost" size="icon" className="h-10 w-10">
-                <Link href={notificationsPath}>
-                  <Bell className="h-5 w-5" />
-                  <span className="sr-only">Notifications</span>
-                </Link>
-              </Button>
-            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">

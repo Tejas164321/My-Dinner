@@ -26,9 +26,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { StudentDetailCard } from "./student-detail-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -508,7 +505,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
             </Tabs>
 
             <Dialog open={!!studentToView} onOpenChange={(open) => !open && handleCloseDialog()}>
-                <DialogContent className="max-w-4xl p-0 bg-transparent border-0 shadow-none data-[state=open]:h-[90vh]">
+                <DialogContent className="p-0 w-[90vw] max-w-[500px] md:max-w-4xl max-h-[90vh] overflow-y-auto">
                      {studentToView && (
                         <StudentDetailCard 
                             student={studentToView} 
