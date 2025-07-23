@@ -356,5 +356,3 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 }
 
     
-
-    

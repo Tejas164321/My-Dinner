@@ -3,6 +3,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,21 +12,19 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import { paymentReminders, Holiday, Leave, AppUser, BillDetails } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
 import { cn } from '@/lib/utils';
-import { Receipt, Wallet, CreditCard, Banknote, X, Info, ShieldAlert } from 'lucide-react';
+import { Receipt, Wallet, CreditCard, Banknote, Info, ShieldAlert } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
@@ -112,6 +111,10 @@ const calculateBillDetailsForMonth = (
 };
 
 export default function StudentBillsPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const { user } = useAuth();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
@@ -124,6 +127,8 @@ export default function StudentBillsPage() {
   const [amountToConfirm, setAmountToConfirm] = useState<number | null>(null);
 
   const { toast } = useToast();
+  
+  const billIdToView = searchParams.get('view');
 
   useEffect(() => {
     if (!user || !user.uid || !user.messId) {
@@ -179,8 +184,31 @@ export default function StudentBillsPage() {
     }
     return bills.reverse();
   }, [user, holidays, leaves, isLoading]);
+  
+  const openedBill = useMemo(() => {
+      if (!billIdToView) return null;
+      return dynamicallyGeneratedBills.find(b => b.id === billIdToView) || null;
+  }, [billIdToView, dynamicallyGeneratedBills]);
 
-  const handleOpenPaymentDialog = (bill: Bill) => setSelectedBill(bill);
+  const handleOpenDetailDialog = (billId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('view', billId);
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleCloseDetailDialog = () => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('view');
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleOpenPaymentDialog = (bill: Bill) => {
+    handleCloseDetailDialog(); // Close detail view first
+    setTimeout(() => { // Allow state to update before opening next dialog
+        setSelectedBill(bill);
+    }, 150);
+  };
+  
   const handleClosePaymentDialogs = () => {
     setSelectedBill(null);
     setIsCashPaymentOpen(false);
@@ -190,7 +218,6 @@ export default function StudentBillsPage() {
   };
 
   const handleMakePayment = (amountToPay: number) => {
-    // This is a mock function, in a real app this would call a server action
     if (!selectedBill || isNaN(amountToPay) || amountToPay <= 0) {
       toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number.' });
       return;
@@ -285,41 +312,42 @@ export default function StudentBillsPage() {
               const billDate = new Date(bill.year, getMonth(new Date(bill.month + " 1, 2000")));
 
               return (
-                <Dialog key={bill.id}>
-                  <div className="p-3 flex items-center gap-3 border-b sm:border sm:rounded-lg hover:bg-secondary/30 transition-all duration-150 group">
-                      <DialogTrigger asChild>
-                        <div className="flex-1 flex items-center gap-3 cursor-pointer">
-                              <div className="p-2.5 rounded-full bg-secondary/80 group-hover:bg-secondary border group-hover:border-primary/20 transition-colors">
-                                  <Receipt className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="flex-1 flex justify-between items-center">
-                                  <div>
-                                      <h3 className="font-semibold text-base truncate">{format(billDate, 'MMM')} {bill.year}</h3>
-                                      <p className="text-xs text-muted-foreground">Total: ₹{bill.totalAmount.toLocaleString()}</p>
-                                  </div>
-                              </div>
+                <div key={bill.id} className="p-3 flex items-center gap-3 border-b sm:border sm:rounded-lg hover:bg-secondary/30 transition-all duration-150 group">
+                    <button onClick={() => handleOpenDetailDialog(bill.id)} className="flex-1 flex items-center gap-3 cursor-pointer text-left w-full">
+                        <div className="p-2.5 rounded-full bg-secondary/80 group-hover:bg-secondary border group-hover:border-primary/20 transition-colors">
+                            <Receipt className="h-5 w-5 text-primary" />
                         </div>
-                      </DialogTrigger>
+                        <div className="flex-1 flex justify-between items-center">
+                            <div>
+                                <h3 className="font-semibold text-base truncate">{format(billDate, 'MMM')} {bill.year}</h3>
+                                <p className="text-xs text-muted-foreground">Total: ₹{bill.totalAmount.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </button>
 
-                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                          <Badge variant={dueAmount > 0 ? 'destructive' : 'secondary'} className={cn('text-xs', dueAmount <= 0 && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>
-                              Due: ₹{dueAmount.toLocaleString()}
-                          </Badge>
-                          <Button size="sm" onClick={() => handleOpenPaymentDialog(bill)} disabled={dueAmount <= 0} className="h-8 px-2.5 text-xs sm:px-3 sm:text-sm">
-                            <Wallet className="mr-1.5 h-3.5 w-3.5" /> <span className="hidden sm:inline">Pay</span>
-                          </Button>
-                      </div>
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <Badge variant={dueAmount > 0 ? 'destructive' : 'secondary'} className={cn('text-xs', dueAmount <= 0 && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>
+                            Due: ₹{dueAmount.toLocaleString()}
+                        </Badge>
+                        <Button size="sm" onClick={() => setSelectedBill(bill)} disabled={dueAmount <= 0} className="h-8 px-2.5 text-xs sm:px-3 sm:text-sm">
+                          <Wallet className="mr-1.5 h-3.5 w-3.5" /> <span className="hidden sm:inline">Pay</span>
+                        </Button>
                     </div>
-
-                  <DialogContent className="p-0 w-[90vw] max-w-[500px] md:max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <BillDetailDialog bill={bill} onPayNow={() => handleOpenPaymentDialog(bill)} leaves={leaves} holidays={holidays} />
-                  </DialogContent>
-                </Dialog>
+                  </div>
               );
             })}
           </div>
         </CardContent>
       </Card>
+      
+      {/* Bill Detail Dialog controlled by URL */}
+      <Dialog open={!!openedBill} onOpenChange={(open) => {if(!open) handleCloseDetailDialog()}}>
+          <DialogContent className="p-0 w-[90vw] max-w-[500px] md:max-w-4xl max-h-[90vh] overflow-y-auto">
+            {openedBill && (
+              <BillDetailDialog bill={openedBill} onPayNow={() => handleOpenPaymentDialog(openedBill)} leaves={leaves} holidays={holidays} />
+            )}
+          </DialogContent>
+      </Dialog>
 
       {/* Payment Method Dialog */}
       <Dialog
@@ -378,7 +406,7 @@ export default function StudentBillsPage() {
               />
             </div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row p-0 gap-2 pt-4">
+          <DialogFooter>
             <Button
               variant="secondary"
               className="w-full sm:w-auto"
@@ -419,4 +447,3 @@ export default function StudentBillsPage() {
     </div>
   );
 }
-
