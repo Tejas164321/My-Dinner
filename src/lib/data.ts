@@ -1,11 +1,12 @@
 
+
 import { format, subDays, addDays, startOfDay } from 'date-fns';
 
 export const studentNavItems = [
     { href: '/student/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-    { href: '/student/leave', label: 'Leave', icon: 'CalendarDays' },
-    { href: '/student/attendance', label: 'Attendance', icon: 'UserCheck' },
-    { href: '/student/bills', label: 'Bills', icon: 'CircleDollarSign' },
+    { href: '/student/leave', label: 'Apply for Leave', icon: 'CalendarDays' },
+    { href: '/student/attendance', label: 'My Attendance', icon: 'UserCheck' },
+    { href: '/student/bills', label: 'My Bills', icon: 'CircleDollarSign' },
     { href: '/student/notifications', label: 'Notifications', icon: 'Bell' },
     { href: '/student/settings', label: 'Settings', icon: 'Settings' },
 ];
@@ -13,7 +14,7 @@ export const studentNavItems = [
 export const adminNavItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
     { href: '/admin/students', label: 'Students', icon: 'Users' },
-    { href: '/admin/menu', label: 'Menu', icon: 'Utensils' },
+    { href: '/admin/menu', label: 'Meal Menu', icon: 'Utensils' },
     { href: '/admin/billing', label: 'Billing', icon: 'CircleDollarSign' },
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
     { href: '/admin/announcements', label: 'Announcements', icon: 'Megaphone' },

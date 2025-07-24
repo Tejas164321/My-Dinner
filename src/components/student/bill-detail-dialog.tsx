@@ -204,9 +204,9 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                       <FileDown /> Download Bill
                   </Button>
                   {dueAmount > 0 && (
-                    <Button className="w-full" onClick={() => onPayNow(bill)}>
-                        <Wallet /> Pay Now
-                    </Button>
+                      <Button className="w-full" onClick={() => onPayNow(bill)}>
+                          <Wallet /> Pay Now
+                      </Button>
                   )}
               </div>
           </div>

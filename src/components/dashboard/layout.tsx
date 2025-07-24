@@ -57,6 +57,7 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   LifeBuoy,
   MessageSquare,
   Settings,
+  LogOut,
 };
 
 export interface NavItem {
@@ -68,7 +69,7 @@ export interface NavItem {
 interface DashboardLayoutProps {
   children: ReactNode;
   navItems: NavItem[];
-  user: { name: string; role: string; email: string; avatarUrl?: string };
+  user: { name: string; role: 'admin' | 'student'; email: string; avatarUrl?: string };
 }
 
 function NavContent({ navItems, isCollapsed, onLinkClick }: { navItems: NavItem[], isCollapsed: boolean, onLinkClick?: () => void }) {
@@ -139,7 +140,8 @@ function BottomNav({ navItems, onLinkClick }: { navItems: NavItem[]; onLinkClick
 
 
 function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLayoutProps['user'], isCollapsed?: boolean, onLinkClick?: () => void }) {
-    const profileLink = user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings';
+    const profileLink = user.role === 'admin' ? '/admin/settings' : '/student/settings';
+    const roleName = user.role === 'admin' ? 'Admin' : 'Student';
     
     return (
         <TooltipProvider delayDuration={300}>
@@ -156,7 +158,7 @@ function UserProfileLink({ user, isCollapsed, onLinkClick }: { user: DashboardLa
                         </Avatar>
                         <div className={cn("flex flex-col w-full min-w-0 transition-all duration-200 overflow-hidden", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
                             <p className="font-semibold text-sm truncate whitespace-nowrap">{user.name}</p>
-                            <p className="text-xs text-muted-foreground truncate whitespace-nowrap">{user.role}</p>
+                            <p className="text-xs text-muted-foreground truncate whitespace-nowrap capitalize">{roleName}</p>
                         </div>
                     </Link>
                 </TooltipTrigger>
@@ -197,8 +199,8 @@ export function DashboardLayout({ children, navItems, user }: DashboardLayoutPro
   
   const handleToggle = () => setIsCollapsed(!isCollapsed);
 
-  const dashboardPath = user.role === 'Mess Manager' ? '/admin/dashboard' : '/student/dashboard';
-  const settingsPath = user.role === 'Mess Manager' ? '/admin/settings' : '/student/settings';
+  const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/student/dashboard';
+  const settingsPath = user.role === 'admin' ? '/admin/settings' : '/student/settings';
   
   const handleLogout = async () => {
       await signOut(auth);

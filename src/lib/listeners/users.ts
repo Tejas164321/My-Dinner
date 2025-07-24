@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, onSnapshot, query, where, Unsubscribe } from 'firebase/firestore';
@@ -23,14 +24,13 @@ export function onUsersUpdate(messId: string, callback: (users: Student[]) => vo
   // This query fetches ALL users who are either pending for this mess or already part of it.
   const q = query(
     collection(db, USERS_COLLECTION),
-    where("role", "==", "student")
+    where("role", "==", "student"),
+    where("messId", "==", messId)
   );
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
-    const users = snapshot.docs
-      .map(doc => ({ uid: doc.id, ...doc.data() } as Student))
-      .filter(user => user.messId === messId); // Filter on the client side
-
+    const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+    
     users.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     callback(users);
 

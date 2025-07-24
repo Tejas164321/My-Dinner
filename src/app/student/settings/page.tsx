@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -10,15 +10,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/auth-context';
-import { messInfo, type Student } from '@/lib/data';
+import type { Student } from '@/lib/data';
+import { getMessInfo, type MessInfo } from '@/lib/services/mess';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, Moon, Sun, HelpCircle, Loader2 } from 'lucide-react';
+import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, HelpCircle, Loader2, Sun, Moon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 // Client-side action
 async function submitPlanChangeRequest(studentUid: string, studentId: string, studentName: string, fromPlan: Student['messPlan'], toPlan: Student['messPlan'], messId: string) {
@@ -36,24 +39,44 @@ async function submitPlanChangeRequest(studentUid: string, studentId: string, st
 
 export default function StudentSettingsPage() {
     const { toast } = useToast();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
+    const [isLoadingMessInfo, setIsLoadingMessInfo] = useState(true);
 
     // Profile Settings State
-    const [name, setName] = useState(user?.name || '');
-    const [email, setEmail] = useState(user?.email || '');
-    const [contact, setContact] = useState(user?.contact || '');
-
-    // Notification Settings
-    const [inAppNotifications, setInAppNotifications] = useState(true);
-
-    // Appearance Settings
-    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [contact, setContact] = useState('');
+    
+    // Mess Info State
+    const [messInfo, setMessInfo] = useState<MessInfo | null>(null);
 
     // Meal Plan Settings
-    const [currentPlan, setCurrentPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>(user?.messPlan || 'full_day');
-    const [selectedPlan, setSelectedPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>(user?.messPlan || 'full_day');
+    const [currentPlan, setCurrentPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>('full_day');
+    const [selectedPlan, setSelectedPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>('full_day');
     const [isRequestPending, setIsRequestPending] = useState(false);
+    
+    useEffect(() => {
+        if (user) {
+            setName(user.name || '');
+            setEmail(user.email || '');
+            setContact(user.contact || '');
+            setCurrentPlan(user.messPlan || 'full_day');
+            setSelectedPlan(user.messPlan || 'full_day');
+
+            if (user.messId) {
+                const fetchMessData = async () => {
+                    setIsLoadingMessInfo(true);
+                    const info = await getMessInfo(user.messId!);
+                    setMessInfo(info);
+                    setIsLoadingMessInfo(false);
+                };
+                fetchMessData();
+            } else {
+                setIsLoadingMessInfo(false);
+            }
+        }
+    }, [user]);
 
 
     const handleSaveChanges = async () => {
@@ -96,25 +119,26 @@ export default function StudentSettingsPage() {
     };
     
     const planDetails = {
-        full_day: { name: 'Full Day', description: 'Includes both lunch and dinner.' },
-        lunch_only: { name: 'Lunch Only', description: 'Includes only lunch every day.' },
-        dinner_only: { name: 'Dinner Only', description: 'Includes only dinner every day.' }
+        full_day: { name: 'Full Day', description: 'Includes both lunch and dinner.', icon: Utensils, color: 'text-primary' },
+        lunch_only: { name: 'Lunch Only', description: 'Includes only lunch every day.', icon: Sun, color: 'text-yellow-400' },
+        dinner_only: { name: 'Dinner Only', description: 'Includes only dinner every day.', icon: Moon, color: 'text-purple-400' }
     };
 
-    if (!user) {
-        return null; // or a loading spinner
+    if (authLoading || !user) {
+        return (
+             <div className="space-y-6">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-96 w-full" />
+            </div>
+        )
     }
-
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-                        {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                        <span className="sr-only">Toggle theme</span>
-                    </Button>
                     <Link href="/student/support" className={cn(buttonVariants({ variant: 'outline', size: 'icon' }))}>
                         <HelpCircle className="h-5 w-5" />
                         <span className="sr-only">Support</span>
@@ -123,9 +147,8 @@ export default function StudentSettingsPage() {
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3">
                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" /> My Profile</TabsTrigger>
-                    <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4" /> Notifications</TabsTrigger>
                     <TabsTrigger value="meal-plan"><Utensils className="mr-2 h-4 w-4" /> Meal Plan</TabsTrigger>
                     <TabsTrigger value="mess-info"><Building2 className="mr-2 h-4 w-4" /> Mess Info</TabsTrigger>
                 </TabsList>
@@ -150,7 +173,7 @@ export default function StudentSettingsPage() {
                                 </div>
                                 <div className="space-y-1.5 text-center sm:text-left">
                                     <h3 className="text-2xl font-semibold">{name}</h3>
-                                    <p className="text-muted-foreground">Student</p>
+                                    <p className="text-muted-foreground capitalize">{user.role}</p>
                                     <div className="space-y-1 pt-2 text-sm text-muted-foreground">
                                         <div className="flex items-center gap-2 justify-center sm:justify-start">
                                             <span className="font-semibold text-foreground">Student ID:</span>
@@ -158,7 +181,7 @@ export default function StudentSettingsPage() {
                                         </div>
                                         <div className="flex items-center gap-2 justify-center sm:justify-start">
                                             <span className="font-semibold text-foreground">Joined:</span>
-                                            <span>{user.joinDate}</span>
+                                            <span>{user.joinDate ? format(new Date(user.joinDate), 'd MMM, yyyy') : 'N/A'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -166,7 +189,7 @@ export default function StudentSettingsPage() {
                             
                             <div className="space-y-4 pt-6 border-t">
                                 <h3 className="font-semibold text-foreground/90">Personal Information</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="profile-name">Full Name</Label>
                                         <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -175,29 +198,10 @@ export default function StudentSettingsPage() {
                                         <Label htmlFor="profile-contact">Contact Number</Label>
                                         <Input id="profile-contact" type="tel" value={contact} onChange={(e) => setContact(e.target.value)} />
                                     </div>
-                                    <div className="space-y-2 md:col-span-2">
+                                    <div className="space-y-2 sm:col-span-2">
                                         <Label htmlFor="profile-email">Email Address</Label>
                                         <Input id="profile-email" type="email" value={email} readOnly disabled />
                                         <p className="text-xs text-muted-foreground">Your email address cannot be changed.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 pt-6 border-t">
-                                <h3 className="font-semibold text-foreground/90">Change Password</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="current-password">Current Password</Label>
-                                        <Input id="current-password" type="password" placeholder="••••••••" />
-                                    </div>
-                                    <div></div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="new-password">New Password</Label>
-                                        <Input id="new-password" type="password" placeholder="••••••••" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                        <Input id="confirm-password" type="password" placeholder="••••••••" />
                                     </div>
                                 </div>
                             </div>
@@ -207,27 +211,6 @@ export default function StudentSettingsPage() {
                                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {isSaving ? 'Saving...' : 'Update Profile'}
                             </Button>
-                        </CardFooter>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="notifications" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Notification Settings</CardTitle>
-                            <CardDescription>Manage how you receive communications from the mess.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="in-app-notifs" className="text-base">In-App Notifications</Label>
-                                    <p className="text-sm text-muted-foreground">Receive alerts for announcements and billing directly in the app.</p>
-                                </div>
-                                <Switch id="in-app-notifs" checked={inAppNotifications} onCheckedChange={setInAppNotifications} />
-                            </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button>Save Preferences</Button>
                         </CardFooter>
                     </Card>
                 </TabsContent>
@@ -253,21 +236,24 @@ export default function StudentSettingsPage() {
                                         Your current plan is: <span className="font-bold text-primary capitalize">{currentPlan.replace('_', ' ')}</span>. Select a new plan below to request a change.
                                     </p>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                       <button onClick={() => setSelectedPlan('full_day')} className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-40", selectedPlan === 'full_day' ? 'border-primary' : 'border-muted bg-popover')}>
-                                            <Utensils className="mb-3 h-8 w-8 text-primary" />
-                                            <span className="font-semibold">{planDetails.full_day.name}</span>
-                                            <p className="text-xs text-muted-foreground mt-1">{planDetails.full_day.description}</p>
-                                        </button>
-                                         <button onClick={() => setSelectedPlan('lunch_only')} className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-40", selectedPlan === 'lunch_only' ? 'border-primary' : 'border-muted bg-popover')}>
-                                            <Sun className="mb-3 h-8 w-8 text-yellow-400" />
-                                            <span className="font-semibold">{planDetails.lunch_only.name}</span>
-                                            <p className="text-xs text-muted-foreground mt-1">{planDetails.lunch_only.description}</p>
-                                        </button>
-                                         <button onClick={() => setSelectedPlan('dinner_only')} className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-40", selectedPlan === 'dinner_only' ? 'border-primary' : 'border-muted bg-popover')}>
-                                            <Moon className="mb-3 h-8 w-8 text-purple-400" />
-                                            <span className="font-semibold">{planDetails.dinner_only.name}</span>
-                                            <p className="text-xs text-muted-foreground mt-1">{planDetails.dinner_only.description}</p>
-                                        </button>
+                                        {Object.entries(planDetails).map(([planKey, planValue]) => {
+                                            const key = planKey as keyof typeof planDetails;
+                                            const { icon: Icon, name, description, color } = planValue;
+                                            return (
+                                                <button 
+                                                    key={key}
+                                                    onClick={() => setSelectedPlan(key)} 
+                                                    className={cn(
+                                                        "flex flex-col items-center justify-center text-center rounded-md border-2 p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-40", 
+                                                        selectedPlan === key ? 'border-primary' : 'border-muted bg-popover'
+                                                    )}
+                                                >
+                                                    <Icon className={cn("mb-3 h-8 w-8", color)} />
+                                                    <span className="font-semibold">{name}</span>
+                                                    <p className="text-xs text-muted-foreground mt-1">{description}</p>
+                                                </button>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -291,10 +277,12 @@ export default function StudentSettingsPage() {
                             <CardDescription>Details of the mess facility you are enrolled in.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6 pt-4">
+                            {isLoadingMessInfo ? <Skeleton className="h-48 w-full" /> : !messInfo ? <p>Could not load mess information.</p> : (
+                            <>
                             <div className="flex items-start gap-4">
                                 <Building2 className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
                                 <div>
-                                    <p className="font-semibold text-foreground">{messInfo.name}</p>
+                                    <p className="font-semibold text-foreground">{messInfo.messName}</p>
                                     <p className="text-sm text-muted-foreground">Mess Name</p>
                                 </div>
                             </div>
@@ -302,7 +290,7 @@ export default function StudentSettingsPage() {
                             <div className="flex items-start gap-4">
                                 <MapPin className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
                                 <div>
-                                    <p className="text-foreground">{messInfo.address}</p>
+                                    <p className="text-foreground">{messInfo.address || 'Not provided'}</p>
                                     <p className="text-sm text-muted-foreground">Address</p>
                                 </div>
                             </div>
@@ -310,7 +298,7 @@ export default function StudentSettingsPage() {
                             <div className="flex items-start gap-4">
                                 <Mail className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
                                 <div>
-                                    <p className="text-foreground">{messInfo.email}</p>
+                                    <p className="text-foreground">{messInfo.contactEmail || 'Not provided'}</p>
                                     <p className="text-sm text-muted-foreground">Contact Email</p>
                                 </div>
                             </div>
@@ -318,10 +306,12 @@ export default function StudentSettingsPage() {
                             <div className="flex items-start gap-4">
                                 <Phone className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
                                 <div>
-                                    <p className="text-foreground">{messInfo.phone}</p>
+                                    <p className="text-foreground">{messInfo.contactPhone || 'Not provided'}</p>
                                     <p className="text-sm text-muted-foreground">Contact Phone</p>
                                 </div>
                             </div>
+                            </>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

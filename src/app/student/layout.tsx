@@ -51,15 +51,21 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             return;
         }
 
-        // --- From this point, we know the user is logged in (and is a student) ---
+        // --- From this point, we know the user is logged in ---
         
-        const isAffiliated = user.status === 'active' || user.status === 'suspended';
-        const isPending = user.status === 'unaffiliated' || user.status === 'pending_approval';
+        // Redirect non-students away from student pages
+        if (user.role !== 'student') {
+             router.replace('/student/login'); // Or a more appropriate page
+             return;
+        }
 
-        // Redirect logged-in users away from auth pages
+        const isAffiliated = !!user.messId && (user.status === 'active' || user.status === 'suspended');
+        const isPendingOrUnaffiliated = !user.messId || user.status === 'unaffiliated' || user.status === 'pending_approval';
+        
+        // Redirect logged-in students away from auth pages
         if (isAuthPage) {
-            if (isPending) router.replace('/student/select-mess');
-            else router.replace('/student/dashboard');
+            if (isAffiliated) router.replace('/student/dashboard');
+            else router.replace('/student/select-mess');
             return;
         }
         
@@ -69,8 +75,8 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             return;
         }
 
-        // Redirect pending users away from protected dashboard pages
-        if (isPending && !isJoiningProcessPage) {
+        // Redirect pending/unaffiliated users away from protected dashboard pages
+        if (isPendingOrUnaffiliated && !isJoiningProcessPage) {
             router.replace('/student/select-mess');
             return;
         }
@@ -84,32 +90,28 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
 
     const isAuthPage = pathname.startsWith('/student/login') || pathname.startsWith('/student/signup');
     const isJoiningProcessPage = pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess');
+    const isAffiliated = user && user.role === 'student' && !!user.messId && !isAuthPage && !isJoiningProcessPage;
 
-    // If user is affiliated and on a protected page, render the full layout.
-    if (user && (user.status === 'active' || user.status === 'suspended') && !isAuthPage && !isJoiningProcessPage) {
+    if (isAffiliated) {
+        // User is logged in, has a mess, and is on a protected dashboard page.
         const dashboardUser = {
-            name: user?.name || 'Student',
-            role: user?.messName || 'Student',
-            email: user?.email || '',
-            avatarUrl: user?.avatarUrl,
+            name: user.name || 'Student',
+            role: 'student',
+            email: user.email || '',
+            avatarUrl: user.avatarUrl,
         };
         return (
             <DashboardLayout navItems={studentNavItems} user={dashboardUser}>
                 {children}
             </DashboardLayout>
         );
-    }
-    
-    // If the user is in the joining process and on a joining page, render it.
-    if (user && (user.status === 'unaffiliated' || user.status === 'pending_approval') && isJoiningProcessPage) {
+    } else if (isAuthPage || isJoiningProcessPage) {
+        // User is on a public page (login, signup) or a semi-protected page (select-mess).
+        // Let these pages render themselves.
         return <>{children}</>;
+    } else {
+        // This is a transient state (e.g., waiting for useEffect to redirect).
+        // Show a skeleton to prevent layout shifts or flashing content.
+        return <StudentDashboardSkeleton />;
     }
-    
-    // If there is no user and we are on an auth page, render the auth page.
-    if (!user && isAuthPage) {
-        return <>{children}</>;
-    }
-
-    // In all other transient cases (e.g., waiting for a redirect), show a skeleton.
-    return <StudentDashboardSkeleton />;
 }

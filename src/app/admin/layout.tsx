@@ -72,7 +72,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     if (user && user.role === 'admin' && !isAuthPage) {
         const dashboardUser = {
             name: user?.name || 'Admin',
-            role: user?.messName || 'Mess Manager',
+            role: user.role,
             email: user?.email || '',
             avatarUrl: user?.avatarUrl,
         };
@@ -93,3 +93,5 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
     // In all other transient cases (e.g., waiting for a redirect), show a skeleton.
     return <AdminDashboardSkeleton />;
 }
+
+    
