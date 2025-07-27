@@ -10,7 +10,7 @@ import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from "@/lib/listeners/leaves";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, subMonths } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, subMonths, parseISO } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, Utensils, Percent, UserX, Sun, Moon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -58,8 +58,10 @@ export default function StudentAttendancePage() {
         return options;
     }, []);
 
+    const joinDate = useMemo(() => user?.joinDate ? startOfDay(parseISO(user.joinDate)) : null, [user]);
+
     const monthlyStats = useMemo(() => {
-        if (!user || isLoading) {
+        if (!user || isLoading || !joinDate) {
             return {
                 attendancePercent: '0%',
                 totalMeals: 0,
@@ -81,7 +83,8 @@ export default function StudentAttendancePage() {
         let absentDaysCount = 0;
         let totalCountedDays = 0;
         
-        const consideredDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1)).filter(d => d <= today);
+        const consideredDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1))
+            .filter(d => d <= today && d >= joinDate);
 
         consideredDays.forEach(day => {
             const isHoliday = monthHolidays.some(h => isSameDay(h.date, day));
@@ -112,7 +115,7 @@ export default function StudentAttendancePage() {
             presentDays: presentDaysCount,
             absentDays: absentDaysCount,
         };
-    }, [month, user, holidays, leaves, isLoading]);
+    }, [month, user, holidays, leaves, isLoading, joinDate]);
 
     const {
         holidayDays,
@@ -120,9 +123,10 @@ export default function StudentAttendancePage() {
         halfLeaveDays,
         fullPresentDays,
         halfPresentDays,
+        beforeJoinDays,
         dayTypeMap,
     } = useMemo(() => {
-        if (!user) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], dayTypeMap: new Map() };
+        if (!user || !joinDate) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], beforeJoinDays: [], dayTypeMap: new Map() };
         
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
@@ -134,6 +138,7 @@ export default function StudentAttendancePage() {
         const hlDays: Date[] = [];
         const fpDays: Date[] = [];
         const hpDays: Date[] = [];
+        const bjDays: Date[] = [];
         const dtMap = new Map();
 
         const studentLeaves = leaves.filter(l => isSameMonth(l.date, month));
@@ -144,6 +149,13 @@ export default function StudentAttendancePage() {
 
         allDaysInMonth.forEach(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
+            
+            if (day < joinDate) {
+                bjDays.push(day);
+                dtMap.set(dateKey, { type: 'before_join' });
+                return;
+            }
+
             const holidayType = htm.get(dateKey);
             const leaveType = ltm.get(dateKey);
 
@@ -173,9 +185,10 @@ export default function StudentAttendancePage() {
             halfLeaveDays: hlDays,
             fullPresentDays: fpDays,
             halfPresentDays: hpDays,
+            beforeJoinDays: bjDays,
             dayTypeMap: dtMap,
         };
-    }, [month, user, holidays, leaves]);
+    }, [month, user, holidays, leaves, joinDate]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
         if (!user) {
@@ -184,6 +197,10 @@ export default function StudentAttendancePage() {
 
         const dateKey = format(date, 'yyyy-MM-dd');
         const dayInfo = dayTypeMap.get(dateKey);
+        
+        if (dayInfo?.type === 'before_join') {
+             return <div className="relative h-full w-full flex items-center justify-center text-muted-foreground/50">{date.getDate()}</div>;
+        }
         
         const holidayType = dayInfo?.type === 'holiday' ? dayInfo.holidayType : null;
         const leaveType = dayInfo?.type === 'leave' ? dayInfo.leaveType : null;
@@ -302,12 +319,14 @@ export default function StudentAttendancePage() {
                     <Calendar
                         month={month}
                         onMonthChange={setMonth}
+                        disabled={(date) => date < (joinDate || new Date(0)) || date > new Date()}
                         modifiers={{
                             holiday: holidayDays,
                             full_leave: fullLeaveDays,
                             half_leave: halfLeaveDays,
                             full_present: fullPresentDays,
                             half_present: halfPresentDays,
+                            before_join: beforeJoinDays,
                         }}
                         components={{ DayContent: CustomDayContent }}
                         modifiersClassNames={{
@@ -316,6 +335,7 @@ export default function StudentAttendancePage() {
                             half_leave: 'bg-chart-3 text-primary-foreground',
                             full_present: 'bg-chart-2 text-primary-foreground',
                             half_present: 'bg-chart-3 text-primary-foreground',
+                            before_join: 'opacity-50 !bg-transparent text-muted-foreground/50 cursor-not-allowed',
                         }}
                         classNames={{
                             months: "w-full",
@@ -341,3 +361,5 @@ export default function StudentAttendancePage() {
         </div>
     );
 }
+
+    

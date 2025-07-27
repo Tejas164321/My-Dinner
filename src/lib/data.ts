@@ -21,33 +21,6 @@ export const adminNavItems = [
     { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
 ];
 
-export const messInfo = {
-  name: 'Messo Central Kitchen',
-  address: '123 College Road, University Campus, New Delhi - 110001',
-  email: 'contact@messo.com',
-  phone: '+91 12345 67890',
-};
-
-export const attendanceData = [
-  { name: 'Jan', total: 850, attended: 780 },
-  { name: 'Feb', total: 920, attended: 850 },
-  { name: 'Mar', total: 950, attended: 900 },
-  { name: 'Apr', total: 880, attended: 810 },
-  { name: 'May', total: 930, attended: 890 },
-  { name: 'Jun', total: 960, attended: 940 },
-  { name: 'Jul', total: 980, attended: 960 },
-];
-
-export const revenueData = [
-    { month: 'Jan', revenue: 250000 },
-    { month: 'Feb', revenue: 265000 },
-    { month: 'Mar', revenue: 275000 },
-    { month: 'Apr', revenue: 270000 },
-    { month: 'May', revenue: 280000 },
-    { month: 'Jun', revenue: 290000 },
-    { month: 'Jul', revenue: 285450 },
-];
-
 export interface BillDetails {
     totalMeals: number;
     chargePerMeal: number;
@@ -90,10 +63,12 @@ export interface AppUser {
     contact?: string;
     roomNo?: string;
     joinDate?: string;
-    status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated';
+    status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'pending_start';
     messId?: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
+    planStartDate?: Date;
+    planStartMeal?: 'lunch' | 'dinner';
 }
 
 export interface Student extends AppUser {
@@ -102,7 +77,7 @@ export interface Student extends AppUser {
     contact: string;
     roomNo: string;
     joinDate: string;
-    status: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated';
+    status: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'pending_start';
     messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
     messId: string;
     messName: string;
@@ -144,30 +119,6 @@ export interface Announcement {
     messId: string;
 }
 
-export const pastAnnouncements: Announcement[] = [
-    {
-        id: '1',
-        title: 'Diwali Celebration Dinner',
-        message: 'A special dinner will be served on the occasion of Diwali. Please join us for the celebration!',
-        date: '2023-11-10',
-        messId: 'dummy'
-    },
-    {
-        id: '2',
-        title: 'Mess Closure for Maintenance',
-        message: 'The mess will be closed for regular maintenance on Sunday from 9 AM to 5 PM. Please make alternate arrangements.',
-        date: '2023-11-05',
-        messId: 'dummy'
-    },
-    {
-        id: '3',
-        title: 'Feedback Form for October',
-        message: 'Your feedback is valuable to us. Please fill out the feedback form for the month of October. Link is available on the student dashboard.',
-        date: '2023-10-30',
-        messId: 'dummy'
-    }
-];
-
 export interface PaymentReminder {
     id: string;
     title: string;
@@ -175,6 +126,7 @@ export interface PaymentReminder {
     date: string;
 }
 
+// Mock payment reminders. In a real app, this would come from a backend process.
 export const paymentReminders: PaymentReminder[] = [
     {
         id: 'rem1',
@@ -184,4 +136,13 @@ export const paymentReminders: PaymentReminder[] = [
     },
 ];
 
-export const studentsData: Student[] = [];
+export const revenueData = [
+    { month: 'Jan', revenue: 250000 },
+    { month: 'Feb', revenue: 265000 },
+    { month: 'Mar', revenue: 275000 },
+    { month: 'Apr', revenue: 270000 },
+    { month: 'May', revenue: 280000 },
+    { month: 'Jun', revenue: 290000 },
+    { month: 'Jul', revenue: 285450 },
+];
+

@@ -4,23 +4,27 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { studentsData, Student } from "@/lib/data";
+import { Student } from "@/lib/data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bell } from 'lucide-react';
+import { Bell, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface BillingTableProps {
     filterMonth: string;
+    students: Student[];
+    isLoading: boolean;
 }
 
+const getDummyBillForStudent = (student: Student) => {
+    if (!student || !student.uid) return { due: 0 };
+    const base = student.messPlan === 'full_day' ? 3500 : 1800;
+    const due = student.uid.charCodeAt(0) % 2 === 0 ? base : 0;
+    return { due };
+};
+
 const BillRow = ({ student, month }: { student: Student, month: string }) => {
-    const monthDetails = student.monthlyDetails[month as keyof typeof student.monthlyDetails];
-    if (!monthDetails) return null;
-
-    const paidAmount = monthDetails.bill.payments.reduce((sum, p) => sum + p.amount, 0);
-    const dueAmount = monthDetails.bill.total - paidAmount;
-
-    if (dueAmount <= 0) return null;
+    const bill = getDummyBillForStudent(student);
+    if (bill.due <= 0) return null;
 
     return (
         <div className="flex items-center gap-4 p-3 hover:bg-secondary/50 rounded-lg transition-colors">
@@ -32,7 +36,7 @@ const BillRow = ({ student, month }: { student: Student, month: string }) => {
                 <p className="text-xs text-muted-foreground">{student.studentId}</p>
             </div>
              <div className="text-right">
-                <p className="font-medium text-destructive text-sm md:text-base">₹{dueAmount.toLocaleString()}</p>
+                <p className="font-medium text-destructive text-sm md:text-base">₹{bill.due.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Due</p>
             </div>
             <Button size="sm" variant="outline"><Bell className="h-4 w-4 md:mr-1.5" /> <span className="hidden md:inline">Remind</span></Button>
@@ -40,16 +44,13 @@ const BillRow = ({ student, month }: { student: Student, month: string }) => {
     )
 };
 
-export function BillingTable({ filterMonth }: BillingTableProps) {
+export function BillingTable({ filterMonth, students, isLoading }: BillingTableProps) {
     const dueStudents = useMemo(() => {
-        return studentsData.filter(student => {
-            const monthDetails = student.monthlyDetails[filterMonth as keyof typeof student.monthlyDetails];
-            if (!monthDetails) return false;
-            const paidAmount = monthDetails.bill.payments.reduce((sum, p) => sum + p.amount, 0);
-            const dueAmount = monthDetails.bill.total - paidAmount;
-            return dueAmount > 0;
+        return students.filter(student => {
+            const bill = getDummyBillForStudent(student);
+            return bill.due > 0;
         });
-    }, [filterMonth]);
+    }, [students, filterMonth]);
 
     return (
         <Card className="h-full flex flex-col">
@@ -69,9 +70,13 @@ export function BillingTable({ filterMonth }: BillingTableProps) {
             <CardContent className="flex-grow p-2 pt-0 relative">
                 <ScrollArea className="h-[350px] absolute inset-0 p-4 pt-0">
                     <div className="flex flex-col gap-2">
-                        {dueStudents.length > 0 ? (
+                        {isLoading ? (
+                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                            </div>
+                        ) : dueStudents.length > 0 ? (
                             dueStudents.map((student) => (
-                               <BillRow key={student.id} student={student} month={filterMonth} />
+                               <BillRow key={student.uid} student={student} month={filterMonth} />
                             ))
                         ) : (
                             <div className="flex items-center justify-center h-full text-muted-foreground py-10">

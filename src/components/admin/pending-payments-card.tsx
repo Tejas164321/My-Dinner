@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -53,37 +54,17 @@ export function PendingPaymentsCard() {
     }
 
     return (
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-500">
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle>Pending Payments</CardTitle>
-                        <CardDescription>A summary of outstanding dues.</CardDescription>
-                    </div>
-                    <Wallet className="h-6 w-6 text-destructive" />
-                </div>
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending Dues</CardTitle>
+                <Wallet className="h-5 w-5 text-destructive" />
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col items-center justify-center p-4 bg-secondary/50 rounded-lg">
-                    <p className="text-2xl font-bold text-destructive">
-                        ₹{totalDues.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Total Due</p>
+            <CardContent>
+                <div className="text-2xl font-bold">
+                    ₹{totalDues.toLocaleString()}
                 </div>
-                 <div className="flex flex-col items-center justify-center p-4 bg-secondary/50 rounded-lg">
-                    <p className="text-2xl font-bold">
-                        {defaulterCount}
-                    </p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Users className="h-4 w-4" /> Students</p>
-                </div>
+                <p className="text-xs text-muted-foreground">{defaulterCount} students with dues</p>
             </CardContent>
-             <CardFooter>
-                <Button asChild className="w-full" variant="outline">
-                    <Link href="/admin/billing">
-                        View Billing Details
-                    </Link>
-                </Button>
-            </CardFooter>
         </Card>
     );
 }

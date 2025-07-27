@@ -80,17 +80,10 @@ export default function StudentLoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
             </div>
-             <div className="flex flex-col sm:flex-row gap-2">
-                <Button variant="outline" asChild className="w-full">
-                  <Link href="/">
-                    <ChevronLeft /> Back
-                  </Link>
-                </Button>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
-                  {isLoading ? 'Logging in...' : 'Log In'}
-                </Button>
-            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
+              {isLoading ? 'Logging in...' : 'Log In'}
+            </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}

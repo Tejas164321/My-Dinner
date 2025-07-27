@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useMemo, useState, useEffect, useTransition } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,7 +48,7 @@ interface StudentsTableProps {
 // Client-side Firestore actions
 async function approveStudent(userId: string) {
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, { status: 'active' });
+    await updateDoc(userRef, { status: 'pending_start' });
 }
 
 async function rejectStudent(userId: string) {
@@ -245,7 +245,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
-    const tab = searchParams.get('tab');
+    const tab = searchParams.get('tab') || "joined";
     
     const { user } = useAuth();
     const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
@@ -302,7 +302,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                 suspended.push(student);
             } else if (student.status === 'pending_approval') {
                 pending.push(student);
-            } else if (student.status === 'active') {
+            } else if (student.status === 'active' || student.status === 'pending_start') {
                 active.push(student);
             }
         });
@@ -350,7 +350,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
 
     return (
         <div>
-            <Tabs defaultValue={tab || "joined"} className="w-full">
+            <Tabs value={tab} onValueChange={(value) => router.push(`${pathname}?tab=${value}`)} className="w-full">
                  <TabsList className="grid w-full grid-cols-4 h-auto p-1">
                     {tabsConfig.map((tabItem) => (
                         <TooltipProvider key={tabItem.value}>
@@ -505,7 +505,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
             </Tabs>
 
             <Dialog open={!!studentToView} onOpenChange={(open) => !open && handleCloseDialog()}>
-                <DialogContent className="p-0 w-[90vw] max-w-[500px] md:max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="p-0 w-[90vw] md:max-w-4xl max-h-[90vh] overflow-y-auto">
                      {studentToView && (
                         <StudentDetailCard 
                             student={studentToView} 
@@ -518,4 +518,3 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         </div>
     );
 }
-

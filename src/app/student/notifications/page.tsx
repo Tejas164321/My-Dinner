@@ -42,7 +42,8 @@ export default function StudentNotificationsPage() {
 
     const combinedNotifications = useMemo(() => {
         const liveAnnouncements: Notification[] = announcements.map(ann => ({ ...ann, type: 'announcement' }));
-        const reminders: Notification[] = paymentReminders.map(rem => ({ ...rem, type: 'reminder' }));
+        // In a real app, reminders might come from a different source or be generated based on bill status
+        const reminders: Notification[] = []; 
 
         const allNotifications = [...liveAnnouncements, ...reminders];
 
@@ -51,31 +52,34 @@ export default function StudentNotificationsPage() {
 
     return (
         <div className="flex flex-col gap-6 animate-in fade-in-0 slide-in-from-top-5 duration-700">
+            <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
             {isLoading ? (
                 <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
                     <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
             ) : combinedNotifications.length > 0 ? (
-                combinedNotifications.map((item) => (
-                   <Card key={`${item.type}-${item.id}`} className={`overflow-hidden ${item.type === 'announcement' ? 'border-primary/20' : 'border-destructive/20'}`}>
-                       <div className={`p-4 flex items-start gap-4 ${item.type === 'announcement' ? 'bg-primary/5' : 'bg-destructive/5'}`}>
-                           <div className={`p-2 rounded-full mt-1 ${item.type === 'announcement' ? 'bg-primary/10' : 'bg-destructive/10'}`}>
-                                {item.type === 'announcement' ? (
-                                    <Bell className="h-5 w-5 text-primary flex-shrink-0" />
-                                ) : (
-                                    <ShieldAlert className="h-5 w-5 text-destructive flex-shrink-0" />
-                                )}
+                <div className="space-y-4">
+                    {combinedNotifications.map((item) => (
+                       <Card key={`${item.type}-${item.id}`} className={`overflow-hidden ${item.type === 'announcement' ? 'border-primary/20' : 'border-destructive/20'}`}>
+                           <div className={`p-4 flex items-start gap-4 ${item.type === 'announcement' ? 'bg-primary/5' : 'bg-destructive/5'}`}>
+                               <div className={`p-2 rounded-full mt-1 ${item.type === 'announcement' ? 'bg-primary/10' : 'bg-destructive/10'}`}>
+                                    {item.type === 'announcement' ? (
+                                        <Bell className="h-5 w-5 text-primary flex-shrink-0" />
+                                    ) : (
+                                        <ShieldAlert className="h-5 w-5 text-destructive flex-shrink-0" />
+                                    )}
+                               </div>
+                               <div className="flex-1">
+                                    <h3 className="font-semibold text-base">{item.title}</h3>
+                                     <p className="text-xs text-muted-foreground/90">{format(new Date(item.date), 'MMMM do, yyyy')}</p>
+                               </div>
                            </div>
-                           <div className="flex-1">
-                                <h3 className="font-semibold text-base">{item.title}</h3>
-                                 <p className="text-xs text-muted-foreground/90">{format(new Date(item.date), 'MMMM do, yyyy')}</p>
-                           </div>
-                       </div>
-                       <CardContent className="p-4 pt-2">
-                           <p className="text-sm text-muted-foreground">{item.message}</p>
-                       </CardContent>
-                   </Card>
-                ))
+                           <CardContent className="p-4 pt-2">
+                               <p className="text-sm text-muted-foreground">{item.message}</p>
+                           </CardContent>
+                       </Card>
+                    ))}
+                </div>
             ) : (
                 <div className="flex h-40 items-center justify-center text-sm text-muted-foreground text-center">
                     <p>You have no notifications yet.</p>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -18,29 +18,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DollarSign, Receipt, Users, FileDown } from 'lucide-react';
-import { studentsData } from '@/lib/data';
 import { RevenueChart } from '@/components/admin/revenue-chart';
 import { BillingTable } from '@/components/admin/billing-table';
+import { onUsersUpdate } from '@/lib/listeners/users';
+import { useAuth } from '@/contexts/auth-context';
+import type { Student } from '@/lib/data';
+
+const getDummyBillForStudent = (student: Student) => {
+    if (!student || !student.uid || !student.studentId) return { due: 0, status: 'Paid', paid: 0 };
+    const base = student.messPlan === 'full_day' ? 3500 : 1800;
+    const due = student.uid.charCodeAt(0) % 2 === 0 ? base : 0;
+    const paid = base - due;
+    return {
+        due,
+        status: due > 0 ? 'Due' : 'Paid',
+        paid,
+    }
+};
 
 export default function AdminBillingPage() {
+  const { user: adminUser } = useAuth();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [month, setMonth] = useState('october');
 
-  const stats = useMemo(() => {
-    const currentMonthData = studentsData.map(s => {
-        const details = s.monthlyDetails[month as keyof typeof s.monthlyDetails];
-        if (!details) return null;
+  useEffect(() => {
+    if (!adminUser) return;
+    setIsLoading(true);
+    const unsubscribe = onUsersUpdate(adminUser.uid, (data) => {
+        setStudents(data);
+        setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [adminUser]);
 
-        const paid = details.bill.payments.reduce((sum, p) => sum + p.amount, 0);
-        const due = details.bill.total - paid;
-        const status = due <= 0 ? 'Paid' : 'Due';
-        
+  const stats = useMemo(() => {
+    const currentMonthData = students.map(s => {
+        const details = getDummyBillForStudent(s);
         return {
             ...details,
-            paid,
-            due,
-            status
         };
-    }).filter(Boolean);
+    });
     
     const totalRevenue = currentMonthData.reduce((sum, data) => sum + data!.paid, 0);
     const pendingDues = currentMonthData.reduce((sum, data) => sum + data!.due, 0);
@@ -51,7 +69,7 @@ export default function AdminBillingPage() {
         pendingDues,
         defaulters
     };
-  }, [month]);
+  }, [students, month]);
 
   return (
     <div className="flex flex-col gap-2 md:gap-6 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -124,7 +142,7 @@ export default function AdminBillingPage() {
                 </Card>
             </div>
             <div className="lg:col-span-2">
-                 <BillingTable filterMonth={month} />
+                 <BillingTable filterMonth={month} students={students} isLoading={isLoading} />
             </div>
        </div>
     </div>

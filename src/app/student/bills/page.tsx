@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { paymentReminders, Holiday, Leave, AppUser, BillDetails } from '@/lib/data';
+import { paymentReminders, Holiday, Leave, AppUser, Bill, BillDetails } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
@@ -48,17 +48,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const CHARGE_PER_MEAL = 65;
-
-export interface Bill {
-    id: string;
-    month: string;
-    year: number;
-    generationDate: string;
-    totalAmount: number;
-    payments: { amount: number; date: string }[];
-    status: 'Paid' | 'Due';
-    details: BillDetails;
-}
 
 const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
 

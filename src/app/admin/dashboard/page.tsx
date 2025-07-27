@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Users, TrendingUp, Bell, Utensils, CalendarDays, Megaphone } from 'lucide-react';
 import { MenuSchedule } from '@/components/admin/menu-schedule';
 import Link from "next/link";
-import { Holiday, Leave, AppUser, Announcement } from '@/lib/data';
+import { Leave, AppUser, Announcement } from '@/lib/data';
 import { isSameDay, startOfDay } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,28 +40,47 @@ export default function AdminDashboardPage() {
     if (!adminUser) return;
     
     setStudentsLoading(true);
-    setLeavesLoading(true);
     setAnnouncementsLoading(true);
 
-    const unsubscribeUsers = onUsersUpdate(adminUser.uid, (updatedUsers) => {
-        setStudents(updatedUsers.filter(u => u.status === 'active'));
+    let leavesUnsubscribe: (() => void) | null = null;
+
+    const usersUnsubscribe = onUsersUpdate(adminUser.uid, (updatedUsers) => {
+        const activeUsers = updatedUsers.filter(u => u.status === 'active');
+        setStudents(activeUsers);
         setStudentsLoading(false);
-    });
-    
-    const unsubscribeLeaves = onAllLeavesUpdate((updatedLeaves) => {
-        setLeaves(updatedLeaves);
-        setLeavesLoading(false);
+
+        // If a leaves listener already exists, unsubscribe from it before creating a new one
+        if (leavesUnsubscribe) {
+            leavesUnsubscribe();
+        }
+        
+        // Now that we have the correct list of active users, we can listen for their leaves.
+        setLeavesLoading(true);
+        const studentIds = new Set(activeUsers.map(u => u.uid));
+
+        // Only listen for leaves if there are active students
+        if (studentIds.size > 0) {
+            leavesUnsubscribe = onAllLeavesUpdate((allLeaves) => {
+                setLeaves(allLeaves.filter(l => studentIds.has(l.studentId)));
+                setLeavesLoading(false);
+            });
+        } else {
+            setLeaves([]); // No active students, so no leaves to show
+            setLeavesLoading(false);
+        }
     });
 
-    const unsubscribeAnnouncements = onAnnouncementsUpdate(adminUser.uid, (updatedAnnouncements) => {
+    const announcementsUnsubscribe = onAnnouncementsUpdate(adminUser.uid, (updatedAnnouncements) => {
         setAnnouncements(updatedAnnouncements);
         setAnnouncementsLoading(false);
     });
 
     return () => {
-        unsubscribeUsers();
-        unsubscribeLeaves();
-        unsubscribeAnnouncements();
+        usersUnsubscribe();
+        if (leavesUnsubscribe) {
+            leavesUnsubscribe();
+        }
+        announcementsUnsubscribe();
     };
   }, [adminUser]);
 
@@ -166,18 +185,7 @@ export default function AdminDashboardPage() {
               </CardContent>
             </Card>
         </Link>
-        <Link href="/admin/billing" className="block transition-transform duration-300 hover:-translate-y-1">
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300 h-full hover:border-primary/50">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">This Month's Revenue</CardTitle>
-                <TrendingUp className="h-5 w-5 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">₹2,85,450</div>
-                <p className="text-xs text-muted-foreground truncate">+12% from last month</p>
-              </CardContent>
-            </Card>
-        </Link>
+        <PendingPaymentsCard />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -186,7 +194,6 @@ export default function AdminDashboardPage() {
         </div>
         
         <div className="lg:col-span-1 flex flex-col gap-6">
-            <PendingPaymentsCard />
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-600 flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>

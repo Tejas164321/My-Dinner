@@ -161,6 +161,7 @@ function SettingsPageContent() {
                     </Avatar>
                     <div className="space-y-2 text-left">
                         <h3 className="text-2xl font-semibold">{profileName}</h3>
+                        <p className="text-muted-foreground capitalize">{adminUser.role}</p>
                         <Button variant="outline">Upload New Photo</Button>
                     </div>
                 </div>

@@ -12,14 +12,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2 } from 'lucide-react';
+import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2, Hourglass } from 'lucide-react';
 import { Leave, Holiday } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/auth-context';
-import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay, getYear, getMonth } from 'date-fns';
+import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay, getYear, getMonth, formatDistanceToNowStrict } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
@@ -39,8 +39,42 @@ import {
 import { getMenuForDateAction, type DailyMenu } from '@/lib/actions/student-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
+const CHARGE_PER_MEAL = 65;
+
+function ActivationCountdown({ activationDate, startMeal }: { activationDate: Date; startMeal: string }) {
+    const [countdown, setCountdown] = useState('');
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const now = new Date();
+            if (now > activationDate) {
+                setCountdown('Your plan is now active!');
+                clearInterval(interval);
+                // Optionally, refresh the page or user state
+                window.location.reload();
+            } else {
+                setCountdown(formatDistanceToNowStrict(activationDate, { addSuffix: true }));
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [activationDate]);
+
+    return (
+        <Alert>
+            <Hourglass className="h-4 w-4" />
+            <AlertTitle>Plan Activation Pending</AlertTitle>
+            <AlertDescription>
+                Your plan will start from {startMeal} on {format(activationDate, 'PPP')}.
+                <span className="font-bold ml-2">{countdown}</span>
+            </AlertDescription>
+        </Alert>
+    );
+}
+
 
 export default function StudentDashboardPage() {
   const { user } = useAuth();
@@ -56,6 +90,12 @@ export default function StudentDashboardPage() {
   const [leavesLoading, setLeavesLoading] = useState(true);
   const [holidaysLoading, setHolidaysLoading] = useState(true);
   const isDataLoading = leavesLoading || holidaysLoading;
+  
+  const planActivationDate = useMemo(() => {
+    if (!user?.planStartDate) return null;
+    const date = (user.planStartDate as unknown as Timestamp).toDate();
+    return date > new Date() ? date : null;
+  }, [user]);
 
 
   useEffect(() => {
@@ -108,7 +148,7 @@ export default function StudentDashboardPage() {
 
   const currentMonthStats = useMemo(() => {
     if (!today || !user || isDataLoading) {
-      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0 };
+      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0, dueAmount: 0 };
     }
     
     const year = getYear(today);
@@ -149,7 +189,7 @@ export default function StudentDashboardPage() {
     const attendance = totalCountedDays > 0 ? ((presentDays / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
 
     return {
-        attendance, totalMeals, presentDays, absentDays, fullDays, halfDays
+        attendance, totalMeals, presentDays, absentDays, fullDays, halfDays, dueAmount: totalMeals * CHARGE_PER_MEAL,
     };
   }, [today, user, leaves, holidays, isDataLoading]);
 
@@ -165,7 +205,7 @@ export default function StudentDashboardPage() {
       return isToday ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
   }, [selectedDate, today]);
 
-  const dueAmount = 1120; // Mocked for now, will be dynamic on bills page
+  const dueAmount = currentMonthStats.dueAmount;
   const isPaid = dueAmount <= 0;
 
   const isLunchOff = onLeave?.type === 'full_day' || onLeave?.type === 'lunch_only';
@@ -205,6 +245,10 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
+        {planActivationDate && user?.planStartMeal && (
+            <ActivationCountdown activationDate={planActivationDate} startMeal={user.planStartMeal} />
+        )}
+
       <div className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user?.name?.split(' ')[0]}!</h1>
       </div>
@@ -333,33 +377,35 @@ export default function StudentDashboardPage() {
                                         {leave.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
                                         {leave.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-3 flex-shrink-0" />}
                                         <div>
-                                            <p className="font-semibold text-sm capitalize">{leave.type.replace('_', ' ')}</p>
+                                            <p className="font-semibold text-sm capitalize">{leave.name === 'Plan Activation' ? 'Plan Activation' : leave.type.replace('_', ' ')}</p>
                                             <p className="text-xs text-muted-foreground">
                                                 {format(leave.date, 'EEEE, MMM do')}
                                             </p>
                                         </div>
                                     </div>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This action cannot be undone. This will cancel your leave for {format(leave.date, 'MMMM do, yyyy')}.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteLeave(leave.id)}>
-                                                    Confirm
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    {leave.name !== 'Plan Activation' && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This action cannot be undone. This will cancel your leave for {format(leave.date, 'MMMM do, yyyy')}.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteLeave(leave.id)}>
+                                                        Confirm
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
                                 </div>
                             ))
                         ) : (
