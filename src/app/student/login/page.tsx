@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ChefHat, LogIn, Loader2 } from 'lucide-react';
+import { ChefHat, LogIn, Loader2, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { AppUser } from '@/lib/data';
 
@@ -80,10 +80,17 @@ export default function StudentLoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
             </div>
-             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
-              {isLoading ? 'Logging in...' : 'Log In'}
-            </Button>
+             <div className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" asChild className="w-full">
+                  <Link href="/">
+                    <ChevronLeft /> Back
+                  </Link>
+                </Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
+                  {isLoading ? 'Logging in...' : 'Log In'}
+                </Button>
+            </div>
           </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}

@@ -227,12 +227,12 @@ export function MenuSchedule() {
 
     const renderCardHeader = (meal: MealType) => (
          <div className="flex justify-between items-center">
-            <CardTitle className="hidden lg:block">{meal === 'lunch' ? 'Lunch Menu' : 'Dinner Menu'}</CardTitle>
-            <div className={cn("flex w-full justify-end", isEditing && isEditing !== meal && "hidden", !isEditing && "lg:w-auto")}>
+            <CardTitle>{meal === 'lunch' ? 'Lunch Menu' : 'Dinner Menu'}</CardTitle>
+            <div className={cn("flex", isEditing && isEditing !== meal && "hidden")}>
                 {isEditing === meal ? (
-                    <div className="flex gap-2 w-full lg:w-auto">
-                        <Button size="sm" variant="ghost" onClick={handleCancel} className="flex-1 lg:flex-none">Cancel</Button>
-                        <Button size="sm" onClick={handleSave} disabled={isSaving} className="flex-1 lg:flex-none">
+                    <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
+                        <Button size="sm" onClick={handleSave} disabled={isSaving}>
                             {isSaving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
                             {isSaving ? 'Saving...' : 'Save'}
                         </Button>

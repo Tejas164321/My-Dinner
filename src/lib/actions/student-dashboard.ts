@@ -13,7 +13,7 @@ export interface DailyMenu {
 const menuCollection = 'menus';
 const createMenuDocId = (messId: string, dateKey: string) => `${messId}_${dateKey}`;
 
-export async function getMenuForDateAction(messId: string, dateKey: string): Promise<DailyMenu | null> {
+export async function getMenuForDateAction(messId: string, dateKey: string): Promise<Omit<DailyMenu, 'messId'> | null> {
   if (!messId) return null;
   try {
     const docId = createMenuDocId(messId, dateKey);
@@ -21,7 +21,8 @@ export async function getMenuForDateAction(messId: string, dateKey: string): Pro
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      return docSnap.data() as DailyMenu;
+      const { lunch, dinner } = docSnap.data() as DailyMenu;
+      return { lunch, dinner };
     } else {
       return null;
     }

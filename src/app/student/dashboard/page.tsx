@@ -77,9 +77,8 @@ export default function StudentDashboardPage() {
       setLeavesLoading(false);
     });
     
-    const holidaysUnsubscribe = onHolidaysUpdate((updatedHolidays) => {
-        const messHolidays = updatedHolidays.filter(h => h.messId === user?.messId);
-        setHolidays(messHolidays);
+    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
+        setHolidays(updatedHolidays);
         setHolidaysLoading(false);
     });
     
