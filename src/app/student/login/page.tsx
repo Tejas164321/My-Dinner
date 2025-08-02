@@ -1,16 +1,18 @@
+
+
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ChefHat, LogIn, Loader2, ChevronLeft } from 'lucide-react';
+import { ChefHat, LogIn, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { AppUser } from '@/lib/data';
 
@@ -33,18 +35,29 @@ export default function StudentLoginPage() {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const user = userCredential.user;
+
+      // Directly fetch user document to decide where to redirect.
+      const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
-      if (userDoc.exists() && userDoc.data()?.role === 'student') {
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as AppUser;
         toast({ title: 'Login Successful!' });
-        // The layout file is now the single source of truth for redirection.
-        // We just push to a protected route and let the layout handle the rest.
-        router.push('/student/dashboard');
+        
+        if (userData.status === 'active') {
+          router.replace('/student/dashboard');
+        } else {
+          // For 'rejected', 'pending_approval', 'unaffiliated', etc.
+          router.replace('/student/select-mess');
+        }
       } else {
-        await signOut(auth);
-        toast({ variant: 'destructive', title: 'Access Denied', description: 'This is not a valid student account.' });
+        // This case should ideally not happen if signup is working correctly.
+        // But as a fallback, we deny access.
+        await auth.signOut();
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'User data not found.' });
       }
+
     } catch (error: any) {
       console.error("Login Error:", error);
       let errorMessage = "An unknown error occurred. Please try again.";
@@ -80,17 +93,10 @@ export default function StudentLoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
             </div>
-             <div className="flex flex-col sm:flex-row gap-2">
-                <Button variant="outline" asChild className="w-full">
-                  <Link href="/">
-                    <ChevronLeft /> Back
-                  </Link>
-                </Button>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
-                  {isLoading ? 'Logging in...' : 'Log In'}
-                </Button>
-            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="animate-spin" /> : <LogIn />}
+              {isLoading ? 'Logging in...' : 'Log In'}
+            </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}

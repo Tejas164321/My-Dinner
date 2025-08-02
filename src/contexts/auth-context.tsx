@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
@@ -8,17 +9,17 @@ import type { AppUser } from '@/lib/data';
 
 interface AuthContextType {
   user: AppUser | null;
-  loading: boolean;
+  authLoading: boolean; // Renamed for clarity
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  loading: true,
+  authLoading: true,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     let userDocUnsubscribe: (() => void) | undefined;
@@ -28,6 +29,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (userDocUnsubscribe) {
         userDocUnsubscribe();
       }
+      
+      setUser(null); // Explicitly set user to null while checking
+      setAuthLoading(true); // Always set loading to true when auth state changes
 
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -38,16 +42,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // User might be in Auth but not Firestore (e.g., deleted from DB but not Auth)
             setUser(null);
           }
-          setLoading(false);
+          // Only set loading to false after we have user doc info
+          setAuthLoading(false);
         }, (error) => {
           console.error("Error with user document snapshot:", error);
           setUser(null);
-          setLoading(false);
+          setAuthLoading(false);
         });
       } else {
-        // User is signed out
+        // User is signed out, no need to fetch from Firestore
         setUser(null);
-        setLoading(false);
+        setAuthLoading(false);
       }
     });
 
@@ -61,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, authLoading }}>
       {children}
     </AuthContext.Provider>
   );
