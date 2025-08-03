@@ -58,27 +58,37 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
              router.replace('/student/login'); // Or a more appropriate page
              return;
         }
-
-        const isAffiliated = !!user.messId && (user.status === 'active' || user.status === 'suspended');
-        const isPendingOrUnaffiliated = !user.messId || user.status === 'unaffiliated' || user.status === 'pending_approval';
         
         // Redirect logged-in students away from auth pages
         if (isAuthPage) {
-            if (isAffiliated) router.replace('/student/dashboard');
+            if (user.status === 'active') router.replace('/student/dashboard');
             else router.replace('/student/select-mess');
             return;
         }
         
-        // Redirect affiliated users away from joining pages
-        if (isAffiliated && isJoiningProcessPage) {
-            router.replace('/student/dashboard');
-            return;
-        }
-
-        // Redirect pending/unaffiliated users away from protected dashboard pages
-        if (isPendingOrUnaffiliated && !isJoiningProcessPage) {
-            router.replace('/student/select-mess');
-            return;
+        // Handle routing based on student status for pages that are NOT auth pages
+        switch (user.status) {
+            case 'active':
+                if (isJoiningProcessPage || isStartMessPage) router.replace('/student/dashboard');
+                break;
+            case 'pending_start':
+                 if (!isStartMessPage) router.replace('/student/start-mess');
+                break;
+            case 'unaffiliated':
+            case 'pending_approval':
+            case 'rejected':
+            case 'suspended':
+                // If a user in any of these states is not on a joining page, redirect them.
+                if (!isJoiningProcessPage) {
+                    router.replace('/student/select-mess');
+                }
+                break;
+            default:
+                // Fallback for any other state
+                if (!isJoiningProcessPage) {
+                    router.replace('/student/select-mess');
+                }
+                break;
         }
         
     }, [user, authLoading, router, pathname]);
@@ -90,10 +100,11 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
 
     const isAuthPage = pathname.startsWith('/student/login') || pathname.startsWith('/student/signup');
     const isJoiningProcessPage = pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess');
-    const isAffiliated = user && user.role === 'student' && !!user.messId && !isAuthPage && !isJoiningProcessPage;
+    const isStartMessPage = pathname.startsWith('/student/start-mess');
+    const isDashboardArea = user && user.role === 'student' && user.status === 'active' && !isAuthPage && !isJoiningProcessPage && !isStartMessPage;
 
-    if (isAffiliated) {
-        // User is logged in, has a mess, and is on a protected dashboard page.
+    if (isDashboardArea) {
+        // User is logged in, active, and on a protected dashboard page.
         const dashboardUser = {
             name: user.name || 'Student',
             role: 'student',
@@ -105,13 +116,14 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
                 {children}
             </DashboardLayout>
         );
-    } else if (isAuthPage || isJoiningProcessPage) {
-        // User is on a public page (login, signup) or a semi-protected page (select-mess).
-        // Let these pages render themselves.
+    } 
+    
+    // For all other valid cases (login, signup, select-mess, start-mess), just render the page's content.
+    // The useEffect above handles all redirection logic. If we reach here, the user is on a page they are allowed to see.
+    if (isAuthPage || isJoiningProcessPage || isStartMessPage) {
         return <>{children}</>;
-    } else {
-        // This is a transient state (e.g., waiting for useEffect to redirect).
-        // Show a skeleton to prevent layout shifts or flashing content.
-        return <StudentDashboardSkeleton />;
     }
+    
+    // This is a transient state (e.g., waiting for useEffect to redirect).
+    return <StudentDashboardSkeleton />;
 }

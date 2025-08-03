@@ -7,8 +7,9 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Student, Leave, PlanChangeRequest } from "@/lib/data";
+import { Student, Leave, PlanChangeRequest, Holiday } from "@/lib/data";
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
+import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onUsersUpdate } from '@/lib/listeners/users';
 import { onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
 import { Users, Check, X, Trash2, UserX, Search, Utensils, Sun, Moon, RotateCcw, Loader2, GitCompareArrows, UserPlus, ShieldX } from "lucide-react";
@@ -32,7 +33,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isFuture, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
@@ -58,6 +59,7 @@ async function rejectStudent(userId: string) {
 
 async function suspendStudent(studentDocId: string) {
     const userRef = doc(db, 'users', studentDocId);
+    // Only change the status. Keep messId and messName for history and re-request functionality.
     await updateDoc(userRef, { status: 'suspended' });
 }
 
@@ -93,21 +95,57 @@ const planInfo = {
     dinner_only: { icon: Moon, text: 'Dinner Only', color: 'text-purple-400' }
 };
 
-const getDummyBillForStudent = (student: Student) => {
-    if (!student || !student.uid || !student.studentId) return { due: 0, attendance: 'N/A', status: 'Paid' };
-    const base = student.messPlan === 'full_day' ? 3500 : 1800;
-    const due = student.uid.charCodeAt(0) % 2 === 0 ? base : 0; // consistent dummy due
-    const attendancePercentage = student.studentId ? `${90 + parseInt(student.studentId.slice(-1), 16) % 10}%` : 'N/A';
-    return {
-        due,
-        attendance: attendancePercentage,
-        status: due > 0 ? 'Due' : 'Paid',
+const CHARGE_PER_MEAL = 65;
+
+const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[]) => {
+    if (!student || !student.uid || !student.messPlan) return { due: 0, attendance: 'N/A', status: 'Paid' };
+
+    const studentLeaves = leaves.filter(l => l.studentId === student.uid && isSameMonth(l.date, month));
+    const messHolidays = holidays.filter(h => h.messId === student.messId && isSameMonth(h.date, month));
+
+    const monthIndex = getMonth(month);
+    const year = getYear(month);
+    const daysInMonth = getDaysInMonth(month);
+    const joinDate = student.joinDate ? startOfDay(parseISO(student.joinDate)) : new Date(0);
+    
+    let totalMeals = 0;
+    let presentDays = 0;
+    let totalCountedDays = 0;
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const day = new Date(year, monthIndex, i);
+        if (isFuture(day) || day < joinDate) continue;
+
+        const holiday = messHolidays.find(h => isSameDay(h.date, day));
+        if (holiday) continue;
+        
+        totalCountedDays++;
+        const leave = studentLeaves.find(l => isSameDay(l.date, day));
+
+        if (leave) {
+            if (student.messPlan === 'full_day') {
+                if (leave.type === 'lunch_only') totalMeals++;
+                if (leave.type === 'dinner_only') totalMeals++;
+            }
+        } else {
+            presentDays++;
+            if (student.messPlan === 'full_day') totalMeals += 2;
+            else totalMeals++;
+        }
     }
+    
+    const totalDue = totalMeals * CHARGE_PER_MEAL;
+    const attendance = totalCountedDays > 0 ? `${Math.round((presentDays / totalCountedDays) * 100)}%` : 'N/A';
+
+    return {
+        due: totalDue,
+        attendance,
+        status: totalDue > 0 ? 'Due' : 'Paid',
+    };
 };
 
-const StudentRowCard = ({ student, showActions, onOpenDialog }: { student: Student, showActions: boolean, onOpenDialog: () => void }) => {
-    const dummyBill = getDummyBillForStudent(student);
-    const billDisplay = `₹${dummyBill.due.toLocaleString()}`;
+const StudentRowCard = ({ student, bill, showActions, onOpenDialog }: { student: Student, bill: any, showActions: boolean, onOpenDialog: () => void }) => {
+    const billDisplay = `₹${bill.due.toLocaleString()}`;
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
     
@@ -124,7 +162,7 @@ const StudentRowCard = ({ student, showActions, onOpenDialog }: { student: Stude
                             <h3 className="font-semibold text-base truncate">{student.name}</h3>
                             <p className="text-xs text-muted-foreground">{student.studentId}</p>
                         </div>
-                        <Badge variant={dummyBill.status === 'Paid' ? 'secondary' : 'destructive'} className={cn('text-xs py-0.5 px-1.5 h-auto', dummyBill.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>
+                        <Badge variant={bill.status === 'Paid' ? 'secondary' : 'destructive'} className={cn('text-xs py-0.5 px-1.5 h-auto', bill.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>
                             Due: {billDisplay}
                         </Badge>
                     </div>
@@ -143,11 +181,11 @@ const StudentRowCard = ({ student, showActions, onOpenDialog }: { student: Stude
                     </div>
                     <div className="hidden md:flex flex-col items-center">
                         <p className="text-xs text-muted-foreground">Attendance</p>
-                        <p className="font-semibold">{dummyBill.attendance}</p>
+                        <p className="font-semibold">{bill.attendance}</p>
                     </div>
                     <div className="hidden md:flex flex-col items-center">
                         <p className="text-xs text-muted-foreground">Bill Due</p>
-                         <Badge variant={dummyBill.status === 'Paid' ? 'secondary' : 'destructive'} className={cn('text-xs', dummyBill.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{billDisplay}</Badge>
+                         <Badge variant={bill.status === 'Paid' ? 'secondary' : 'destructive'} className={cn('text-xs', bill.status === 'Paid' && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>{billDisplay}</Badge>
                     </div>
                 </div>
             </button>
@@ -194,23 +232,26 @@ const StudentRowCard = ({ student, showActions, onOpenDialog }: { student: Stude
                     </AlertDialog>
                 </div>
             ) : (
-                 <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                    <Button onClick={() => reactivateStudent(student.uid)} variant="ghost" size="icon" className="h-9 w-9 text-green-400 hover:text-green-300 hover:bg-green-500/10">
+                        <RotateCcw className="h-4 w-4" />
+                    </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 text-green-400 hover:text-green-300 hover:bg-green-500/10">
-                                <RotateCcw className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Reactivate {student.name}?</AlertDialogTitle>
+                                <AlertDialogTitle>Permanently Delete {student.name}?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                   This will move the student back to the active list. Are you sure?
+                                    This action is irreversible. All data associated with this student will be permanently deleted. This is for clearing out old records. Are you sure?
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => reactivateStudent(student.uid)}>Reactivate</AlertDialogAction>
+                                <AlertDialogAction onClick={() => deleteStudent(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Permanently</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -249,90 +290,72 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     
     const { user } = useAuth();
     const [allLeaves, setAllLeaves] = useState<Leave[]>([]);
+    const [allHolidays, setAllHolidays] = useState<Holiday[]>([]);
     const [users, setUsers] = useState<Student[]>([]);
     const [planChangeRequests, setPlanChangeRequests] = useState<PlanChangeRequest[]>([]);
     
-    const [isUsersLoading, setIsUsersLoading] = useState(true);
-    const [isPlansLoading, setIsPlansLoading] = useState(true);
-    const [isLeavesLoading, setIsLeavesLoading] = useState(true);
-
-    const isLoading = isUsersLoading || isPlansLoading || isLeavesLoading;
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (!user || !user.uid) {
-            setIsUsersLoading(false);
-            setIsPlansLoading(false);
-            setIsLeavesLoading(false);
+            setIsLoading(false);
             return;
         }
         
-        setIsUsersLoading(true);
-        setIsPlansLoading(true);
-        setIsLeavesLoading(true);
+        setIsLoading(true);
 
-        const unsubscribeUsers = onUsersUpdate(user.uid, (data) => {
-            setUsers(data);
-            setIsUsersLoading(false);
-        });
+        const unsubscribes = [
+            onUsersUpdate(user.uid, setUsers),
+            onPlanChangeRequestsUpdate(user.uid, setPlanChangeRequests),
+            onAllLeavesUpdate(setAllLeaves),
+            onHolidaysUpdate(user.uid, setAllHolidays)
+        ];
 
-        const unsubscribePlans = onPlanChangeRequestsUpdate(user.uid, (data) => {
-            setPlanChangeRequests(data);
-            setIsPlansLoading(false);
-        });
-        
-        const unsubscribeLeaves = onAllLeavesUpdate((data) => {
-            setAllLeaves(data);
-            setIsLeavesLoading(false);
-        });
+        // This is a simplified way to set loading state.
+        // A more robust solution might track loading for each listener individually.
+        Promise.all([
+            new Promise(res => onUsersUpdate(user.uid, d => res(d))),
+            new Promise(res => onPlanChangeRequestsUpdate(user.uid, d => res(d))),
+            new Promise(res => onAllLeavesUpdate(d => res(d))),
+            new Promise(res => onHolidaysUpdate(user.uid, d => res(d))),
+        ]).then(() => setIsLoading(false));
 
-        return () => {
-            unsubscribeUsers();
-            unsubscribePlans();
-            unsubscribeLeaves();
-        };
+        return () => unsubscribes.forEach(unsub => unsub());
     }, [user]);
 
     const { activeStudents, suspendedStudents, pendingStudents } = useMemo(() => {
-        const active: Student[] = [];
-        const suspended: Student[] = [];
-        const pending: Student[] = [];
+        const activeList: Student[] = [];
+        const suspendedList: Student[] = [];
+        const pendingList: Student[] = [];
         
         users.forEach(student => {
             if (student.status === 'suspended') {
-                suspended.push(student);
+                suspendedList.push(student);
             } else if (student.status === 'pending_approval') {
-                pending.push(student);
+                pendingList.push(student);
             } else if (student.status === 'active' || student.status === 'pending_start') {
-                active.push(student);
+                activeList.push(student);
             }
         });
 
-        return { 
-            activeStudents: active, 
-            suspendedStudents: suspended, 
-            pendingStudents: pending 
-        };
+        return { activeStudents: activeList, suspendedStudents: suspendedList, pendingStudents: pendingList };
     }, [users]);
 
     const filteredActiveStudents = useMemo(() => {
-        return activeStudents
-            .filter(student => {
-                const dummyBill = getDummyBillForStudent(student);
-                if (filterStatus === 'all') return true;
-                return dummyBill.status === filterStatus;
-            })
-             .filter(student => {
-                if (filterPlan === 'all') return true;
-                return student.messPlan === filterPlan;
-            })
-            .filter(student => {
+        return activeStudents.map(student => ({
+                student,
+                bill: calculateBillForStudent(student, filterMonth, allLeaves, allHolidays),
+            }))
+            .filter(({ bill }) => filterStatus === 'all' || bill.status === filterStatus)
+            .filter(({ student }) => filterPlan === 'all' || student.messPlan === filterPlan)
+            .filter(({ student }) => {
                 if (!searchQuery) return true;
                 const searchLower = searchQuery.toLowerCase();
                 const nameMatch = student.name.toLowerCase().includes(searchLower);
                 const idMatch = student.studentId && student.studentId.toLowerCase().includes(searchLower);
                 return nameMatch || idMatch;
             });
-    }, [activeStudents, filterStatus, searchQuery, filterPlan]);
+    }, [activeStudents, filterStatus, searchQuery, filterPlan, filterMonth, allLeaves, allHolidays]);
     
     const formatPlanName = (plan: string) => {
         return plan.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -381,10 +404,11 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                         {isLoading ? (
                             Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
                         ) : filteredActiveStudents.length > 0 ? (
-                            filteredActiveStudents.map((student) => (
+                            filteredActiveStudents.map(({ student, bill }) => (
                                <StudentRowCard 
                                     key={student.uid} 
                                     student={student} 
+                                    bill={bill}
                                     showActions={true} 
                                     onOpenDialog={() => handleOpenDialog(student.uid)}
                                 />
@@ -490,7 +514,8 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             suspendedStudents.map((student) => (
                             <StudentRowCard 
                                     key={student.uid} 
-                                    student={student} 
+                                    student={student}
+                                    bill={calculateBillForStudent(student, filterMonth, allLeaves, allHolidays)} 
                                     showActions={false}
                                     onOpenDialog={() => handleOpenDialog(student.uid)}
                                 />
@@ -518,3 +543,4 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         </div>
     );
 }
+

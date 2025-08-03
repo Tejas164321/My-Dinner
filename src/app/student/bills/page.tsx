@@ -42,7 +42,7 @@ import { BillDetailDialog } from '@/components/student/bill-detail-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { format, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, subMonths } from 'date-fns';
+import { format, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, subMonths, parseISO, isFuture } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -72,6 +72,8 @@ const calculateBillDetailsForMonth = (
 
     for (let i = 1; i <= daysInMonth; i++) {
         const day = new Date(year, month, i);
+        if (isFuture(day)) continue; // Don't count future days
+
         const holiday = holidays.find(h => isSameDay(h.date, day));
         const leave = leaves.find(l => isSameDay(l.date, day));
 
@@ -143,27 +145,29 @@ export default function StudentBillsPage() {
 
     const bills: Bill[] = [];
     const today = new Date();
+    
     // Simulate payment history for consistent demo
     const paymentHistory: {[key: string]: { amount: number; date: string }[]} = {
       '2023-09': [{ amount: 3380, date: '2023-10-04' }],
       '2023-08': [{ amount: 1000, date: '2023-09-10' }, { amount: 1000, date: '2023-09-20' }],
-      '2023-10': [{ amount: 3445, date: '2023-11-05' }],
     };
 
+    // Let's generate bills for the last 4 months
     for (let i = 0; i < 4; i++) {
         const monthDate = startOfMonth(subMonths(today, i));
-        const demoMonthDate = startOfMonth(subMonths(new Date(2023, 10, 1), i));
-
+        
         const userLeaves = leaves.filter(l => l.studentId === user.uid);
-        const details = calculateBillDetailsForMonth(demoMonthDate, user, holidays, userLeaves);
+        const details = calculateBillDetailsForMonth(monthDate, user, holidays, userLeaves);
         const totalAmount = details.totalMeals * details.chargePerMeal;
-        const monthKey = format(demoMonthDate, 'yyyy-MM');
-        const payments = paymentHistory[monthKey] || [];
+        
+        // Use a consistent key for mock payment history if needed, or implement real payments
+        const monthKeyForMockPayment = format(subMonths(new Date(2023, 10, 1), i), 'yyyy-MM');
+        const payments = paymentHistory[monthKeyForMockPayment] || [];
 
         bills.push({
-            id: `bill-${monthKey}`,
-            month: format(demoMonthDate, 'MMMM'),
-            year: getYear(demoMonthDate),
+            id: `bill-${format(monthDate, 'yyyy-MM')}`,
+            month: format(monthDate, 'MMMM'),
+            year: getYear(monthDate),
             generationDate: format(startOfMonth(subMonths(today, i - 1)), 'yyyy-MM-dd'),
             totalAmount,
             payments,

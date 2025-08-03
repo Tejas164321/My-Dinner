@@ -63,7 +63,7 @@ export interface AppUser {
     contact?: string;
     roomNo?: string;
     joinDate?: string;
-    status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'pending_start';
+    status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'rejected' | 'pending_start';
     messId?: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
@@ -77,7 +77,7 @@ export interface Student extends AppUser {
     contact: string;
     roomNo: string;
     joinDate: string;
-    status: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'pending_start';
+    status: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'rejected' | 'pending_start';
     messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
     messId: string;
     messName: string;
@@ -126,23 +126,5 @@ export interface PaymentReminder {
     date: string;
 }
 
-// Mock payment reminders. In a real app, this would come from a backend process.
-export const paymentReminders: PaymentReminder[] = [
-    {
-        id: 'rem1',
-        title: 'Payment Due for August',
-        message: 'Your bill for August of ₹3,120 is overdue. Please pay at the earliest to avoid late fees.',
-        date: '2023-09-25',
-    },
-];
-
-export const revenueData = [
-    { month: 'Jan', revenue: 250000 },
-    { month: 'Feb', revenue: 265000 },
-    { month: 'Mar', revenue: 275000 },
-    { month: 'Apr', revenue: 270000 },
-    { month: 'May', revenue: 280000 },
-    { month: 'Jun', revenue: 290000 },
-    { month: 'Jul', revenue: 285450 },
-];
-
+// In a real app, reminders would come from a backend process.
+export const paymentReminders: PaymentReminder[] = [];

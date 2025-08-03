@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -15,7 +16,7 @@ import { useAuth } from '@/contexts/auth-context';
 import type { Student } from '@/lib/data';
 import { getMessInfo, type MessInfo } from '@/lib/services/mess';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, HelpCircle, Loader2, Sun, Moon } from 'lucide-react';
+import { User, Bell, Building2, Mail, Phone, MapPin, Utensils, Send, Camera, HelpCircle, Loader2, Sun, Moon, LogOut } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
@@ -23,6 +24,17 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Client-side action
 async function submitPlanChangeRequest(studentUid: string, studentId: string, studentName: string, fromPlan: Student['messPlan'], toPlan: Student['messPlan'], messId: string) {
@@ -36,6 +48,15 @@ async function submitPlanChangeRequest(studentUid: string, studentId: string, st
         date: new Date().toISOString(),
     });
 }
+
+// Sets the student's status to 'suspended' but keeps their messId for historical data.
+async function leaveMess(studentUid: string): Promise<void> {
+    const userRef = doc(db, 'users', studentUid);
+    await updateDoc(userRef, { 
+        status: 'suspended',
+    });
+}
+
 
 const settingsNav = [
   { title: "My Profile", href: "profile", icon: User },
@@ -51,6 +72,7 @@ export default function StudentSettingsPage() {
     const { toast } = useToast();
     const { user, loading: authLoading } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
+    const [isLeaving, setIsLeaving] = useState(false);
     const [isLoadingMessInfo, setIsLoadingMessInfo] = useState(true);
 
     const activeTab = useMemo(() => searchParams.get('tab') || 'profile', [searchParams]);
@@ -68,6 +90,18 @@ export default function StudentSettingsPage() {
     const [selectedPlan, setSelectedPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>('full_day');
     const [isRequestPending, setIsRequestPending] = useState(false);
     
+    // Dummy due amount for demonstration
+    const hasDue = useMemo(() => {
+        if (!user) return false;
+        // Test condition for piyush1@gmail.com
+        if (user.email === 'piyush1@gmail.com') {
+            return false;
+        }
+        if (!user.uid) return false;
+        const charCode = user.uid.charCodeAt(0);
+        return charCode % 3 === 0; // ~33% of users will have a due
+    }, [user]);
+
     useEffect(() => {
         if (user) {
             setName(user.name || '');
@@ -134,6 +168,31 @@ export default function StudentSettingsPage() {
             toast({ variant: 'destructive', title: "Submission Failed", description: "Could not submit your request. Please try again." });
         }
     };
+
+    const handleLeaveMess = async () => {
+        if (!user) return;
+        if (hasDue) {
+            toast({
+                variant: 'destructive',
+                title: 'Action Denied',
+                description: 'You cannot leave the mess with an outstanding balance. Please clear your dues first.'
+            });
+            return;
+        }
+        setIsLeaving(true);
+        try {
+            await leaveMess(user.uid);
+            toast({
+                title: 'Left Successfully',
+                description: 'You have left the mess. You can now join a new one.'
+            });
+            // The layout effect will now handle redirection to select-mess page
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to leave the mess. Please try again.' });
+        } finally {
+            setIsLeaving(false);
+        }
+    };
     
     const planDetails = {
         full_day: { name: 'Full Day', description: 'Lunch & Dinner', icon: Utensils, color: 'text-primary' },
@@ -167,7 +226,7 @@ export default function StudentSettingsPage() {
                 <CardDescription>Manage your personal information.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
-                <div className="flex flex-row items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-center gap-8">
                     <div className="relative flex-shrink-0">
                         <Avatar className="w-24 h-24 border-4 border-primary/20">
                             <AvatarImage src={user.avatarUrl} alt={name} />
@@ -178,18 +237,18 @@ export default function StudentSettingsPage() {
                             <span className="sr-only">Upload New Photo</span>
                         </Button>
                     </div>
-                    <div className="space-y-2 text-left">
+                    <div className="space-y-2 text-center sm:text-left">
                         <h3 className="text-2xl font-semibold">{name}</h3>
                         <div className="space-y-1 pt-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2 justify-start">
+                            <div className="flex items-center gap-2 justify-center sm:justify-start">
                                 <span className="font-semibold text-foreground">Student ID:</span>
                                 <span>{user.studentId}</span>
                             </div>
-                             <div className="flex items-center gap-2 justify-start">
+                             <div className="flex items-center gap-2 justify-center sm:justify-start">
                                 <span className="font-semibold text-foreground">Plan:</span>
                                 <PlanBadge plan={user.messPlan!} />
                             </div>
-                            <div className="flex items-center gap-2 justify-start">
+                            <div className="flex items-center gap-2 justify-center sm:justify-start">
                                 <span className="font-semibold text-foreground">Joined:</span>
                                 <span>{user.joinDate ? format(new Date(user.joinDate), 'd MMM, yyyy') : 'N/A'}</span>
                             </div>
@@ -243,23 +302,24 @@ export default function StudentSettingsPage() {
                 ) : (
                     <div>
                         <p className="text-sm text-muted-foreground mb-4">
-                            Select a new plan to request a change.
+                            Your current plan is: <span className="font-bold text-primary capitalize">{currentPlan.replace('_', ' ')}</span>. Select a new plan to request a change.
                         </p>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4">
                             {Object.entries(planDetails).map(([planKey, planValue]) => {
                                 const key = planKey as keyof typeof planDetails;
-                                const { icon: Icon, name, color } = planValue;
+                                const { icon: Icon, name, description, color } = planValue;
                                 return (
                                     <button 
                                         key={key}
                                         onClick={() => setSelectedPlan(key)} 
                                         className={cn(
-                                            "flex flex-col items-center justify-center text-center rounded-md border-2 p-2 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-28", 
+                                            "flex flex-col items-center justify-center text-center rounded-md border-2 p-3 sm:p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-32", 
                                             selectedPlan === key ? 'border-primary' : 'border-muted bg-popover'
                                         )}
                                     >
-                                        <Icon className={cn("mb-2 h-5 w-5", color)} />
-                                        <span className="font-semibold text-xs">{name}</span>
+                                        <Icon className={cn("mb-2 h-6 w-6 sm:h-8 sm:w-8", color)} />
+                                        <span className="font-semibold text-sm sm:text-base">{name}</span>
+                                        <p className="text-xs text-muted-foreground mt-1 hidden sm:block">{description}</p>
                                     </button>
                                 )
                             })}
@@ -273,7 +333,7 @@ export default function StudentSettingsPage() {
                     disabled={isRequestPending || currentPlan === selectedPlan}
                 >
                     <Send className="mr-2 h-4 w-4" />
-                    {isRequestPending ? "Request Sent" : "Submit"}
+                    {isRequestPending ? "Request Sent" : "Submit Change Request"}
                 </Button>
             </CardFooter>
         </Card>
@@ -330,6 +390,38 @@ export default function StudentSettingsPage() {
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={(e) => {
+                            if (hasDue) {
+                                e.preventDefault();
+                                toast({
+                                    variant: 'destructive',
+                                    title: 'Action Denied',
+                                    description: 'You cannot leave the mess with an outstanding balance. Please clear your dues first.'
+                                });
+                            }
+                        }}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Leave Mess
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will remove you from the current mess and suspend your account. You will be able to rejoin or apply to a new mess. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleLeaveMess} disabled={isLeaving} className={cn(buttonVariants({ variant: "destructive" }))}>
+                                {isLeaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Confirm & Leave
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
             
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">

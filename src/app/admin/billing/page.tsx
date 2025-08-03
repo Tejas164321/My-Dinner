@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -22,16 +23,52 @@ import { RevenueChart } from '@/components/admin/revenue-chart';
 import { BillingTable } from '@/components/admin/billing-table';
 import { onUsersUpdate } from '@/lib/listeners/users';
 import { useAuth } from '@/contexts/auth-context';
-import type { Student } from '@/lib/data';
+import type { Student, Leave, Holiday } from '@/lib/data';
+import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
+import { onHolidaysUpdate } from '@/lib/listeners/holidays';
+import { format, subMonths, startOfMonth, getMonth, getYear, getDaysInMonth, isSameDay, isFuture, parseISO } from 'date-fns';
 
-const getDummyBillForStudent = (student: Student) => {
-    if (!student || !student.uid || !student.studentId) return { due: 0, status: 'Paid', paid: 0 };
-    const base = student.messPlan === 'full_day' ? 3500 : 1800;
-    const due = student.uid.charCodeAt(0) % 2 === 0 ? base : 0;
-    const paid = base - due;
+const CHARGE_PER_MEAL = 65;
+
+const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[]) => {
+    if (!student || !student.uid || !student.messPlan || !student.joinDate) return { due: 0, paid: 0, status: 'Paid' };
+
+    const studentLeaves = leaves.filter(l => l.studentId === student.uid && getMonth(l.date) === getMonth(month));
+    const messHolidays = holidays.filter(h => h.messId === student.messId && getMonth(h.date) === getMonth(month));
+
+    const monthIndex = getMonth(month);
+    const year = getYear(month);
+    const daysInMonth = getDaysInMonth(month);
+    const joinDate = startOfDay(parseISO(student.joinDate));
+    
+    let totalMeals = 0;
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const day = new Date(year, monthIndex, i);
+        if (isFuture(day) || day < joinDate) continue;
+
+        const holiday = messHolidays.find(h => isSameDay(h.date, day));
+        if (holiday) continue;
+        
+        const leave = studentLeaves.find(l => isSameDay(l.date, day));
+        if (leave) {
+            if (student.messPlan === 'full_day') {
+                if (leave.type === 'lunch_only') totalMeals++;
+                if (leave.type === 'dinner_only') totalMeals++;
+            }
+        } else {
+            if (student.messPlan === 'full_day') totalMeals += 2;
+            else totalMeals++;
+        }
+    }
+    
+    const due = totalMeals * CHARGE_PER_MEAL;
+    // Payment tracking would be implemented here. For now, paid is 0.
+    const paid = 0; 
+    
     return {
-        due,
-        status: due > 0 ? 'Due' : 'Paid',
+        due: due - paid,
+        status: (due - paid) > 0 ? 'Due' : 'Paid',
         paid,
     }
 };
@@ -39,37 +76,78 @@ const getDummyBillForStudent = (student: Student) => {
 export default function AdminBillingPage() {
   const { user: adminUser } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [month, setMonth] = useState('october');
+  const [month, setMonth] = useState(startOfMonth(new Date()));
 
   useEffect(() => {
     if (!adminUser) return;
     setIsLoading(true);
-    const unsubscribe = onUsersUpdate(adminUser.uid, (data) => {
-        setStudents(data);
-        setIsLoading(false);
-    });
-    return () => unsubscribe();
+
+    const unsubUsers = onUsersUpdate(adminUser.uid, setStudents);
+    const unsubLeaves = onAllLeavesUpdate(setLeaves);
+    const unsubHolidays = onHolidaysUpdate(adminUser.uid, setHolidays);
+
+    // Consider loading finished when all data is fetched
+    Promise.all([
+        new Promise(res => onUsersUpdate(adminUser.uid, d => { setStudents(d); res(d); })),
+        new Promise(res => onAllLeavesUpdate(d => { setLeaves(d); res(d); })),
+        new Promise(res => onHolidaysUpdate(adminUser.uid, d => { setHolidays(d); res(d); }))
+    ]).then(() => setIsLoading(false));
+
+    return () => {
+        unsubUsers();
+        unsubLeaves();
+        unsubHolidays();
+    };
   }, [adminUser]);
+  
+  const monthOptions = useMemo(() => {
+      const options = [];
+      const today = new Date();
+      for (let i = 0; i < 6; i++) {
+          const date = startOfMonth(subMonths(today, i));
+          options.push({
+              value: format(date, 'yyyy-MM-dd'),
+              label: format(date, 'MMMM yyyy'),
+          });
+      }
+      return options;
+  }, []);
 
   const stats = useMemo(() => {
-    const currentMonthData = students.map(s => {
-        const details = getDummyBillForStudent(s);
-        return {
-            ...details,
-        };
-    });
+    const currentMonthData = students.map(s => calculateBillForStudent(s, month, leaves, holidays));
     
-    const totalRevenue = currentMonthData.reduce((sum, data) => sum + data!.paid, 0);
-    const pendingDues = currentMonthData.reduce((sum, data) => sum + data!.due, 0);
-    const defaulters = currentMonthData.filter(data => data!.status === 'Due').length;
+    const totalRevenue = currentMonthData.reduce((sum, data) => sum + data.paid, 0);
+    const pendingDues = currentMonthData.reduce((sum, data) => sum + data.due, 0);
+    const defaulters = currentMonthData.filter(data => data.status === 'Due').length;
 
-    return {
-        totalRevenue,
-        pendingDues,
-        defaulters
-    };
-  }, [students, month]);
+    return { totalRevenue, pendingDues, defaulters };
+  }, [students, month, leaves, holidays]);
+
+  const chartData = useMemo(() => {
+    if (isLoading) return [];
+    
+    const data = [];
+    const today = new Date();
+    for (let i = 5; i >= 0; i--) {
+        const monthDate = startOfMonth(subMonths(today, i));
+        let monthlyRevenue = 0;
+
+        students.forEach(student => {
+            const bill = calculateBillForStudent(student, monthDate, leaves, holidays);
+            // In a real system, you'd use actual paid amounts. For trend, we use total due as proxy for potential revenue.
+            monthlyRevenue += bill.due;
+        });
+
+        data.push({
+            month: format(monthDate, 'MMM'),
+            revenue: monthlyRevenue,
+        });
+    }
+    return data;
+  }, [isLoading, students, leaves, holidays]);
 
   return (
     <div className="flex flex-col gap-2 md:gap-6 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -78,15 +156,14 @@ export default function AdminBillingPage() {
           <h1 className="text-2xl font-bold tracking-tight">Billing & Payments</h1>
         </div>
         <div className="flex w-full md:w-auto items-center gap-2">
-          <Select value={month} onValueChange={setMonth}>
+          <Select value={format(month, 'yyyy-MM-dd')} onValueChange={(val) => setMonth(new Date(val))}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Select month" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="october">October</SelectItem>
-              <SelectItem value="september">September</SelectItem>
-              <SelectItem value="august">August</SelectItem>
-              <SelectItem value="july">July</SelectItem>
+                {monthOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
             </SelectContent>
           </Select>
           <Button variant="outline" className="flex-shrink-0">
@@ -134,15 +211,15 @@ export default function AdminBillingPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Monthly Revenue Trend</CardTitle>
-                        <CardDescription>An overview of revenue collected over the past months.</CardDescription>
+                        <CardDescription>An overview of revenue generated over the past months.</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[350px] p-2">
-                       <RevenueChart />
+                       <RevenueChart data={chartData} />
                     </CardContent>
                 </Card>
             </div>
             <div className="lg:col-span-2">
-                 <BillingTable filterMonth={month} students={students} isLoading={isLoading} />
+                 <BillingTable filterMonth={month} students={students} leaves={leaves} holidays={holidays} isLoading={isLoading} />
             </div>
        </div>
     </div>

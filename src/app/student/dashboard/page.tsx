@@ -148,7 +148,7 @@ export default function StudentDashboardPage() {
 
   const currentMonthStats = useMemo(() => {
     if (!today || !user || isDataLoading) {
-      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, fullDays: 0, halfDays: 0, dueAmount: 0 };
+      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, dueAmount: 0 };
     }
     
     const year = getYear(today);
@@ -160,8 +160,6 @@ export default function StudentDashboardPage() {
     let presentDays = 0;
     let absentDays = 0;
     let totalMeals = 0;
-    let fullDays = 0;
-    let halfDays = 0;
     let totalCountedDays = 0;
 
     const daysSoFar = Array.from({ length: today.getDate() }, (_, i) => new Date(year, monthIndex, i + 1));
@@ -176,20 +174,23 @@ export default function StudentDashboardPage() {
         if (leave) {
             absentDays++;
             if (user.messPlan === 'full_day') {
-                if (leave.type === 'lunch_only') { halfDays++; totalMeals++; }
-                if (leave.type === 'dinner_only') { halfDays++; totalMeals++; }
+                if (leave.type === 'lunch_only') totalMeals++;
+                if (leave.type === 'dinner_only') totalMeals++;
             }
         } else {
             presentDays++;
-            if (user.messPlan === 'full_day') { fullDays++; totalMeals += 2; }
-            else { halfDays++; totalMeals++; }
+            if (user.messPlan === 'full_day') {
+                totalMeals += 2;
+            } else {
+                totalMeals++;
+            }
         }
     });
 
     const attendance = totalCountedDays > 0 ? ((presentDays / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
 
     return {
-        attendance, totalMeals, presentDays, absentDays, fullDays, halfDays, dueAmount: totalMeals * CHARGE_PER_MEAL,
+        attendance, totalMeals, presentDays, absentDays, dueAmount: totalMeals * CHARGE_PER_MEAL,
     };
   }, [today, user, leaves, holidays, isDataLoading]);
 

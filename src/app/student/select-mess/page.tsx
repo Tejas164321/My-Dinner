@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useTransition, Suspense, type MouseEvent } from 'react';
@@ -10,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion, LogOut, RefreshCw, Trash2 } from 'lucide-react';
+import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion, LogOut, RefreshCw, Trash2, ShieldX } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { cn } from '@/lib/utils';
 
 
 interface Mess {
@@ -49,11 +51,15 @@ async function cancelOrLeaveMess(userId: string): Promise<{ success: boolean; er
     }
 }
 
-async function reapplyToMess(userId: string): Promise<{ success: boolean; error?: string }> {
+async function reapplyToMess(userId: string, messId: string, messName: string): Promise<{ success: boolean; error?: string }> {
     if (!userId) return { success: false, error: 'User ID is missing.' };
     try {
         const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, { status: 'pending_approval' });
+        await updateDoc(userRef, { 
+            status: 'pending_approval',
+            messId,
+            messName
+        });
         return { success: true };
     } catch (error: any) {
         console.error("Error reapplying to mess:", error);
@@ -74,7 +80,7 @@ function SelectMessComponent() {
     const [isCancelling, startCancelTransition] = useTransition();
     const [isReapplying, startReapplyTransition] = useTransition();
 
-    const activeTab = searchParams.get('tab') || (user?.status === 'rejected' || user?.status === 'pending_approval' ? 'requests' : 'messes');
+    const activeTab = searchParams.get('tab') || (user?.status === 'rejected' || user?.status === 'pending_approval' || user?.status === 'suspended' ? 'requests' : 'messes');
 
     useEffect(() => {
         async function fetchMesses() {
@@ -103,7 +109,7 @@ function SelectMessComponent() {
         await signOut(auth);
     };
 
-    const handleCancelRequest = () => {
+    const handleClearRequest = () => {
         if (!user) return;
         startCancelTransition(async () => {
             const result = await cancelOrLeaveMess(user.uid);
@@ -116,9 +122,9 @@ function SelectMessComponent() {
     };
     
      const handleReapply = () => {
-        if (!user) return;
+        if (!user || !user.messId || !user.messName) return;
         startReapplyTransition(async () => {
-            const result = await reapplyToMess(user.uid);
+            const result = await reapplyToMess(user.uid, user.messId!, user.messName!);
             if (result.success) {
                 toast({ title: 'Re-applied Successfully', description: 'Your request has been sent to the admin for approval again.' });
             } else {
@@ -132,15 +138,15 @@ function SelectMessComponent() {
     };
     
     const handleMessClick = (e: MouseEvent<HTMLAnchorElement>, mess: Mess) => {
+        // Prevent applying to a new mess if a request is pending or was rejected (needs clearing first).
+        // A suspended user SHOULD be able to apply.
         if (user?.status === 'pending_approval' || user?.status === 'rejected') {
             e.preventDefault();
             toast({
                 variant: 'destructive',
                 title: 'Action Required',
-                description: 'Please cancel your current request before applying to another mess.',
+                description: 'Please resolve your current request status before applying to another mess.',
             });
-        } else {
-            router.push(`/student/join-mess?messId=${mess.id}&messName=${encodeURIComponent(mess.messName)}`);
         }
     };
 
@@ -162,7 +168,7 @@ function SelectMessComponent() {
                                 </Badge>
                             </div>
                         </div>
-                         <Button variant="destructive" disabled={isCancelling} onClick={handleCancelRequest}>
+                         <Button variant="destructive" disabled={isCancelling} onClick={handleClearRequest}>
                             {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
                             Cancel Request
                         </Button>
@@ -189,7 +195,7 @@ function SelectMessComponent() {
                             </Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-9 w-9">
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-9 w-9 hover:bg-muted">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </AlertDialogTrigger>
@@ -202,7 +208,7 @@ function SelectMessComponent() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleCancelRequest} disabled={isCancelling}>
+                                        <AlertDialogAction onClick={handleClearRequest} disabled={isCancelling}>
                                             {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Confirm
                                         </AlertDialogAction>
@@ -213,6 +219,28 @@ function SelectMessComponent() {
                     </CardContent>
                 </Card>
             );
+        } else if (user?.status === 'suspended') {
+             return (
+                <Card className="bg-secondary/50">
+                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <ShieldX className="h-8 w-8 text-destructive flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold">
+                                    Suspended from <span className="text-primary">{user.messName || 'your previous mess'}</span>
+                                </p>
+                                 <Badge variant="destructive">Suspended</Badge>
+                            </div>
+                        </div>
+                         <div className="flex items-center gap-2">
+                             <Button size="sm" disabled={isReapplying} onClick={handleReapply}>
+                                {isReapplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                Re-request to Join
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+             )
         } else {
             return (
                  <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">

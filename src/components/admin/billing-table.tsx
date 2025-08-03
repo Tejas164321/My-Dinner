@@ -1,29 +1,62 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Student } from "@/lib/data";
+import { Student, Leave, Holiday } from "@/lib/data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bell, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getMonth, getYear, getDaysInMonth, isSameDay, isFuture } from 'date-fns';
 
 interface BillingTableProps {
-    filterMonth: string;
+    filterMonth: Date;
     students: Student[];
+    leaves: Leave[];
+    holidays: Holiday[];
     isLoading: boolean;
 }
 
-const getDummyBillForStudent = (student: Student) => {
-    if (!student || !student.uid) return { due: 0 };
-    const base = student.messPlan === 'full_day' ? 3500 : 1800;
-    const due = student.uid.charCodeAt(0) % 2 === 0 ? base : 0;
-    return { due };
+const CHARGE_PER_MEAL = 65;
+
+const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[]) => {
+    if (!student || !student.uid || !student.messPlan) return { due: 0 };
+
+    const studentLeaves = leaves.filter(l => l.studentId === student.uid && getMonth(l.date) === getMonth(month));
+    const messHolidays = holidays.filter(h => h.messId === student.messId && getMonth(h.date) === getMonth(month));
+
+    const monthIndex = getMonth(month);
+    const year = getYear(month);
+    const daysInMonth = getDaysInMonth(month);
+    
+    let totalMeals = 0;
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const day = new Date(year, monthIndex, i);
+        if (isFuture(day)) continue;
+
+        const holiday = messHolidays.find(h => isSameDay(h.date, day));
+        if (holiday) continue;
+        
+        const leave = studentLeaves.find(l => isSameDay(l.date, day));
+        if (leave) {
+            if (student.messPlan === 'full_day') {
+                if (leave.type === 'lunch_only') totalMeals++;
+                if (leave.type === 'dinner_only') totalMeals++;
+            }
+        } else {
+            if (student.messPlan === 'full_day') totalMeals += 2;
+            else totalMeals++;
+        }
+    }
+    
+    return { due: totalMeals * CHARGE_PER_MEAL };
 };
 
-const BillRow = ({ student, month }: { student: Student, month: string }) => {
-    const bill = getDummyBillForStudent(student);
+
+const BillRow = ({ student, bill }: { student: Student, bill: { due: number } }) => {
     if (bill.due <= 0) return null;
 
     return (
@@ -44,13 +77,15 @@ const BillRow = ({ student, month }: { student: Student, month: string }) => {
     )
 };
 
-export function BillingTable({ filterMonth, students, isLoading }: BillingTableProps) {
+export function BillingTable({ filterMonth, students, leaves, holidays, isLoading }: BillingTableProps) {
     const dueStudents = useMemo(() => {
-        return students.filter(student => {
-            const bill = getDummyBillForStudent(student);
-            return bill.due > 0;
-        });
-    }, [students, filterMonth]);
+        return students
+            .map(student => ({
+                student,
+                bill: calculateBillForStudent(student, filterMonth, leaves, holidays)
+            }))
+            .filter(({ bill }) => bill.due > 0);
+    }, [students, filterMonth, leaves, holidays]);
 
     return (
         <Card className="h-full flex flex-col">
@@ -58,7 +93,7 @@ export function BillingTable({ filterMonth, students, isLoading }: BillingTableP
                 <div className="flex justify-between items-start">
                     <div>
                         <CardTitle>Pending Payments</CardTitle>
-                        <CardDescription>Students with outstanding dues for {filterMonth.charAt(0).toUpperCase() + filterMonth.slice(1)}.</CardDescription>
+                        <CardDescription>Students with outstanding dues.</CardDescription>
                     </div>
                     {dueStudents.length > 0 && (
                         <Button variant="outline" size="sm">
@@ -75,8 +110,8 @@ export function BillingTable({ filterMonth, students, isLoading }: BillingTableP
                                 <Loader2 className="h-6 w-6 animate-spin" />
                             </div>
                         ) : dueStudents.length > 0 ? (
-                            dueStudents.map((student) => (
-                               <BillRow key={student.uid} student={student} month={filterMonth} />
+                            dueStudents.map(({ student, bill }) => (
+                               <BillRow key={student.uid} student={student} bill={bill} />
                             ))
                         ) : (
                             <div className="flex items-center justify-center h-full text-muted-foreground py-10">

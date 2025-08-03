@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
@@ -7,9 +8,12 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { revenueData } from "@/lib/data";
 
-export function RevenueChart() {
+interface RevenueChartProps {
+    data: { month: string; revenue: number }[];
+}
+
+export function RevenueChart({ data }: RevenueChartProps) {
   const chartConfig = {
     revenue: {
       label: "Revenue",
@@ -21,7 +25,7 @@ export function RevenueChart() {
     <ChartContainer config={chartConfig} className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          data={revenueData}
+          data={data}
           margin={{
             top: 10,
             right: 30,
