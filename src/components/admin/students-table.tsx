@@ -33,7 +33,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
 import { Skeleton } from '../ui/skeleton';
-import { format, parseISO, isFuture, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth } from 'date-fns';
+import { format, parseISO, isFuture, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, isSameMonth, startOfDay } from 'date-fns';
 import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
@@ -60,7 +60,9 @@ async function rejectStudent(userId: string) {
 async function suspendStudent(studentDocId: string) {
     const userRef = doc(db, 'users', studentDocId);
     // Only change the status. Keep messId and messName for history and re-request functionality.
-    await updateDoc(userRef, { status: 'suspended' });
+    await updateDoc(userRef, { 
+        status: 'suspended',
+    });
 }
 
 async function reactivateStudent(studentDocId: string) {
@@ -68,9 +70,19 @@ async function reactivateStudent(studentDocId: string) {
     await updateDoc(userRef, { status: 'active' });
 }
 
-async function deleteStudent(studentDocId: string) {
+async function removeStudentFromMess(studentDocId: string) {
     const userRef = doc(db, 'users', studentDocId);
-    await deleteDoc(userRef);
+    // This action makes the student 'unaffiliated', allowing them to join a new mess.
+    // It does not delete their auth record.
+    await updateDoc(userRef, {
+        status: 'unaffiliated',
+        messId: null,
+        messName: null,
+        joinDate: null,
+        planStartDate: null,
+        planStartMeal: null,
+        leaveDate: new Date().toISOString(),
+    });
 }
 
 async function approvePlanChangeRequest(requestId: string, studentUid: string, toPlan: Student['messPlan']) {
@@ -202,7 +214,7 @@ const StudentRowCard = ({ student, bill, showActions, onOpenDialog }: { student:
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Suspend {student.name}?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will move the student to the suspended list. They will no longer have access, but their data will be kept for historical purposes. Are you sure?
+                                    This will move the student to the suspended list. They will be logged out and must re-apply to join again. Are you sure?
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -219,23 +231,20 @@ const StudentRowCard = ({ student, bill, showActions, onOpenDialog }: { student:
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Permanently Delete {student.name}?</AlertDialogTitle>
+                                <AlertDialogTitle>Remove {student.name} From Mess?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action is irreversible. All data associated with this student will be permanently deleted. Are you sure you want to proceed?
+                                    This action will remove the student from your mess and clear their associated data (messId, joinDate, etc.). They will be able to join another mess. This does not delete their account.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteStudent(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Permanently</AlertDialogAction>
+                                <AlertDialogAction onClick={() => removeStudentFromMess(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Remove From Mess</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
             ) : (
                 <div className="flex items-center gap-2">
-                    <Button onClick={() => reactivateStudent(student.uid)} variant="ghost" size="icon" className="h-9 w-9 text-green-400 hover:text-green-300 hover:bg-green-500/10">
-                        <RotateCcw className="h-4 w-4" />
-                    </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive">
@@ -244,14 +253,14 @@ const StudentRowCard = ({ student, bill, showActions, onOpenDialog }: { student:
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Permanently Delete {student.name}?</AlertDialogTitle>
+                                <AlertDialogTitle>Remove {student.name} From Mess?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action is irreversible. All data associated with this student will be permanently deleted. This is for clearing out old records. Are you sure?
+                                     This action will remove the student from your mess and clear their associated data (messId, joinDate, etc.). They will be able to join another mess. This does not delete their account.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteStudent(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Permanently</AlertDialogAction>
+                                <AlertDialogAction onClick={() => removeStudentFromMess(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Remove From Mess</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -329,7 +338,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         const pendingList: Student[] = [];
         
         users.forEach(student => {
-            if (student.status === 'suspended') {
+            if (student.status === 'suspended' || student.status === 'left') {
                 suspendedList.push(student);
             } else if (student.status === 'pending_approval') {
                 pendingList.push(student);
@@ -522,7 +531,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             ))
                          ) : (
                             <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
-                                <p>No suspended students.</p>
+                                <p>No suspended or left students.</p>
                             </div>
                          )}
                     </div>
@@ -543,4 +552,3 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         </div>
     );
 }
-

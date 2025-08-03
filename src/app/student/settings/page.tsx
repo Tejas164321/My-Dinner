@@ -49,11 +49,12 @@ async function submitPlanChangeRequest(studentUid: string, studentId: string, st
     });
 }
 
-// Sets the student's status to 'suspended' but keeps their messId for historical data.
+// Sets the student's status to 'left' and records the leave date.
 async function leaveMess(studentUid: string): Promise<void> {
     const userRef = doc(db, 'users', studentUid);
     await updateDoc(userRef, { 
-        status: 'suspended',
+        status: 'left',
+        leaveDate: new Date().toISOString()
     });
 }
 
@@ -410,7 +411,7 @@ export default function StudentSettingsPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will remove you from the current mess and suspend your account. You will be able to rejoin or apply to a new mess. This action cannot be undone.
+                                This will remove you from the current mess. Your account data will be preserved for historical purposes, and you can join another mess. This action cannot be undone.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

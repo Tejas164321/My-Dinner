@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState, useEffect, type ComponentProps } from "react";
@@ -11,7 +12,7 @@ import type { Student, Holiday, Leave } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet, FileDown, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, isSameMonth, isSameDay, getDaysInMonth } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 
@@ -35,8 +36,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
     const [holidays, setHolidays] = useState<Holiday[]>([]);
 
     useEffect(() => {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
+        const now = startOfDay(new Date());
         setToday(now);
 
         const unsubscribe = onHolidaysUpdate(student.messId, (data) => {
@@ -165,7 +165,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
             halfPresentDays: hpDays,
             dayTypeMap: dtMap
         };
-    }, [month, student.id, student.messPlan, holidays, leaves]);
+    }, [month, student.uid, student.messPlan, holidays, leaves]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
         if (!today) {

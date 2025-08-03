@@ -78,6 +78,7 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
             case 'pending_approval':
             case 'rejected':
             case 'suspended':
+            case 'left':
                 // If a user in any of these states is not on a joining page, redirect them.
                 if (!isJoiningProcessPage) {
                     router.replace('/student/select-mess');

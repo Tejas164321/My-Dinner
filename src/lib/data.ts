@@ -63,12 +63,13 @@ export interface AppUser {
     contact?: string;
     roomNo?: string;
     joinDate?: string;
-    status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'rejected' | 'pending_start';
+    status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'rejected' | 'pending_start' | 'left';
     messId?: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
     planStartDate?: Date;
     planStartMeal?: 'lunch' | 'dinner';
+    leaveDate?: string;
 }
 
 export interface Student extends AppUser {
@@ -77,7 +78,7 @@ export interface Student extends AppUser {
     contact: string;
     roomNo: string;
     joinDate: string;
-    status: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'rejected' | 'pending_start';
+    status: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'rejected' | 'pending_start' | 'left';
     messPlan: 'full_day' | 'lunch_only' | 'dinner_only';
     messId: string;
     messName: string;

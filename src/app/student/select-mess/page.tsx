@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion, LogOut, RefreshCw, Trash2, ShieldX } from 'lucide-react';
+import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion, LogOut, RefreshCw, Trash2, ShieldX, History } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
 
 
 interface Mess {
@@ -43,6 +44,7 @@ async function cancelOrLeaveMess(userId: string): Promise<{ success: boolean; er
           status: 'unaffiliated',
           messId: null,
           messName: null,
+          leaveDate: null,
         });
         return { success: true };
     } catch (error: any) {
@@ -52,13 +54,14 @@ async function cancelOrLeaveMess(userId: string): Promise<{ success: boolean; er
 }
 
 async function reapplyToMess(userId: string, messId: string, messName: string): Promise<{ success: boolean; error?: string }> {
-    if (!userId) return { success: false, error: 'User ID is missing.' };
+    if (!userId || !messId || !messName) return { success: false, error: 'User or mess information is missing.' };
     try {
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, { 
             status: 'pending_approval',
             messId,
-            messName
+            messName,
+            leaveDate: null,
         });
         return { success: true };
     } catch (error: any) {
@@ -80,7 +83,7 @@ function SelectMessComponent() {
     const [isCancelling, startCancelTransition] = useTransition();
     const [isReapplying, startReapplyTransition] = useTransition();
 
-    const activeTab = searchParams.get('tab') || (user?.status === 'rejected' || user?.status === 'pending_approval' || user?.status === 'suspended' ? 'requests' : 'messes');
+    const activeTab = searchParams.get('tab') || (user?.status === 'rejected' || user?.status === 'pending_approval' || user?.status === 'suspended' || user?.status === 'left' ? 'requests' : 'messes');
 
     useEffect(() => {
         async function fetchMesses() {
@@ -138,8 +141,6 @@ function SelectMessComponent() {
     };
     
     const handleMessClick = (e: MouseEvent<HTMLAnchorElement>, mess: Mess) => {
-        // Prevent applying to a new mess if a request is pending or was rejected (needs clearing first).
-        // A suspended user SHOULD be able to apply.
         if (user?.status === 'pending_approval' || user?.status === 'rejected') {
             e.preventDefault();
             toast({
@@ -154,13 +155,34 @@ function SelectMessComponent() {
         if (authLoading) {
             return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>;
         }
+        
+        if (user?.status === 'left') {
+            return (
+                <Card className="bg-secondary/50">
+                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <History className="h-8 w-8 text-blue-500 flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold">You left {user.messName}</p>
+                                <Badge variant="outline" className="border-blue-500/30 text-blue-400">
+                                    {user.leaveDate ? `on ${format(parseISO(user.leaveDate), 'MMM do, yyyy')}` : 'Recently'}
+                                </Badge>
+                            </div>
+                        </div>
+                         <Button asChild>
+                            <Link href="/student/select-mess?tab=messes">Join a New Mess</Link>
+                         </Button>
+                    </CardContent>
+                </Card>
+            );
+        }
 
         if (user?.status === 'pending_approval') {
             return (
                 <Card className="bg-secondary/50">
                     <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <Hourglass className="h-8 w-8 text-amber-500" />
+                            <Hourglass className="h-8 w-8 text-amber-500 flex-shrink-0" />
                             <div>
                                 <p className="font-semibold">{user.messName || 'Awaiting Details...'}</p>
                                 <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30">
@@ -182,7 +204,7 @@ function SelectMessComponent() {
                         <div className="flex items-center gap-4">
                             <XCircle className="h-8 w-8 text-destructive flex-shrink-0" />
                             <div>
-                                <p className="font-semibold">{user.messName || 'Awaiting Details...'}</p>
+                                <p className="font-semibold">Request to join {user.messName || 'a mess'} was rejected.</p>
                                 <Badge variant="destructive">
                                     Request Rejected
                                 </Badge>
@@ -227,7 +249,7 @@ function SelectMessComponent() {
                             <ShieldX className="h-8 w-8 text-destructive flex-shrink-0" />
                             <div>
                                 <p className="font-semibold">
-                                    Suspended from <span className="text-primary">{user.messName || 'your previous mess'}</span>
+                                    Suspended from <span className="text-primary">{user.messName}</span>
                                 </p>
                                  <Badge variant="destructive">Suspended</Badge>
                             </div>
