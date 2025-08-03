@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
                   <Skeleton className="h-28 w-full" />
               </div>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <div className="hidden lg:block lg:col-span-2">
+                  <div className="lg:col-span-2">
                      <Skeleton className="h-[600px] w-full" />
                   </div>
                   <div className="space-y-6">
@@ -185,15 +185,25 @@ export default function AdminDashboardPage() {
               </CardContent>
             </Card>
         </Link>
-        <PendingPaymentsCard />
+         <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300 h-full hover:border-primary/50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">This Month's Revenue</CardTitle>
+                <TrendingUp className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">₹2,85,450</div>
+                <p className="text-xs text-muted-foreground">+12% from last month</p>
+            </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="hidden lg:block lg:col-span-2">
+        <div className="lg:col-span-2">
            <MenuSchedule />
         </div>
         
         <div className="lg:col-span-1 flex flex-col gap-6">
+            <PendingPaymentsCard />
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-600 flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>

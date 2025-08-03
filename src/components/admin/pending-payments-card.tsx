@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,13 +11,13 @@ import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { Student, Leave, Holiday } from '@/lib/data';
 import { Skeleton } from '../ui/skeleton';
-import { Wallet, Users } from 'lucide-react';
-import { getMonth, getYear, getDaysInMonth, isSameDay, isFuture, startOfMonth } from 'date-fns';
+import { Wallet, Users, Receipt } from 'lucide-react';
+import { getMonth, getYear, getDaysInMonth, isSameDay, isFuture, startOfMonth, parseISO, startOfDay } from 'date-fns';
 
 const CHARGE_PER_MEAL = 65;
 
 const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[]) => {
-    if (!student || !student.uid || !student.messPlan) return { due: 0 };
+    if (!student || !student.uid || !student.messPlan || !student.joinDate) return { due: 0 };
 
     const studentLeaves = leaves.filter(l => l.studentId === student.uid && getMonth(l.date) === getMonth(month));
     const messHolidays = holidays.filter(h => h.messId === student.messId && getMonth(h.date) === getMonth(month));
@@ -26,12 +25,13 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
     const monthIndex = getMonth(month);
     const year = getYear(month);
     const daysInMonth = getDaysInMonth(month);
+    const joinDate = student.joinDate ? startOfDay(parseISO(student.joinDate)) : new Date(0);
     
     let totalMeals = 0;
 
     for (let i = 1; i <= daysInMonth; i++) {
         const day = new Date(year, monthIndex, i);
-        if (isFuture(day)) continue;
+        if (isFuture(day) || day < joinDate) continue;
 
         const holiday = messHolidays.find(h => isSameDay(h.date, day));
         if (holiday) continue;
@@ -103,17 +103,35 @@ export function PendingPaymentsCard() {
     }
 
     return (
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Dues</CardTitle>
-                <Wallet className="h-5 w-5 text-destructive" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">
-                    ₹{totalDues.toLocaleString()}
+        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-500 flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Pending Payments</CardTitle>
+                    <CardDescription>A summary of outstanding dues.</CardDescription>
                 </div>
-                <p className="text-xs text-muted-foreground">{defaulterCount} students with dues</p>
+                <Receipt className="h-6 w-6 text-primary" />
+            </CardHeader>
+            <CardContent className="flex-grow space-y-4">
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg border bg-secondary/30 text-center">
+                        <Wallet className="h-6 w-6 mx-auto mb-2 text-destructive" />
+                        <p className="text-xl font-bold">₹{totalDues.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Total Due</p>
+                    </div>
+                     <div className="p-4 rounded-lg border bg-secondary/30 text-center">
+                        <Users className="h-6 w-6 mx-auto mb-2 text-destructive" />
+                        <p className="text-xl font-bold">{defaulterCount}</p>
+                        <p className="text-xs text-muted-foreground">Students</p>
+                    </div>
+                </div>
             </CardContent>
+            <CardFooter>
+                 <Button asChild className="w-full">
+                    <Link href="/admin/billing">
+                        View Billing Details
+                    </Link>
+                </Button>
+            </CardFooter>
         </Card>
     );
 }
