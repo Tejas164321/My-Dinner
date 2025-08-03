@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -31,20 +32,18 @@ function StudentDashboardSkeleton() {
 }
 
 export default function StudentDashboardLayout({ children }: { children: ReactNode }) {
-    const { user, loading } = useAuth();
+    const { user, authLoading } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
-        if (loading) {
-            return; // Wait until auth state is confirmed
-        }
+        if (authLoading) return; // Wait until auth state and user doc are fully loaded
 
         const isAuthPage = pathname.startsWith('/student/login') || pathname.startsWith('/student/signup');
         const isJoiningProcessPage = pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess');
         const isStartMessPage = pathname.startsWith('/student/start-mess');
 
-        // Case 1: User is NOT logged in
+        // If no user is logged in, they must be on an auth page. If not, redirect them.
         if (!user) {
             if (!isAuthPage) {
                 router.replace('/student/login');
@@ -56,58 +55,45 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
         
         // Redirect non-students away from student pages
         if (user.role !== 'student') {
-             router.replace('/student/login');
+             router.replace('/student/login'); // Or a more appropriate page
              return;
         }
 
+        const isAffiliated = !!user.messId && (user.status === 'active' || user.status === 'suspended');
+        const isPendingOrUnaffiliated = !user.messId || user.status === 'unaffiliated' || user.status === 'pending_approval';
+        
         // Redirect logged-in students away from auth pages
         if (isAuthPage) {
-            if (user.status === 'unaffiliated' || user.status === 'pending_approval') {
-                router.replace('/student/select-mess');
-            } else if (user.status === 'pending_start') {
-                router.replace('/student/start-mess');
-            } else {
-                router.replace('/student/dashboard');
-            }
+            if (isAffiliated) router.replace('/student/dashboard');
+            else router.replace('/student/select-mess');
             return;
         }
         
-        // Handle routing based on status
-        switch (user.status) {
-            case 'active':
-            case 'suspended':
-                // Affiliated user, should be on dashboard pages
-                if (isJoiningProcessPage || isStartMessPage) {
-                    router.replace('/student/dashboard');
-                }
-                break;
-            case 'pending_start':
-                 // User needs to set their start date
-                if (!isStartMessPage) {
-                    router.replace('/student/start-mess');
-                }
-                break;
-            case 'pending_approval':
-            case 'unaffiliated':
-                // User needs to join a mess
-                if (!isJoiningProcessPage) {
-                    router.replace('/student/select-mess');
-                }
-                break;
+        // Redirect affiliated users away from joining pages
+        if (isAffiliated && isJoiningProcessPage) {
+            router.replace('/student/dashboard');
+            return;
+        }
+
+        // Redirect pending/unaffiliated users away from protected dashboard pages
+        if (isPendingOrUnaffiliated && !isJoiningProcessPage) {
+            router.replace('/student/select-mess');
+            return;
         }
         
-    }, [user, loading, router, pathname]);
+    }, [user, authLoading, router, pathname]);
     
-    // Render logic
-    if (loading) {
+    // --- Render Logic ---
+    if (authLoading) {
         return <StudentDashboardSkeleton />;
     }
 
     const isAuthPage = pathname.startsWith('/student/login') || pathname.startsWith('/student/signup');
-    const isProtectedDashboard = !isAuthPage && !pathname.startsWith('/student/select-mess') && !pathname.startsWith('/student/join-mess') && !pathname.startsWith('/student/start-mess');
+    const isJoiningProcessPage = pathname.startsWith('/student/select-mess') || pathname.startsWith('/student/join-mess');
+    const isAffiliated = user && user.role === 'student' && !!user.messId && !isAuthPage && !isJoiningProcessPage;
 
-    // If a logged-in student is on a protected dashboard page, show the layout
-    if (user && user.role === 'student' && (user.status === 'active' || user.status === 'suspended') && isProtectedDashboard) {
+    if (isAffiliated) {
+        // User is logged in, has a mess, and is on a protected dashboard page.
         const dashboardUser = {
             name: user.name || 'Student',
             role: 'student',
@@ -119,13 +105,13 @@ export default function StudentDashboardLayout({ children }: { children: ReactNo
                 {children}
             </DashboardLayout>
         );
-    }
-    
-    // If the user is on an auth page, or in the joining/starting process, just render the page content
-    if (isAuthPage || (user && (user.status === 'unaffiliated' || user.status === 'pending_approval' || user.status === 'pending_start'))) {
+    } else if (isAuthPage || isJoiningProcessPage) {
+        // User is on a public page (login, signup) or a semi-protected page (select-mess).
+        // Let these pages render themselves.
         return <>{children}</>;
+    } else {
+        // This is a transient state (e.g., waiting for useEffect to redirect).
+        // Show a skeleton to prevent layout shifts or flashing content.
+        return <StudentDashboardSkeleton />;
     }
-
-    // In all other transient cases (e.g., waiting for a redirect), show a skeleton.
-    return <StudentDashboardSkeleton />;
 }

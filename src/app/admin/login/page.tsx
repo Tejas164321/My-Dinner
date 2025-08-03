@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserCog, LogIn, Loader2, ChevronLeft } from 'lucide-react';
+import { UserCog, LogIn, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { AppUser } from '@/lib/data';
 
@@ -89,6 +90,11 @@ export default function AdminLoginPage() {
             Don&apos;t have an admin account?{' '}
             <Link href="/admin/signup" className="underline text-primary">
               Sign up
+            </Link>
+          </div>
+           <div className="mt-4 text-center text-sm">
+             <Link href="/" className="text-xs text-muted-foreground hover:underline">
+               Back to Home
             </Link>
           </div>
         </CardContent>

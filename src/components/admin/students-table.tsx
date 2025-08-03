@@ -53,7 +53,7 @@ async function approveStudent(userId: string) {
 
 async function rejectStudent(userId: string) {
     const userRef = doc(db, 'users', userId);
-    await deleteDoc(userRef);
+    await updateDoc(userRef, { status: 'rejected' });
 }
 
 async function suspendStudent(studentDocId: string) {
