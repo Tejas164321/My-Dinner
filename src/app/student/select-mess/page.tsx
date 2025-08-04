@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useEffect, useState, useTransition, Suspense, type MouseEvent } from 'react';
+import { useEffect, useState, useTransition, Suspense, type MouseEvent, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { db, auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
@@ -11,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion, LogOut, RefreshCw, Trash2, ShieldX, History } from 'lucide-react';
+import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion, LogOut, RefreshCw, Trash2, ShieldX, History, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +27,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 
 
 interface Mess {
@@ -80,6 +81,7 @@ function SelectMessComponent() {
     const [messes, setMesses] = useState<Mess[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [isCancelling, startCancelTransition] = useTransition();
     const [isReapplying, startReapplyTransition] = useTransition();
 
@@ -107,6 +109,11 @@ function SelectMessComponent() {
         
         fetchMesses();
     }, []);
+
+    const filteredMesses = useMemo(() => {
+        if (!searchQuery) return messes;
+        return messes.filter(mess => mess.messName.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [messes, searchQuery]);
 
     const handleLogout = async () => {
         await signOut(auth);
@@ -141,7 +148,7 @@ function SelectMessComponent() {
     };
     
     const handleMessClick = (e: MouseEvent<HTMLAnchorElement>, mess: Mess) => {
-        if (user?.status === 'pending_approval' || user?.status === 'rejected') {
+        if (user?.status === 'pending_approval' || user?.status === 'rejected' || user?.status === 'suspended') {
             e.preventDefault();
             toast({
                 variant: 'destructive',
@@ -169,9 +176,6 @@ function SelectMessComponent() {
                                 </Badge>
                             </div>
                         </div>
-                         <Button asChild>
-                            <Link href="/student/select-mess?tab=messes">Join a New Mess</Link>
-                         </Button>
                     </CardContent>
                 </Card>
             );
@@ -279,9 +283,9 @@ function SelectMessComponent() {
             <CardHeader className="text-center relative">
                 <CardTitle>Join a Mess</CardTitle>
                 <CardDescription>Select a mess to join or check the status of your existing request.</CardDescription>
-                <Button variant="ghost" size="icon" className="absolute top-4 right-4" onClick={handleLogout}>
-                    <LogOut className="h-5 w-5" />
-                    <span className="sr-only">Log out</span>
+                <Button variant="ghost" className="absolute top-2 right-2 h-9 px-3" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Log Out
                 </Button>
             </CardHeader>
             <CardContent>
@@ -291,42 +295,59 @@ function SelectMessComponent() {
                         <TabsTrigger value="requests">My Requests</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="messes" className="mt-4 space-y-3">
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
-                                <Loader2 className="h-8 w-8 mb-4 animate-spin" />
-                                <p>Loading available messes...</p>
+                    <TabsContent value="messes" className="mt-4">
+                        <div className="space-y-4 h-[400px] flex flex-col">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search for a mess..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-9"
+                                />
                             </div>
-                        ) : error ? (
-                            <div className="text-center text-destructive py-8"><p>{error}</p></div>
-                        ) : messes.length > 0 ? (
-                            messes.map((mess) => (
-                                <a
-                                    key={mess.id}
-                                    href={`/student/join-mess?messId=${mess.id}&messName=${encodeURIComponent(mess.messName)}`}
-                                    onClick={(e) => handleMessClick(e, mess)}
-                                    className="block"
-                                >
-                                    <Card className="hover:border-primary/80 hover:bg-secondary/50 transition-all">
-                                        <CardContent className="p-4 flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <Building2 className="h-6 w-6 text-primary" />
-                                                <p className="font-semibold">{mess.messName}</p>
-                                            </div>
-                                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                        </CardContent>
-                                    </Card>
-                                </a>
-                            ))
-                        ) : (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>No messes are currently registered.</p>
-                            </div>
-                        )}
+                            <ScrollArea className="flex-grow pr-4">
+                                <div className="space-y-3">
+                                    {loading ? (
+                                        <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
+                                            <Loader2 className="h-8 w-8 mb-4 animate-spin" />
+                                            <p>Loading available messes...</p>
+                                        </div>
+                                    ) : error ? (
+                                        <div className="text-center text-destructive py-8"><p>{error}</p></div>
+                                    ) : filteredMesses.length > 0 ? (
+                                        filteredMesses.map((mess) => (
+                                            <a
+                                                key={mess.id}
+                                                href={`/student/join-mess?messId=${mess.id}&messName=${encodeURIComponent(mess.messName)}`}
+                                                onClick={(e) => handleMessClick(e, mess)}
+                                                className="block"
+                                            >
+                                                <Card className="hover:border-primary/80 hover:bg-secondary/50 transition-all">
+                                                    <CardContent className="p-4 flex items-center justify-between">
+                                                        <div className="flex items-center gap-4">
+                                                            <Building2 className="h-6 w-6 text-primary" />
+                                                            <p className="font-semibold">{mess.messName}</p>
+                                                        </div>
+                                                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                                    </CardContent>
+                                                </Card>
+                                            </a>
+                                        ))
+                                    ) : (
+                                        <div className="text-center text-muted-foreground py-8">
+                                            <p>No messes found matching your search.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="requests" className="mt-4">
-                        {renderRequestStatus()}
+                         <div className="h-[400px]">
+                            {renderRequestStatus()}
+                        </div>
                     </TabsContent>
                 </Tabs>
             </CardContent>
@@ -338,7 +359,7 @@ function SelectMessComponent() {
 export default function SelectMessPage() {
     return (
         <main className="flex min-h-screen flex-col items-center justify-center p-4">
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="h-10 w-10 animate-spin" /></div>}>
                 <SelectMessComponent />
             </Suspense>
         </main>
