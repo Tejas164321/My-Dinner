@@ -26,11 +26,10 @@ import { useAuth } from '@/contexts/auth-context';
 import type { Student, Leave, Holiday } from '@/lib/data';
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
-import { format, subMonths, startOfMonth, getMonth, getYear, getDaysInMonth, isSameDay, isFuture, parseISO } from 'date-fns';
+import { format, subMonths, startOfMonth, getMonth, getYear, getDaysInMonth, isSameDay, isFuture, parseISO, startOfDay } from 'date-fns';
+import { getMessInfo } from '@/lib/services/mess';
 
-const CHARGE_PER_MEAL = 65;
-
-const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[]) => {
+const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[], perMealCharge: number) => {
     if (!student || !student.uid || !student.messPlan || !student.joinDate) return { due: 0, paid: 0, status: 'Paid' };
 
     const studentLeaves = leaves.filter(l => l.studentId === student.uid && getMonth(l.date) === getMonth(month));
@@ -62,7 +61,7 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
         }
     }
     
-    const due = totalMeals * CHARGE_PER_MEAL;
+    const due = totalMeals * perMealCharge;
     // Payment tracking would be implemented here. For now, paid is 0.
     const paid = 0; 
     
@@ -78,12 +77,20 @@ export default function AdminBillingPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [perMealCharge, setPerMealCharge] = useState(65);
   const [isLoading, setIsLoading] = useState(true);
   const [month, setMonth] = useState(startOfMonth(new Date()));
 
   useEffect(() => {
     if (!adminUser) return;
     setIsLoading(true);
+    
+    const fetchMessSettings = async () => {
+        const messInfo = await getMessInfo(adminUser.uid);
+        if (messInfo?.perMealCharge) {
+            setPerMealCharge(messInfo.perMealCharge);
+        }
+    };
 
     const unsubUsers = onUsersUpdate(adminUser.uid, setStudents);
     const unsubLeaves = onAllLeavesUpdate(setLeaves);
@@ -91,6 +98,7 @@ export default function AdminBillingPage() {
 
     // Consider loading finished when all data is fetched
     Promise.all([
+        fetchMessSettings(),
         new Promise(res => onUsersUpdate(adminUser.uid, d => { setStudents(d); res(d); })),
         new Promise(res => onAllLeavesUpdate(d => { setLeaves(d); res(d); })),
         new Promise(res => onHolidaysUpdate(adminUser.uid, d => { setHolidays(d); res(d); }))
@@ -117,14 +125,14 @@ export default function AdminBillingPage() {
   }, []);
 
   const stats = useMemo(() => {
-    const currentMonthData = students.map(s => calculateBillForStudent(s, month, leaves, holidays));
+    const currentMonthData = students.map(s => calculateBillForStudent(s, month, leaves, holidays, perMealCharge));
     
     const totalRevenue = currentMonthData.reduce((sum, data) => sum + data.paid, 0);
     const pendingDues = currentMonthData.reduce((sum, data) => sum + data.due, 0);
     const defaulters = currentMonthData.filter(data => data.status === 'Due').length;
 
     return { totalRevenue, pendingDues, defaulters };
-  }, [students, month, leaves, holidays]);
+  }, [students, month, leaves, holidays, perMealCharge]);
 
   const chartData = useMemo(() => {
     if (isLoading) return [];
@@ -136,7 +144,7 @@ export default function AdminBillingPage() {
         let monthlyRevenue = 0;
 
         students.forEach(student => {
-            const bill = calculateBillForStudent(student, monthDate, leaves, holidays);
+            const bill = calculateBillForStudent(student, monthDate, leaves, holidays, perMealCharge);
             // In a real system, you'd use actual paid amounts. For trend, we use total due as proxy for potential revenue.
             monthlyRevenue += bill.due;
         });
@@ -147,7 +155,7 @@ export default function AdminBillingPage() {
         });
     }
     return data;
-  }, [isLoading, students, leaves, holidays]);
+  }, [isLoading, students, leaves, holidays, perMealCharge]);
 
   return (
     <div className="flex flex-col gap-2 md:gap-6 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -219,7 +227,7 @@ export default function AdminBillingPage() {
                 </Card>
             </div>
             <div className="lg:col-span-2">
-                 <BillingTable filterMonth={month} students={students} leaves={leaves} holidays={holidays} isLoading={isLoading} />
+                 <BillingTable filterMonth={month} students={students} leaves={leaves} holidays={holidays} isLoading={isLoading} perMealCharge={perMealCharge} />
             </div>
        </div>
     </div>

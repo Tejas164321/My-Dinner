@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -59,7 +60,7 @@ function SettingsPageContent() {
     const [dinnerDeadline, setDinnerDeadline] = useState('18:00');
 
     // Billing Settings State
-    const [perMealCharge, setPerMealCharge] = useState('65.00');
+    const [perMealCharge, setPerMealCharge] = useState('65');
 
     useEffect(() => {
         if (adminUser) {
@@ -75,6 +76,7 @@ function SettingsPageContent() {
                     setContactEmail(messData.contactEmail || '');
                     setContactPhone(messData.contactPhone || '');
                     setAddress(messData.address || '');
+                    setPerMealCharge(messData.perMealCharge?.toString() || '65');
                 }
                 setIsLoadingMessInfo(false);
             };
@@ -119,12 +121,21 @@ function SettingsPageContent() {
         if (!adminUser) return;
         setIsSaving(true);
         try {
+            let dataToUpdate = {};
             if (activeTab === 'general') {
-                await updateMessInfo(adminUser.uid, {
-                    messName, contactEmail, contactPhone, address
-                });
+                dataToUpdate = { messName, contactEmail, contactPhone, address };
+            } else if (activeTab === 'billing') {
+                const charge = parseFloat(perMealCharge);
+                if (isNaN(charge) || charge < 0) {
+                    toast({ variant: 'destructive', title: 'Invalid Price', description: 'Per meal charge must be a positive number.' });
+                    setIsSaving(false);
+                    return;
+                }
+                dataToUpdate = { perMealCharge: charge };
             }
-             toast({ title: 'Success', description: 'Your changes have been saved.' });
+             
+            await updateMessInfo(adminUser.uid, dataToUpdate);
+            toast({ title: 'Success', description: 'Your changes have been saved.' });
         } catch (error) {
              toast({ variant: 'destructive', title: 'Error', description: 'Failed to save changes.' });
         } finally {
@@ -330,13 +341,16 @@ function SettingsPageContent() {
                     <Label htmlFor="per-meal-charge">Per Meal Charge (INR)</Label>
                     <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="per-meal-charge" type="number" placeholder="65.00" value={perMealCharge} onChange={(e) => setPerMealCharge(e.target.value)} className="pl-8" />
+                        <Input id="per-meal-charge" type="number" placeholder="65" value={perMealCharge} onChange={(e) => setPerMealCharge(e.target.value)} className="pl-8" />
                     </div>
                     <p className="text-xs text-muted-foreground">The base rate charged per student for a single meal (lunch or dinner).</p>
                 </div>
             </CardContent>
             <CardFooter>
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveChanges} disabled={isSaving}>
+                    {isSaving && <Loader2 className="animate-spin" />}
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
             </CardFooter>
         </Card>
     );

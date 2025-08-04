@@ -5,12 +5,12 @@ import { useState, useMemo, useEffect } from "react";
 import type { DayContentProps } from "react-day-picker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Holiday, Leave } from "@/lib/data";
+import { Holiday, Leave, AppUser } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from "@/lib/listeners/leaves";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
-import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, subMonths, parseISO } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, subMonths, parseISO, isFuture, isBefore, isAfter } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, Utensils, Percent, UserX, Sun, Moon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -58,10 +58,17 @@ export default function StudentAttendancePage() {
         return options;
     }, []);
 
-    const joinDate = useMemo(() => user?.joinDate ? startOfDay(parseISO(user.joinDate)) : null, [user]);
+    const planStartDate = useMemo(() => {
+        if (!user?.planStartDate) return null;
+        const dateValue = typeof user.planStartDate === 'string' 
+            ? parseISO(user.planStartDate) 
+            : (user.planStartDate as any).toDate ? (user.planStartDate as any).toDate() : new Date(user.planStartDate);
+
+        return startOfDay(dateValue);
+    }, [user]);
 
     const monthlyStats = useMemo(() => {
-        if (!user || isLoading || !joinDate) {
+        if (!user || isLoading || !planStartDate) {
             return {
                 attendancePercent: '0%',
                 totalMeals: 0,
@@ -72,7 +79,6 @@ export default function StudentAttendancePage() {
 
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
-        const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
         const today = startOfDay(new Date());
 
         const studentLeaves = leaves.filter(l => isSameMonth(l.date, month));
@@ -83,8 +89,8 @@ export default function StudentAttendancePage() {
         let absentDaysCount = 0;
         let totalCountedDays = 0;
         
-        const consideredDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1))
-            .filter(d => d <= today && d >= joinDate);
+        const consideredDays = Array.from({ length: getDaysInMonth(month) }, (_, i) => new Date(year, monthIndex, i + 1))
+            .filter(d => d <= today && d >= planStartDate);
 
         consideredDays.forEach(day => {
             const isHoliday = monthHolidays.some(h => isSameDay(h.date, day));
@@ -115,7 +121,7 @@ export default function StudentAttendancePage() {
             presentDays: presentDaysCount,
             absentDays: absentDaysCount,
         };
-    }, [month, user, holidays, leaves, isLoading, joinDate]);
+    }, [month, user, holidays, leaves, isLoading, planStartDate]);
 
     const {
         holidayDays,
@@ -123,22 +129,25 @@ export default function StudentAttendancePage() {
         halfLeaveDays,
         fullPresentDays,
         halfPresentDays,
-        beforeJoinDays,
+        beforePlanDays,
+        futureDays,
         dayTypeMap,
     } = useMemo(() => {
-        if (!user || !joinDate) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], beforeJoinDays: [], dayTypeMap: new Map() };
+        if (!user || !planStartDate) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], beforePlanDays: [], futureDays: [], dayTypeMap: new Map() };
         
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
         const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
         const allDaysInMonth = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
-        
+        const today = startOfDay(new Date());
+
         const hDays: Date[] = [];
         const flDays: Date[] = [];
         const hlDays: Date[] = [];
         const fpDays: Date[] = [];
         const hpDays: Date[] = [];
-        const bjDays: Date[] = [];
+        const bpDays: Date[] = [];
+        const ftDays: Date[] = [];
         const dtMap = new Map();
 
         const studentLeaves = leaves.filter(l => isSameMonth(l.date, month));
@@ -150,9 +159,14 @@ export default function StudentAttendancePage() {
         allDaysInMonth.forEach(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             
-            if (day < joinDate) {
-                bjDays.push(day);
-                dtMap.set(dateKey, { type: 'before_join' });
+            if (isBefore(day, planStartDate)) {
+                bpDays.push(day);
+                dtMap.set(dateKey, { type: 'before_plan' });
+                return;
+            }
+            if (isAfter(day, today)) {
+                ftDays.push(day);
+                dtMap.set(dateKey, { type: 'future' });
                 return;
             }
 
@@ -185,10 +199,11 @@ export default function StudentAttendancePage() {
             halfLeaveDays: hlDays,
             fullPresentDays: fpDays,
             halfPresentDays: hpDays,
-            beforeJoinDays: bjDays,
+            beforePlanDays: bpDays,
+            futureDays: ftDays,
             dayTypeMap: dtMap,
         };
-    }, [month, user, holidays, leaves, joinDate]);
+    }, [month, user, holidays, leaves, planStartDate]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
         if (!user) {
@@ -198,8 +213,8 @@ export default function StudentAttendancePage() {
         const dateKey = format(date, 'yyyy-MM-dd');
         const dayInfo = dayTypeMap.get(dateKey);
         
-        if (dayInfo?.type === 'before_join') {
-             return <div className="relative h-full w-full flex items-center justify-center text-muted-foreground/50">{date.getDate()}</div>;
+        if (dayInfo?.type === 'before_plan' || dayInfo?.type === 'future') {
+             return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
         }
         
         const holidayType = dayInfo?.type === 'holiday' ? dayInfo.holidayType : null;
@@ -220,8 +235,8 @@ export default function StudentAttendancePage() {
 
         return (
             <div className="relative h-full w-full flex items-center justify-center">
-                {date.getDate()}
-                <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
+                <div className="relative z-10">{date.getDate()}</div>
+                <div className="absolute bottom-1 flex items-center justify-center gap-0.5 z-10">
                     {lunchDot}
                     {dinnerDot}
                 </div>
@@ -319,23 +334,26 @@ export default function StudentAttendancePage() {
                     <Calendar
                         month={month}
                         onMonthChange={setMonth}
-                        disabled={(date) => date < (joinDate || new Date(0)) || date > new Date()}
                         modifiers={{
+                            today: new Date(),
                             holiday: holidayDays,
                             full_leave: fullLeaveDays,
                             half_leave: halfLeaveDays,
                             full_present: fullPresentDays,
                             half_present: halfPresentDays,
-                            before_join: beforeJoinDays,
+                            before_plan: beforePlanDays,
+                            future: futureDays,
                         }}
                         components={{ DayContent: CustomDayContent }}
                         modifiersClassNames={{
+                            today: 'day-today-highlight',
                             holiday: 'bg-primary/40 text-primary-foreground',
                             full_leave: 'bg-destructive text-destructive-foreground',
                             half_leave: 'bg-chart-3 text-primary-foreground',
                             full_present: 'bg-chart-2 text-primary-foreground',
                             half_present: 'bg-chart-3 text-primary-foreground',
-                            before_join: 'opacity-50 !bg-transparent text-muted-foreground/50 cursor-not-allowed',
+                            before_plan: 'opacity-50 !bg-transparent text-muted-foreground/50 cursor-not-allowed',
+                            future: '!bg-transparent',
                         }}
                         classNames={{
                             months: "w-full",
@@ -343,7 +361,6 @@ export default function StudentAttendancePage() {
                             head_cell: "text-muted-foreground w-full font-normal text-sm",
                             cell: "h-9 w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center",
                             day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center",
-                            day_today: "bg-accent text-accent-foreground rounded-full",
                             day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                         }}
                         className="p-3"
@@ -354,12 +371,10 @@ export default function StudentAttendancePage() {
                         <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-chart-3" />Half Day</div>
                         <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-destructive" />Leave</div>
                         <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-primary/40" />Holiday</div>
-                        <div className="flex items-center gap-2"><Badge variant="outline" className="h-5 border-accent text-accent">Today</Badge>Today</div>
+                        <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full bg-accent/30 border border-accent"></div>Today</div>
                     </div>
                 </CardContent>
             </Card>
         </div>
     );
 }
-
-    

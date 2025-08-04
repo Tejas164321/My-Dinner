@@ -9,7 +9,7 @@ import { Student, Leave, Holiday } from "@/lib/data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bell, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getMonth, getYear, getDaysInMonth, isSameDay, isFuture } from 'date-fns';
+import { getMonth, getYear, getDaysInMonth, isSameDay, isFuture, parseISO, startOfDay } from 'date-fns';
 
 interface BillingTableProps {
     filterMonth: Date;
@@ -17,12 +17,11 @@ interface BillingTableProps {
     leaves: Leave[];
     holidays: Holiday[];
     isLoading: boolean;
+    perMealCharge: number;
 }
 
-const CHARGE_PER_MEAL = 65;
-
-const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[]) => {
-    if (!student || !student.uid || !student.messPlan) return { due: 0 };
+const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[], perMealCharge: number) => {
+    if (!student || !student.uid || !student.messPlan || !student.joinDate) return { due: 0 };
 
     const studentLeaves = leaves.filter(l => l.studentId === student.uid && getMonth(l.date) === getMonth(month));
     const messHolidays = holidays.filter(h => h.messId === student.messId && getMonth(h.date) === getMonth(month));
@@ -30,12 +29,13 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
     const monthIndex = getMonth(month);
     const year = getYear(month);
     const daysInMonth = getDaysInMonth(month);
+    const joinDate = startOfDay(parseISO(student.joinDate));
     
     let totalMeals = 0;
 
     for (let i = 1; i <= daysInMonth; i++) {
         const day = new Date(year, monthIndex, i);
-        if (isFuture(day)) continue;
+        if (isFuture(day) || day < joinDate) continue;
 
         const holiday = messHolidays.find(h => isSameDay(h.date, day));
         if (holiday) continue;
@@ -52,7 +52,7 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
         }
     }
     
-    return { due: totalMeals * CHARGE_PER_MEAL };
+    return { due: totalMeals * perMealCharge };
 };
 
 
@@ -77,15 +77,15 @@ const BillRow = ({ student, bill }: { student: Student, bill: { due: number } })
     )
 };
 
-export function BillingTable({ filterMonth, students, leaves, holidays, isLoading }: BillingTableProps) {
+export function BillingTable({ filterMonth, students, leaves, holidays, isLoading, perMealCharge }: BillingTableProps) {
     const dueStudents = useMemo(() => {
         return students
             .map(student => ({
                 student,
-                bill: calculateBillForStudent(student, filterMonth, leaves, holidays)
+                bill: calculateBillForStudent(student, filterMonth, leaves, holidays, perMealCharge)
             }))
             .filter(({ bill }) => bill.due > 0);
-    }, [students, filterMonth, leaves, holidays]);
+    }, [students, filterMonth, leaves, holidays, perMealCharge]);
 
     return (
         <Card className="h-full flex flex-col">

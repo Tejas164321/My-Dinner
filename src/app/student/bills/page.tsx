@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { paymentReminders, Holiday, Leave, AppUser, Bill, BillDetails } from '@/lib/data';
+import { Holiday, Leave, AppUser, Bill, BillDetails } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
@@ -42,7 +42,7 @@ import { BillDetailDialog } from '@/components/student/bill-detail-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { format, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, subMonths, parseISO, isFuture } from 'date-fns';
+import { format, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, subMonths, parseISO, isFuture, startOfDay } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -70,9 +70,11 @@ const calculateBillDetailsForMonth = (
     let absentDays = 0;
     let holidayCount = 0;
 
+    const joinDate = user.joinDate ? startOfDay(parseISO(user.joinDate)) : new Date(0);
+
     for (let i = 1; i <= daysInMonth; i++) {
         const day = new Date(year, month, i);
-        if (isFuture(day)) continue; // Don't count future days
+        if (isFuture(day) || day < joinDate) continue;
 
         const holiday = holidays.find(h => isSameDay(h.date, day));
         const leave = leaves.find(l => isSameDay(l.date, day));
@@ -145,36 +147,33 @@ export default function StudentBillsPage() {
 
     const bills: Bill[] = [];
     const today = new Date();
+    const joinDate = user.joinDate ? startOfDay(parseISO(user.joinDate)) : new Date(0);
     
-    // Simulate payment history for consistent demo
-    const paymentHistory: {[key: string]: { amount: number; date: string }[]} = {
-      '2023-09': [{ amount: 3380, date: '2023-10-04' }],
-      '2023-08': [{ amount: 1000, date: '2023-09-10' }, { amount: 1000, date: '2023-09-20' }],
-    };
-
-    // Let's generate bills for the last 4 months
-    for (let i = 0; i < 4; i++) {
-        const monthDate = startOfMonth(subMonths(today, i));
-        
+    // Generate bills from join month up to current month
+    let loopDate = startOfMonth(joinDate);
+    while (loopDate <= today) {
         const userLeaves = leaves.filter(l => l.studentId === user.uid);
-        const details = calculateBillDetailsForMonth(monthDate, user, holidays, userLeaves);
+        const details = calculateBillDetailsForMonth(loopDate, user, holidays, userLeaves);
         const totalAmount = details.totalMeals * details.chargePerMeal;
         
-        // Use a consistent key for mock payment history if needed, or implement real payments
-        const monthKeyForMockPayment = format(subMonths(new Date(2023, 10, 1), i), 'yyyy-MM');
-        const payments = paymentHistory[monthKeyForMockPayment] || [];
+        // In a real app, payments would be fetched from Firestore.
+        // For now, payments are an empty array.
+        const payments: Bill['payments'] = [];
 
         bills.push({
-            id: `bill-${format(monthDate, 'yyyy-MM')}`,
-            month: format(monthDate, 'MMMM'),
-            year: getYear(monthDate),
-            generationDate: format(startOfMonth(subMonths(today, i - 1)), 'yyyy-MM-dd'),
+            id: `bill-${format(loopDate, 'yyyy-MM')}`,
+            month: format(loopDate, 'MMMM'),
+            year: getYear(loopDate),
+            generationDate: format(startOfMonth(subMonths(today, -1)), 'yyyy-MM-dd'),
             totalAmount,
             payments,
-            status: totalAmount - payments.reduce((sum, p) => sum + p.amount, 0) > 0 ? 'Due' : 'Paid',
+            status: totalAmount - getPaidAmount({payments} as Bill) > 0 ? 'Due' : 'Paid',
             details,
         });
+
+        loopDate = new Date(loopDate.getFullYear(), loopDate.getMonth() + 1, 1);
     }
+
     return bills.reverse();
   }, [user, holidays, leaves, isLoading]);
   
@@ -258,11 +257,6 @@ export default function StudentBillsPage() {
             <Button variant="outline" className="relative">
                 <ShieldAlert className="mr-2 h-4 w-4 text-destructive" />
                 View Reminders
-                {paymentReminders.length > 0 && (
-                    <Badge variant="destructive" className="absolute -top-2 -right-2 px-2 h-6 w-6 flex items-center justify-center rounded-full">
-                        {paymentReminders.length}
-                    </Badge>
-                )}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -273,24 +267,9 @@ export default function StudentBillsPage() {
                 </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-4">
-                {paymentReminders.length > 0 ? (
-                    paymentReminders.map((reminder) => (
-                        <Alert key={reminder.id} variant="destructive">
-                            <ShieldAlert className="h-4 w-4" />
-                            <AlertTitle>{reminder.title}</AlertTitle>
-                            <AlertDescription>
-                                {reminder.message}
-                                <p className="text-xs text-destructive-foreground/80 mt-2">
-                                    Received on: {format(new Date(reminder.date), 'MMMM do, yyyy')}
-                                </p>
-                            </AlertDescription>
-                        </Alert>
-                    ))
-                ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                        You have no pending payment reminders.
-                    </div>
-                )}
+                <div className="text-center text-muted-foreground py-4">
+                    You have no pending payment reminders.
+                </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -299,7 +278,7 @@ export default function StudentBillsPage() {
       <Card>
         <CardContent className="p-0">
           <div className="space-y-3 sm:p-4">
-            {dynamicallyGeneratedBills.map((bill) => {
+            {dynamicallyGeneratedBills.length > 0 ? dynamicallyGeneratedBills.map((bill) => {
               const paidAmount = getPaidAmount(bill);
               const dueAmount = bill.totalAmount - paidAmount;
               const billDate = new Date(bill.year, getMonth(new Date(bill.month + " 1, 2000")));
@@ -328,7 +307,11 @@ export default function StudentBillsPage() {
                     </div>
                   </div>
               );
-            })}
+            }) : (
+                 <div className="p-8 text-center text-muted-foreground">
+                    <p>No bills generated yet.</p>
+                </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -440,3 +423,5 @@ export default function StudentBillsPage() {
     </div>
   );
 }
+
+    

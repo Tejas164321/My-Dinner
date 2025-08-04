@@ -17,6 +17,7 @@ export interface MessInfo {
   contactEmail?: string;
   contactPhone?: string;
   address?: string;
+  perMealCharge?: number;
 }
 
 /**

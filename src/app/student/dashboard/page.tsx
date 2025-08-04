@@ -13,13 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2, Hourglass } from 'lucide-react';
-import { Leave, Holiday } from "@/lib/data";
+import { Leave, Holiday, AppUser } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
 import { doc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/auth-context';
-import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay, getYear, getMonth, formatDistanceToNowStrict } from 'date-fns';
+import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay, getYear, getMonth, formatDistanceToNowStrict, parseISO } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
@@ -91,10 +91,35 @@ export default function StudentDashboardPage() {
   const [holidaysLoading, setHolidaysLoading] = useState(true);
   const isDataLoading = leavesLoading || holidaysLoading;
   
-  const planActivationDate = useMemo(() => {
+  const planActivationInfo = useMemo(() => {
+    if (!user?.planStartDate || !user?.planStartMeal) return null;
+    
+    // Safely handle both Timestamp and ISO string formats
+    const dateValue = user.planStartDate;
+    let activationDate: Date;
+
+    if (typeof dateValue === 'string') {
+        activationDate = parseISO(dateValue);
+    } else if (dateValue && typeof (dateValue as any).toDate === 'function') {
+        activationDate = (dateValue as any).toDate();
+    } else {
+        // Fallback for unexpected formats, though less likely with Firestore
+        activationDate = new Date(dateValue as any);
+    }
+
+    // Check if the plan is still pending activation
+    return activationDate > new Date() ? { activationDate, startMeal: user.planStartMeal } : null;
+  }, [user]);
+
+  const planStartDate = useMemo(() => {
     if (!user?.planStartDate) return null;
-    const date = (user.planStartDate as unknown as Timestamp).toDate();
-    return date > new Date() ? date : null;
+    const dateValue = user.planStartDate;
+     if (typeof dateValue === 'string') {
+        return startOfDay(parseISO(dateValue));
+    } else if (dateValue && typeof (dateValue as any).toDate === 'function') {
+        return startOfDay((dateValue as any).toDate());
+    }
+    return startOfDay(new Date(dateValue as any));
   }, [user]);
 
 
@@ -147,7 +172,7 @@ export default function StudentDashboardPage() {
 
 
   const currentMonthStats = useMemo(() => {
-    if (!today || !user || isDataLoading) {
+    if (!today || !user || isDataLoading || !planStartDate) {
       return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, dueAmount: 0 };
     }
     
@@ -162,7 +187,8 @@ export default function StudentDashboardPage() {
     let totalMeals = 0;
     let totalCountedDays = 0;
 
-    const daysSoFar = Array.from({ length: today.getDate() }, (_, i) => new Date(year, monthIndex, i + 1));
+    const daysSoFar = Array.from({ length: today.getDate() }, (_, i) => new Date(year, monthIndex, i + 1))
+      .filter(d => d >= planStartDate);
     
     daysSoFar.forEach(day => {
         const isHoliday = monthHolidays.some(h => isSameDay(h.date, day));
@@ -192,7 +218,7 @@ export default function StudentDashboardPage() {
     return {
         attendance, totalMeals, presentDays, absentDays, dueAmount: totalMeals * CHARGE_PER_MEAL,
     };
-  }, [today, user, leaves, holidays, isDataLoading]);
+  }, [today, user, leaves, holidays, isDataLoading, planStartDate]);
 
   const { onLeave } = useMemo(() => {
     if (!selectedDate) return { onLeave: null };
@@ -222,7 +248,7 @@ export default function StudentDashboardPage() {
   const upcomingLeaves = useMemo(() => {
     if (!today) return [];
     return leaves
-      .filter(l => l.date >= today)
+      .filter(l => l.date >= today && l.name !== 'Plan Activation') // Exclude activation leaves
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [leaves, today]);
 
@@ -246,8 +272,8 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
-        {planActivationDate && user?.planStartMeal && (
-            <ActivationCountdown activationDate={planActivationDate} startMeal={user.planStartMeal} />
+        {planActivationInfo && (
+            <ActivationCountdown activationDate={planActivationInfo.activationDate} startMeal={planActivationInfo.startMeal} />
         )}
 
       <div className="hidden md:block">
@@ -378,35 +404,33 @@ export default function StudentDashboardPage() {
                                         {leave.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
                                         {leave.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-3 flex-shrink-0" />}
                                         <div>
-                                            <p className="font-semibold text-sm capitalize">{leave.name === 'Plan Activation' ? 'Plan Activation' : leave.type.replace('_', ' ')}</p>
+                                            <p className="font-semibold text-sm capitalize">{leave.type.replace('_', ' ')}</p>
                                             <p className="text-xs text-muted-foreground">
                                                 {format(leave.date, 'EEEE, MMM do')}
                                             </p>
                                         </div>
                                     </div>
-                                    {leave.name !== 'Plan Activation' && (
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                                  <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This action cannot be undone. This will cancel your leave for {format(leave.date, 'MMMM do, yyyy')}.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteLeave(leave.id)}>
-                                                        Confirm
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    )}
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action cannot be undone. This will cancel your leave for {format(leave.date, 'MMMM do, yyyy')}.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteLeave(leave.id)}>
+                                                    Confirm
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             ))
                         ) : (

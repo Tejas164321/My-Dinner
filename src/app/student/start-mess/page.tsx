@@ -1,31 +1,57 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { format, startOfDay } from 'date-fns';
+import { format, startOfDay, isSameDay, getHours } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ChefHat, Sun, Moon, Loader2, CheckCircle } from 'lucide-react';
+import { ChefHat, Sun, Moon, Loader2, CheckCircle, Info } from 'lucide-react';
 import { activateStudentPlan } from '@/lib/actions/start-mess';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from '@/lib/utils';
+
+const LUNCH_DEADLINE_HOUR = 10; // 10 AM
+const DINNER_DEADLINE_HOUR = 18; // 6 PM
 
 export default function StartMessPage() {
     const { user } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
     const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
-    const [startMeal, setStartMeal] = useState<'lunch' | 'dinner'>('lunch');
+    const [startMeal, setStartMeal] = useState<'lunch' | 'dinner' | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Check deadlines
+    const now = new Date();
+    const currentHour = getHours(now);
+    const isTodaySelected = startDate ? isSameDay(startDate, now) : false;
+    
+    const isLunchDisabled = isTodaySelected && currentHour >= LUNCH_DEADLINE_HOUR;
+    const isDinnerDisabled = isTodaySelected && currentHour >= DINNER_DEADLINE_HOUR;
+
+    // Effect to auto-select available meal or clear selection
+    useEffect(() => {
+        if (isLunchDisabled && isDinnerDisabled) {
+             setStartMeal(undefined);
+        } else if (isLunchDisabled && startMeal === 'lunch') {
+            setStartMeal('dinner'); // Default to dinner if lunch is gone
+        } else if (isDinnerDisabled && startMeal === 'dinner') {
+             setStartMeal(undefined); // No meals available for today
+        } else if (!startMeal && !isLunchDisabled) {
+            setStartMeal('lunch'); // Default to lunch if available
+        }
+    }, [isLunchDisabled, isDinnerDisabled, startMeal]);
+    
 
     const handleSubmit = async () => {
-        if (!user || !startDate) {
-            toast({ variant: 'destructive', title: 'Error', description: 'User data or start date is missing.' });
+        if (!user || !startDate || !startMeal) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a valid start date and meal.' });
             return;
         }
         setIsSubmitting(true);
@@ -77,30 +103,43 @@ export default function StartMessPage() {
                         </div>
                         <div className="space-y-4">
                             <Label className="text-center block font-semibold">2. Start with</Label>
-                             <RadioGroup value={startMeal} onValueChange={(value: 'lunch' | 'dinner') => setStartMeal(value)} className="grid grid-cols-1 gap-4">
-                                <Label htmlFor="r_lunch" className="flex items-center gap-4 rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                    <RadioGroupItem value="lunch" id="r_lunch" />
-                                    <Sun className="h-6 w-6 text-yellow-400" />
-                                    <span className="font-semibold">Lunch</span>
+                             <RadioGroup value={startMeal} onValueChange={(value) => setStartMeal(value as 'lunch' | 'dinner')} className="grid grid-cols-1 gap-4">
+                                <Label htmlFor="r_lunch" className={cn("flex items-center gap-4 rounded-md border-2 p-4 font-normal transition-all", isLunchDisabled ? "cursor-not-allowed bg-muted/50 border-muted" : "cursor-pointer border-muted bg-popover hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary")}>
+                                    <RadioGroupItem value="lunch" id="r_lunch" disabled={isLunchDisabled} />
+                                    <Sun className={cn("h-6 w-6", isLunchDisabled ? "text-muted-foreground" : "text-yellow-400")} />
+                                    <span className={cn("font-semibold", isLunchDisabled && "text-muted-foreground")}>Lunch</span>
                                 </Label>
-                                <Label htmlFor="r_dinner" className="flex items-center gap-4 rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                    <RadioGroupItem value="dinner" id="r_dinner" />
-                                    <Moon className="h-6 w-6 text-purple-400" />
-                                    <span className="font-semibold">Dinner</span>
+                                <Label htmlFor="r_dinner" className={cn("flex items-center gap-4 rounded-md border-2 p-4 font-normal transition-all", isDinnerDisabled ? "cursor-not-allowed bg-muted/50 border-muted" : "cursor-pointer border-muted bg-popover hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary")}>
+                                    <RadioGroupItem value="dinner" id="r_dinner" disabled={isDinnerDisabled} />
+                                    <Moon className={cn("h-6 w-6", isDinnerDisabled ? "text-muted-foreground" : "text-purple-400")} />
+                                    <span className={cn("font-semibold", isDinnerDisabled && "text-muted-foreground")}>Dinner</span>
                                 </Label>
                             </RadioGroup>
+                            {isDinnerDisabled && isTodaySelected && (
+                                <p className="text-center text-xs text-destructive">All meal deadlines for today have passed. Please select tomorrow to start.</p>
+                            )}
                         </div>
                     </div>
-                    <Alert className="border-primary/30 bg-primary/10">
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertTitle className="font-semibold">Your Plan Starts:</AlertTitle>
-                        <AlertDescription>
-                            {startDate ? format(startDate, 'PPP') : 'Select a date'} with <span className="capitalize font-medium">{startMeal}</span>
-                        </AlertDescription>
-                    </Alert>
+                    {startDate && startMeal ? (
+                        <Alert className="border-primary/30 bg-primary/10">
+                            <CheckCircle className="h-4 w-4" />
+                            <AlertTitle className="font-semibold">Your Plan Starts:</AlertTitle>
+                            <AlertDescription>
+                                {format(startDate, 'PPP')} with <span className="capitalize font-medium">{startMeal}</span>
+                            </AlertDescription>
+                        </Alert>
+                    ) : (
+                         <Alert variant="destructive">
+                            <Info className="h-4 w-4" />
+                            <AlertTitle className="font-semibold">Selection Required</AlertTitle>
+                            <AlertDescription>
+                                Please select a valid start date and meal.
+                            </AlertDescription>
+                        </Alert>
+                    )}
                 </CardContent>
                 <CardFooter>
-                     <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting || !startDate}>
+                     <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting || !startDate || !startMeal}>
                       {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {isSubmitting ? 'Confirming...' : 'Confirm & Activate Plan'}
                     </Button>
@@ -109,3 +148,4 @@ export default function StartMessPage() {
         </main>
     )
 }
+

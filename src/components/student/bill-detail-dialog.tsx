@@ -11,7 +11,7 @@ import type { Bill, Holiday, Leave } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { Utensils, FileDown, Wallet, X, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isSameDay, getDaysInMonth, isFuture, parseISO, startOfDay, getMonth, getYear, isBefore, isAfter } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { DialogClose, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -37,72 +37,111 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
   const paidAmount = getPaidAmount(bill);
   const dueAmount = bill.totalAmount - paidAmount;
 
-  const {
-    holidayDays,
-    fullLeaveDays,
-    halfPresentDays,
-    fullPresentDays,
-    leaveTypeMap,
-    holidayTypeMap,
-  } = useMemo(() => {
-    const year = bill.year;
-    const monthIndex = monthMap[bill.month];
-    if (monthIndex === undefined || !student) {
-      return { holidayDays: [], fullLeaveDays: [], halfPresentDays: [], fullPresentDays: [], leaveTypeMap: new Map(), holidayTypeMap: new Map() };
-    }
+   const planStartDate = useMemo(() => {
+        if (!student?.planStartDate) return null;
+        const dateValue = typeof student.planStartDate === 'string' 
+            ? parseISO(student.planStartDate) 
+            : (student.planStartDate as any).toDate ? (student.planStartDate as any).toDate() : new Date(student.planStartDate);
 
-    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
+        return startOfDay(dateValue);
+    }, [student]);
 
-    const hDays: Date[] = [];
-    const flDays: Date[] = [];
-    const hpDays: Date[] = [];
-    const fpDays: Date[] = [];
 
-    const studentLeaves = leaves.filter(l => l.studentId === student.uid);
-    const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
-    const htm = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
+   const {
+        holidayDays,
+        fullLeaveDays,
+        halfLeaveDays,
+        fullPresentDays,
+        halfPresentDays,
+        beforePlanDays,
+        futureDays,
+        dayTypeMap,
+    } = useMemo(() => {
+        if (!student || !planStartDate) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], beforePlanDays: [], futureDays: [], dayTypeMap: new Map() };
+        
+        const year = monthDate.getFullYear();
+        const monthIndex = monthDate.getMonth();
+        const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
+        const allDaysInMonth = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
+        const today = startOfDay(new Date());
 
-    allDays.forEach(day => {
-      const dateKey = format(day, 'yyyy-MM-dd');
-      const holidayType = htm.get(dateKey);
-      const leaveType = ltm.get(dateKey);
+        const hDays: Date[] = [];
+        const flDays: Date[] = [];
+        const hlDays: Date[] = [];
+        const fpDays: Date[] = [];
+        const hpDays: Date[] = [];
+        const bpDays: Date[] = [];
+        const ftDays: Date[] = [];
+        const dtMap = new Map();
 
-      if (holidayType) {
-        hDays.push(day);
-      } else if (leaveType) {
-        if (leaveType === 'full_day') {
-          flDays.push(day);
-        } else {
-          // any partial leave is a half day
-          hpDays.push(day);
-        }
-      } else {
-        // present days
-        if (student.messPlan === 'full_day') {
-          fpDays.push(day);
-        } else {
-          hpDays.push(day);
-        }
-      }
-    });
+        const studentLeaves = leaves.filter(l => getMonth(l.date) === monthIndex && getYear(l.date) === year);
+        const monthHolidays = holidays.filter(h => getMonth(h.date) === monthIndex && getYear(h.date) === year);
 
-    return { 
-        holidayDays: hDays,
-        fullLeaveDays: flDays,
-        halfPresentDays: hpDays,
-        fullPresentDays: fpDays,
-        leaveTypeMap: ltm,
-        holidayTypeMap: htm,
-    };
-  }, [bill, student, holidays, leaves]);
+        const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
+        const htm = new Map(monthHolidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
+
+        allDaysInMonth.forEach(day => {
+            const dateKey = format(day, 'yyyy-MM-dd');
+            
+            if (isBefore(day, planStartDate)) {
+                bpDays.push(day);
+                dtMap.set(dateKey, { type: 'before_plan' });
+                return;
+            }
+            if (isAfter(day, today)) {
+                ftDays.push(day);
+                dtMap.set(dateKey, { type: 'future' });
+                return;
+            }
+
+            const holidayType = htm.get(dateKey);
+            const leaveType = ltm.get(dateKey);
+
+            if (holidayType) {
+                hDays.push(day);
+                dtMap.set(dateKey, { type: 'holiday', holidayType });
+            } else if (leaveType) {
+                if (leaveType === 'full_day') {
+                    flDays.push(day);
+                } else {
+                    hlDays.push(day);
+                }
+                dtMap.set(dateKey, { type: 'leave', leaveType });
+            } else {
+                 if (student.messPlan === 'full_day') {
+                    fpDays.push(day);
+                } else {
+                    hpDays.push(day);
+                }
+                dtMap.set(dateKey, { type: 'present' });
+            }
+        });
+
+        return { 
+            holidayDays: hDays,
+            fullLeaveDays: flDays,
+            halfLeaveDays: hlDays,
+            fullPresentDays: fpDays,
+            halfPresentDays: hpDays,
+            beforePlanDays: bpDays,
+            futureDays: ftDays,
+            dayTypeMap: dtMap,
+        };
+  }, [monthDate, student, holidays, leaves, planStartDate]);
 
   function CustomDayContent({ date }: DayContentProps) {
     if (!student) return <div>{date.getDate()}</div>
+    
     const dateKey = format(date, 'yyyy-MM-dd');
-    const leaveType = leaveTypeMap.get(dateKey);
-    const holidayType = holidayTypeMap.get(dateKey);
-
+    const dayInfo = dayTypeMap.get(dateKey);
+    
+    if (dayInfo?.type === 'before_plan' || dayInfo?.type === 'future') {
+         return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
+    }
+    
+    const holidayType = dayInfo?.type === 'holiday' ? dayInfo.holidayType : null;
+    const leaveType = dayInfo?.type === 'leave' ? dayInfo.leaveType : null;
+    
     const isLunchAttended = !(
         (holidayType === 'full_day' || holidayType === 'lunch_only') ||
         (leaveType === 'full_day' || leaveType === 'lunch_only')
@@ -118,8 +157,8 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
 
     return (
       <div className="relative h-full w-full flex items-center justify-center">
-        {date.getDate()}
-        <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
+        <div className="relative z-10">{date.getDate()}</div>
+        <div className="absolute bottom-1 flex items-center justify-center gap-0.5 z-10">
             {lunchDot}
             {dinnerDot}
         </div>
@@ -148,7 +187,7 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
       <DialogHeader className="p-4 md:p-6 pb-0">
         <DialogTitle className="text-xl">Bill for {bill.month} {bill.year}</DialogTitle>
       </DialogHeader>
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-4 md:p-6">
+      <div className="bg-background grid grid-cols-1 lg:grid-cols-5 gap-6 p-4 md:p-6">
           {/* --- Left Column: Billing & Attendance Summary --- */}
           <div className="lg:col-span-2 flex flex-col gap-6">
               {/* Billing Details */}
@@ -242,17 +281,25 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                        <Calendar
                           month={monthDate}
                           modifiers={{
+                              today: new Date(),
                               holiday: holidayDays,
                               full_leave: fullLeaveDays,
+                              half_leave: halfLeaveDays,
                               half_present: halfPresentDays,
                               full_present: fullPresentDays,
+                              before_plan: beforePlanDays,
+                              future: futureDays,
                           }}
                           components={{ DayContent: CustomDayContent }}
                           modifiersClassNames={{
-                              holiday: 'bg-primary/40 text-primary-foreground',
-                              full_leave: 'bg-destructive text-destructive-foreground',
-                              half_present: 'bg-chart-3 text-primary-foreground',
-                              full_present: 'bg-chart-2 text-primary-foreground',
+                                today: 'day-today-highlight',
+                                holiday: 'bg-primary/40 text-primary-foreground',
+                                full_leave: 'bg-destructive text-destructive-foreground',
+                                half_leave: 'bg-chart-3 text-primary-foreground',
+                                full_present: 'bg-chart-2 text-primary-foreground',
+                                half_present: 'bg-chart-3 text-primary-foreground',
+                                before_plan: 'opacity-50 !bg-transparent text-muted-foreground/50 cursor-not-allowed',
+                                future: '!bg-transparent',
                           }}
                           classNames={{
                               months: 'w-full',
@@ -260,7 +307,6 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                               head_cell: 'text-muted-foreground w-full font-normal text-[0.8rem]',
                               cell: 'h-9 w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center',
                               day: 'h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center',
-                              day_today: 'bg-accent text-accent-foreground rounded-full',
                               day_selected: 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
                           }}
                           className="p-0"
@@ -275,6 +321,7 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
                           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
                           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
+                          <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full bg-accent/30 border border-accent"></div>Today</div>
                       </div>
                   </div>
                </div>

@@ -38,6 +38,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getMessInfo } from '@/lib/services/mess';
 
 interface StudentsTableProps {
     filterMonth: Date;
@@ -107,10 +108,8 @@ const planInfo = {
     dinner_only: { icon: Moon, text: 'Dinner Only', color: 'text-purple-400' }
 };
 
-const CHARGE_PER_MEAL = 65;
-
-const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[]) => {
-    if (!student || !student.uid || !student.messPlan) return { due: 0, attendance: 'N/A', status: 'Paid' };
+const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[], perMealCharge: number) => {
+    if (!student || !student.uid || !student.messPlan || !student.joinDate) return { due: 0, attendance: 'N/A', status: 'Paid' };
 
     const studentLeaves = leaves.filter(l => l.studentId === student.uid && isSameMonth(l.date, month));
     const messHolidays = holidays.filter(h => h.messId === student.messId && isSameMonth(h.date, month));
@@ -118,7 +117,7 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
     const monthIndex = getMonth(month);
     const year = getYear(month);
     const daysInMonth = getDaysInMonth(month);
-    const joinDate = student.joinDate ? startOfDay(parseISO(student.joinDate)) : new Date(0);
+    const joinDate = startOfDay(parseISO(student.joinDate));
     
     let totalMeals = 0;
     let presentDays = 0;
@@ -146,7 +145,7 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
         }
     }
     
-    const totalDue = totalMeals * CHARGE_PER_MEAL;
+    const totalDue = totalMeals * perMealCharge;
     const attendance = totalCountedDays > 0 ? `${Math.round((presentDays / totalCountedDays) * 100)}%` : 'N/A';
 
     return {
@@ -302,6 +301,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     const [allHolidays, setAllHolidays] = useState<Holiday[]>([]);
     const [users, setUsers] = useState<Student[]>([]);
     const [planChangeRequests, setPlanChangeRequests] = useState<PlanChangeRequest[]>([]);
+    const [perMealCharge, setPerMealCharge] = useState(65);
     
     const [isLoading, setIsLoading] = useState(true);
 
@@ -313,7 +313,15 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         
         setIsLoading(true);
 
+        const fetchMessSettings = async () => {
+            const messInfo = await getMessInfo(user.uid);
+            if (messInfo?.perMealCharge) {
+                setPerMealCharge(messInfo.perMealCharge);
+            }
+        };
+
         const unsubscribes = [
+            fetchMessSettings(),
             onUsersUpdate(user.uid, setUsers),
             onPlanChangeRequestsUpdate(user.uid, setPlanChangeRequests),
             onAllLeavesUpdate(setAllLeaves),
@@ -329,7 +337,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
             new Promise(res => onHolidaysUpdate(user.uid, d => res(d))),
         ]).then(() => setIsLoading(false));
 
-        return () => unsubscribes.forEach(unsub => unsub());
+        return () => unsubscribes.forEach(unsub => typeof unsub === 'function' && unsub());
     }, [user]);
 
     const { activeStudents, suspendedStudents, pendingStudents } = useMemo(() => {
@@ -353,7 +361,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
     const filteredActiveStudents = useMemo(() => {
         return activeStudents.map(student => ({
                 student,
-                bill: calculateBillForStudent(student, filterMonth, allLeaves, allHolidays),
+                bill: calculateBillForStudent(student, filterMonth, allLeaves, allHolidays, perMealCharge),
             }))
             .filter(({ bill }) => filterStatus === 'all' || bill.status === filterStatus)
             .filter(({ student }) => filterPlan === 'all' || student.messPlan === filterPlan)
@@ -364,7 +372,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                 const idMatch = student.studentId && student.studentId.toLowerCase().includes(searchLower);
                 return nameMatch || idMatch;
             });
-    }, [activeStudents, filterStatus, searchQuery, filterPlan, filterMonth, allLeaves, allHolidays]);
+    }, [activeStudents, filterStatus, searchQuery, filterPlan, filterMonth, allLeaves, allHolidays, perMealCharge]);
     
     const formatPlanName = (plan: string) => {
         return plan.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -524,7 +532,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             <StudentRowCard 
                                     key={student.uid} 
                                     student={student}
-                                    bill={calculateBillForStudent(student, filterMonth, allLeaves, allHolidays)} 
+                                    bill={calculateBillForStudent(student, filterMonth, allLeaves, allHolidays, perMealCharge)} 
                                     showActions={false}
                                     onOpenDialog={() => handleOpenDialog(student.uid)}
                                 />
@@ -539,7 +547,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
             </Tabs>
 
             <Dialog open={!!studentToView} onOpenChange={(open) => !open && handleCloseDialog()}>
-                <DialogContent className="p-0 w-[90vw] md:max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="p-0 w-[90vw] max-w-[500px] md:max-w-4xl max-h-[90vh] overflow-y-auto">
                      {studentToView && (
                         <StudentDetailCard 
                             student={studentToView} 

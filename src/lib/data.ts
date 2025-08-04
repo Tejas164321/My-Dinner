@@ -67,7 +67,7 @@ export interface AppUser {
     messId?: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
-    planStartDate?: Date;
+    planStartDate?: string;
     planStartMeal?: 'lunch' | 'dinner';
     leaveDate?: string;
 }

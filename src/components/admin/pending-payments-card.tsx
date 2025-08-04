@@ -13,10 +13,9 @@ import { Student, Leave, Holiday } from '@/lib/data';
 import { Skeleton } from '../ui/skeleton';
 import { Wallet, Users, Receipt } from 'lucide-react';
 import { getMonth, getYear, getDaysInMonth, isSameDay, isFuture, startOfMonth, parseISO, startOfDay } from 'date-fns';
+import { getMessInfo } from '@/lib/services/mess';
 
-const CHARGE_PER_MEAL = 65;
-
-const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[]) => {
+const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[], perMealCharge: number) => {
     if (!student || !student.uid || !student.messPlan || !student.joinDate) return { due: 0 };
 
     const studentLeaves = leaves.filter(l => l.studentId === student.uid && getMonth(l.date) === getMonth(month));
@@ -48,7 +47,7 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
         }
     }
     
-    return { due: totalMeals * CHARGE_PER_MEAL };
+    return { due: totalMeals * perMealCharge };
 };
 
 
@@ -57,17 +56,27 @@ export function PendingPaymentsCard() {
     const [students, setStudents] = useState<Student[]>([]);
     const [leaves, setLeaves] = useState<Leave[]>([]);
     const [holidays, setHolidays] = useState<Holiday[]>([]);
+    const [perMealCharge, setPerMealCharge] = useState(65);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (!adminUser) return;
         setIsLoading(true);
+
+        const fetchMessSettings = async () => {
+            const messInfo = await getMessInfo(adminUser.uid);
+            if (messInfo?.perMealCharge) {
+                setPerMealCharge(messInfo.perMealCharge);
+            }
+        };
+
         const unsubUsers = onUsersUpdate(adminUser.uid, setStudents);
         const unsubLeaves = onAllLeavesUpdate(setLeaves);
         const unsubHolidays = onHolidaysUpdate(adminUser.uid, setHolidays);
 
         // A simple way to wait for all listeners to fire once
         Promise.all([
+            fetchMessSettings(),
             new Promise(res => onUsersUpdate(adminUser.uid, d => res(d))),
             new Promise(res => onAllLeavesUpdate(d => res(d))),
             new Promise(res => onHolidaysUpdate(adminUser.uid, d => res(d))),
@@ -89,14 +98,14 @@ export function PendingPaymentsCard() {
         
         students.forEach(student => {
             // Simplified: Not accounting for payments here, just total generated bill
-            const bill = calculateBillForStudent(student, currentMonth, leaves, holidays);
+            const bill = calculateBillForStudent(student, currentMonth, leaves, holidays, perMealCharge);
             if (bill.due > 0) {
                 dues += bill.due;
                 count++;
             }
         });
         return { totalDues: dues, defaulterCount: count };
-    }, [students, leaves, holidays, isLoading]);
+    }, [students, leaves, holidays, isLoading, perMealCharge]);
 
     if (isLoading) {
         return <Skeleton className="h-48 w-full" />;

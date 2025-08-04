@@ -12,7 +12,7 @@ import type { Student, Holiday, Leave } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet, FileDown, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, parseISO, isFuture, isBefore, isAfter } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 
@@ -50,6 +50,14 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         setMonth(initialMonth);
     }, [initialMonth]);
 
+    const planStartDate = useMemo(() => {
+        if (!student?.planStartDate) return null;
+        const dateValue = typeof student.planStartDate === 'string' 
+            ? parseISO(student.planStartDate) 
+            : (student.planStartDate as any).toDate();
+        return startOfDay(dateValue);
+    }, [student]);
+
     const monthData = useMemo(() => {
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
@@ -64,6 +72,8 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 
         for (let i = 1; i <= daysInMonth; i++) {
             const day = new Date(year, monthIndex, i);
+            if (isFuture(day) || (planStartDate && day < planStartDate)) continue;
+
             const holiday = monthHolidays.find(h => isSameDay(h.date, day));
             const leave = studentLeaves.find(l => isSameDay(l.date, day));
 
@@ -111,7 +121,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
             },
             status
         };
-    }, [month, student, holidays, leaves]);
+    }, [month, student, holidays, leaves, planStartDate]);
     
     const {
         holidayDays,
@@ -119,18 +129,23 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         halfLeaveDays,
         fullPresentDays,
         halfPresentDays,
+        beforePlanDays,
+        futureDays,
         dayTypeMap
     } = useMemo(() => {
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
         const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
         const allDaysInMonth = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
+        const today = startOfDay(new Date());
         
         const hDays: Date[] = [];
         const flDays: Date[] = [];
         const hlDays: Date[] = [];
         const fpDays: Date[] = [];
         const hpDays: Date[] = [];
+        const bpDays: Date[] = [];
+        const ftDays: Date[] = [];
         const dtMap = new Map();
 
         const studentLeavesForMonth = leaves.filter(l => isSameMonth(l.date, month));
@@ -141,6 +156,17 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 
         allDaysInMonth.forEach(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
+            if (planStartDate && day < planStartDate) {
+                bpDays.push(day);
+                dtMap.set(dateKey, { type: 'before_plan' });
+                return;
+            }
+             if (isAfter(day, today)) {
+                ftDays.push(day);
+                dtMap.set(dateKey, { type: 'future' });
+                return;
+            }
+
             const holidayType = htm.get(dateKey);
             const leaveType = ltm.get(dateKey);
 
@@ -163,9 +189,11 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
             halfLeaveDays: hlDays,
             fullPresentDays: fpDays,
             halfPresentDays: hpDays,
+            beforePlanDays: bpDays,
+            futureDays: ftDays,
             dayTypeMap: dtMap
         };
-    }, [month, student.uid, student.messPlan, holidays, leaves]);
+    }, [month, student, holidays, leaves, planStartDate]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
         if (!today) {
@@ -174,6 +202,10 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 
         const dateKey = format(date, 'yyyy-MM-dd');
         const dayInfo = dayTypeMap.get(dateKey);
+
+        if (dayInfo?.type === 'before_plan' || dayInfo?.type === 'future') {
+            return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
+        }
 
         const holidayType = dayInfo?.holidayType;
         const leaveType = dayInfo?.leaveType;
@@ -206,7 +238,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
     const PlanIcon = currentPlan.icon;
 
     return (
-        <Card className="w-full h-full bg-card/95 backdrop-blur-xl border-0 overflow-hidden">
+        <Card className="w-full h-full bg-card border-0 overflow-hidden">
             <div className="flex flex-col gap-4 md:gap-6 p-4 md:p-6 h-full overflow-y-auto">
                 {/* --- Profile Section --- */}
                  <div className="flex flex-col md:flex-row items-center gap-4">
@@ -312,19 +344,25 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 month={month}
                                 onMonthChange={setMonth}
                                 modifiers={{
+                                    today: new Date(),
                                     holiday: holidayDays,
                                     full_leave: fullLeaveDays,
                                     half_leave: halfLeaveDays,
                                     full_present: fullPresentDays,
                                     half_present: halfPresentDays,
+                                    before_plan: beforePlanDays,
+                                    future: futureDays,
                                 }}
                                 components={{ DayContent: CustomDayContent }}
                                 modifiersClassNames={{
+                                    today: 'day_today',
                                     holiday: 'bg-primary/40 text-primary-foreground',
                                     full_leave: 'bg-destructive text-destructive-foreground',
                                     half_leave: 'bg-chart-3 text-primary-foreground',
                                     full_present: 'bg-chart-2 text-primary-foreground',
                                     half_present: 'bg-chart-3 text-primary-foreground',
+                                    before_plan: 'opacity-50 !bg-transparent text-muted-foreground/50 cursor-not-allowed',
+                                    future: '!bg-transparent',
                                 }}
                                 classNames={{
                                     months: "w-full",
@@ -332,7 +370,6 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                     head_cell: "text-muted-foreground rounded-md w-8 md:w-9 font-normal text-[0.7rem] md:text-[0.8rem]",
                                     cell: "h-8 w-8 md:h-9 md:w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center",
                                     day: "h-8 w-8 md:h-9 md:w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center",
-                                    day_today: "bg-accent text-accent-foreground rounded-full",
                                     day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                                 }}
                                 className="p-1 md:p-2"
@@ -345,6 +382,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
+                                <div className="flex items-center gap-1.5"><Badge variant="outline" className="h-5 border-accent/50 text-accent-foreground bg-accent/30">Today</Badge>Today</div>
                             </div>
                         </div>
                     </div>
@@ -355,4 +393,3 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
     );
 }
 
-    
