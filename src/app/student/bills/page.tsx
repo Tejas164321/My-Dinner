@@ -45,9 +45,8 @@ import { useToast } from '@/hooks/use-toast';
 import { format, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, subMonths, parseISO, isFuture, startOfDay } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getMessInfo } from '@/lib/services/mess';
 
-
-const CHARGE_PER_MEAL = 65;
 
 const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
 
@@ -55,7 +54,8 @@ const calculateBillDetailsForMonth = (
     monthDate: Date, 
     user: AppUser, 
     allHolidays: Holiday[], 
-    allLeaves: Leave[]
+    allLeaves: Leave[],
+    perMealCharge: number
 ): BillDetails => {
     const month = getMonth(monthDate);
     const year = getYear(monthDate);
@@ -97,7 +97,7 @@ const calculateBillDetailsForMonth = (
     }
     
     return {
-        totalMeals, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: daysInMonth,
+        totalMeals, chargePerMeal: perMealCharge, totalDaysInMonth: daysInMonth,
         holidays: holidayCount, billableDays: daysInMonth - holidayCount,
         fullDays, halfDays, absentDays
     };
@@ -111,6 +111,7 @@ export default function StudentBillsPage() {
   const { user } = useAuth();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [perMealCharge, setPerMealCharge] = useState(65);
   const [isLoading, setIsLoading] = useState(true);
 
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
@@ -129,13 +130,27 @@ export default function StudentBillsPage() {
         return;
     }
     setIsLoading(true);
+
+    const fetchMessSettings = async () => {
+        const messInfo = await getMessInfo(user.messId!);
+        if (messInfo?.perMealCharge) {
+            setPerMealCharge(messInfo.perMealCharge);
+        }
+    };
     
     const leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
-
     const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
         setHolidays(updatedHolidays);
+    });
+
+    Promise.all([
+        fetchMessSettings(),
+        new Promise(res => onLeavesUpdate(user.uid, d => { setLeaves(d); res(d); })),
+        new Promise(res => onHolidaysUpdate(user.messId, d => { setHolidays(d); res(d); })),
+    ]).then(() => {
         if(user) setIsLoading(false);
     });
+
     return () => {
         leavesUnsubscribe();
         holidaysUnsubscribe();
@@ -147,13 +162,14 @@ export default function StudentBillsPage() {
 
     const bills: Bill[] = [];
     const today = new Date();
-    const joinDate = user.joinDate ? startOfDay(parseISO(user.joinDate)) : new Date(0);
+    // Use originalJoinDate for history, fallback to joinDate for new users
+    const firstJoinDate = user.originalJoinDate ? startOfDay(parseISO(user.originalJoinDate)) : (user.joinDate ? startOfDay(parseISO(user.joinDate)) : new Date(0));
     
     // Generate bills from join month up to current month
-    let loopDate = startOfMonth(joinDate);
+    let loopDate = startOfMonth(firstJoinDate);
     while (loopDate <= today) {
         const userLeaves = leaves.filter(l => l.studentId === user.uid);
-        const details = calculateBillDetailsForMonth(loopDate, user, holidays, userLeaves);
+        const details = calculateBillDetailsForMonth(loopDate, user, holidays, userLeaves, perMealCharge);
         const totalAmount = details.totalMeals * details.chargePerMeal;
         
         // In a real app, payments would be fetched from Firestore.
@@ -175,7 +191,7 @@ export default function StudentBillsPage() {
     }
 
     return bills.reverse();
-  }, [user, holidays, leaves, isLoading]);
+  }, [user, holidays, leaves, isLoading, perMealCharge]);
   
   const openedBill = useMemo(() => {
       if (!billIdToView) return null;
@@ -425,3 +441,4 @@ export default function StudentBillsPage() {
 }
 
     
+

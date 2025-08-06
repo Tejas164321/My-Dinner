@@ -43,7 +43,6 @@ function JoinMessContent() {
 
         try {
             // 1. Fetch the admin's user document to validate the secret code.
-            // Security rules must allow `get` on `/users/{adminId}` for this to work.
             const messAdminUserRef = doc(db, 'users', messAdminUid);
             const messAdminDoc = await getDoc(messAdminUserRef);
 
@@ -61,17 +60,18 @@ function JoinMessContent() {
             }
 
             // 3. If the code is correct, update the student's OWN user document.
-            // The security rules must allow this specific update.
             const studentId = `STU${user.uid.slice(-5).toUpperCase()}`;
             const studentRef = doc(db, 'users', user.uid);
             
             await updateDoc(studentRef, {
-                messId: messAdminUid, // This is the admin's UID
+                messId: messAdminUid,
                 messName: messName,
                 status: 'pending_approval',
                 studentId: studentId,
                 joinDate: new Date().toISOString(),
-                messPlan: 'full_day'
+                messPlan: 'full_day',
+                // Keep originalJoinDate if it exists, otherwise set it for the first time
+                originalJoinDate: user.originalJoinDate || new Date().toISOString()
             });
 
             toast({ title: 'Request Sent!', description: 'Your join request is pending admin approval.' });

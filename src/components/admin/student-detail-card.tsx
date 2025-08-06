@@ -54,7 +54,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         if (!student?.planStartDate) return null;
         const dateValue = typeof student.planStartDate === 'string' 
             ? parseISO(student.planStartDate) 
-            : (student.planStartDate as any).toDate();
+            : (student.planStartDate as any).toDate ? (student.planStartDate as any).toDate() : new Date(student.planStartDate);
         return startOfDay(dateValue);
     }, [student]);
 
@@ -133,6 +133,8 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         futureDays,
         dayTypeMap
     } = useMemo(() => {
+        if (!planStartDate) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], beforePlanDays: [], futureDays: [], dayTypeMap: new Map() };
+
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
         const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
@@ -156,7 +158,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 
         allDaysInMonth.forEach(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
-            if (planStartDate && day < planStartDate) {
+            if (day < planStartDate) {
                 bpDays.push(day);
                 dtMap.set(dateKey, { type: 'before_plan' });
                 return;
@@ -170,7 +172,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
             const holidayType = htm.get(dateKey);
             const leaveType = ltm.get(dateKey);
 
-            dtMap.set(dateKey, { holidayType, leaveType });
+            dtMap.set(dateKey, { type: 'day', holidayType, leaveType });
 
             if (holidayType) {
                 hDays.push(day);
@@ -225,8 +227,8 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 
         return (
             <div className="relative h-full w-full flex items-center justify-center">
-                {date.getDate()}
-                <div className="absolute bottom-1 flex items-center justify-center gap-0.5">
+                <div className="relative z-10">{date.getDate()}</div>
+                 <div className="absolute bottom-1 flex items-center justify-center gap-0.5 z-10">
                     {lunchDot}
                     {dinnerDot}
                 </div>
@@ -355,7 +357,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 }}
                                 components={{ DayContent: CustomDayContent }}
                                 modifiersClassNames={{
-                                    today: 'day_today',
+                                    today: 'day-today-highlight',
                                     holiday: 'bg-primary/40 text-primary-foreground',
                                     full_leave: 'bg-destructive text-destructive-foreground',
                                     half_leave: 'bg-chart-3 text-primary-foreground',
@@ -392,4 +394,3 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         </Card>
     );
 }
-

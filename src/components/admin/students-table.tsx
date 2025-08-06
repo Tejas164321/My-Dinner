@@ -12,7 +12,7 @@ import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onUsersUpdate } from '@/lib/listeners/users';
 import { onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
-import { Users, Check, X, Trash2, UserX, Search, Utensils, Sun, Moon, RotateCcw, Loader2, GitCompareArrows, UserPlus, ShieldX } from "lucide-react";
+import { Users, Check, X, Trash2, UserX, Search, Utensils, Sun, Moon, RotateCcw, Loader2, GitCompareArrows, UserPlus, ShieldX, History } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +39,7 @@ import { db } from '@/lib/firebase';
 import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getMessInfo } from '@/lib/services/mess';
+import { leaveMessAction } from '@/lib/actions/user';
 
 interface StudentsTableProps {
     filterMonth: Date;
@@ -73,17 +74,8 @@ async function reactivateStudent(studentDocId: string) {
 
 async function removeStudentFromMess(studentDocId: string) {
     const userRef = doc(db, 'users', studentDocId);
-    // This action makes the student 'unaffiliated', allowing them to join a new mess.
-    // It does not delete their auth record.
-    await updateDoc(userRef, {
-        status: 'unaffiliated',
-        messId: null,
-        messName: null,
-        joinDate: null,
-        planStartDate: null,
-        planStartMeal: null,
-        leaveDate: new Date().toISOString(),
-    });
+    // This is a "soft delete" for the admin view. The user can rejoin.
+    await leaveMessAction(studentDocId);
 }
 
 async function approvePlanChangeRequest(requestId: string, studentUid: string, toPlan: Student['messPlan']) {
@@ -232,37 +224,28 @@ const StudentRowCard = ({ student, bill, showActions, onOpenDialog }: { student:
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Remove {student.name} From Mess?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action will remove the student from your mess and clear their associated data (messId, joinDate, etc.). They will be able to join another mess. This does not delete their account.
+                                    This will mark the student as 'Left' and clear their mess affiliation, allowing them to join another mess. Their historical data will be preserved. Are you sure?
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => removeStudentFromMess(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Remove From Mess</AlertDialogAction>
+                                <AlertDialogAction onClick={() => removeStudentFromMess(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Confirm & Remove</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
             ) : (
                 <div className="flex items-center gap-2">
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Remove {student.name} From Mess?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                     This action will remove the student from your mess and clear their associated data (messId, joinDate, etc.). They will be able to join another mess. This does not delete their account.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => removeStudentFromMess(student.uid)} className={cn(buttonVariants({variant: "destructive"}))}>Remove From Mess</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={() => reactivateStudent(student.uid)} variant="ghost" size="icon" className="h-9 w-9 text-green-400 hover:text-green-300 hover:bg-green-500/10">
+                                    <RotateCcw className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Re-activate Student</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             )}
         </div>
@@ -340,14 +323,14 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         return () => unsubscribes.forEach(unsub => typeof unsub === 'function' && unsub());
     }, [user]);
 
-    const { activeStudents, suspendedStudents, pendingStudents } = useMemo(() => {
+    const { activeStudents, historicalStudents, pendingStudents } = useMemo(() => {
         const activeList: Student[] = [];
-        const suspendedList: Student[] = [];
+        const historicalList: Student[] = [];
         const pendingList: Student[] = [];
         
         users.forEach(student => {
             if (student.status === 'suspended' || student.status === 'left') {
-                suspendedList.push(student);
+                historicalList.push(student);
             } else if (student.status === 'pending_approval') {
                 pendingList.push(student);
             } else if (student.status === 'active' || student.status === 'pending_start') {
@@ -355,7 +338,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
             }
         });
 
-        return { activeStudents: activeList, suspendedStudents: suspendedList, pendingStudents: pendingList };
+        return { activeStudents: activeList, historicalStudents: historicalList, pendingStudents: pendingList };
     }, [users]);
 
     const filteredActiveStudents = useMemo(() => {
@@ -382,7 +365,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         { value: "joined", label: "Students", icon: Users, data: activeStudents, badgeVariant: 'secondary' as const },
         { value: "requests", label: "Requests", icon: UserPlus, data: pendingStudents, badgeVariant: pendingStudents.length > 0 ? 'destructive' : 'secondary' },
         { value: "plan_requests", label: "Plan", icon: GitCompareArrows, data: planChangeRequests, badgeVariant: planChangeRequests.length > 0 ? 'destructive' : 'secondary' },
-        { value: "suspended", label: "Suspended", icon: ShieldX, data: suspendedStudents, badgeVariant: 'secondary' as const },
+        { value: "historical", label: "Historical", icon: History, data: historicalStudents, badgeVariant: 'secondary' as const },
     ];
 
     const studentToView = openStudentId ? users.find(s => s.uid === openStudentId) : null;
@@ -523,12 +506,12 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                     </div>
                 </TabsContent>
 
-                 <TabsContent value="suspended" className="mt-4">
+                 <TabsContent value="historical" className="mt-4">
                     <div className="flex flex-col gap-3">
                          {isLoading ? (
                             Array.from({ length: 1 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
-                        ) : suspendedStudents.length > 0 ? (
-                            suspendedStudents.map((student) => (
+                        ) : historicalStudents.length > 0 ? (
+                            historicalStudents.map((student) => (
                             <StudentRowCard 
                                     key={student.uid} 
                                     student={student}

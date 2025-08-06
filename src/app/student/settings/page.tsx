@@ -22,7 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -35,6 +35,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { leaveMessAction } from '@/lib/actions/user';
+
 
 // Client-side action
 async function submitPlanChangeRequest(studentUid: string, studentId: string, studentName: string, fromPlan: Student['messPlan'], toPlan: Student['messPlan'], messId: string) {
@@ -46,15 +48,6 @@ async function submitPlanChangeRequest(studentUid: string, studentId: string, st
         toPlan,
         messId,
         date: new Date().toISOString(),
-    });
-}
-
-// Sets the student's status to 'left' and records the leave date.
-async function leaveMess(studentUid: string): Promise<void> {
-    const userRef = doc(db, 'users', studentUid);
-    await updateDoc(userRef, { 
-        status: 'left',
-        leaveDate: new Date().toISOString()
     });
 }
 
@@ -182,7 +175,7 @@ export default function StudentSettingsPage() {
         }
         setIsLeaving(true);
         try {
-            await leaveMess(user.uid);
+            await leaveMessAction(user.uid);
             toast({
                 title: 'Left Successfully',
                 description: 'You have left the mess. You can now join a new one.'
@@ -251,7 +244,7 @@ export default function StudentSettingsPage() {
                             </div>
                             <div className="flex items-center gap-2 justify-center sm:justify-start">
                                 <span className="font-semibold text-foreground">Joined:</span>
-                                <span>{user.joinDate ? format(new Date(user.joinDate), 'd MMM, yyyy') : 'N/A'}</span>
+                                <span>{user.joinDate ? format(parseISO(user.joinDate), 'd MMM, yyyy') : 'N/A'}</span>
                             </div>
                         </div>
                     </div>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useTransition, Suspense, type MouseEvent, useMemo } from 'react';
@@ -29,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { leaveMessAction } from '@/lib/actions/user';
 
 
 interface Mess {
@@ -37,23 +39,6 @@ interface Mess {
 }
 
 // Client-side actions
-async function cancelOrLeaveMess(userId: string): Promise<{ success: boolean; error?: string }> {
-    if (!userId) return { success: false, error: 'User ID is missing.' };
-    try {
-        const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, {
-          status: 'unaffiliated',
-          messId: null,
-          messName: null,
-          leaveDate: null,
-        });
-        return { success: true };
-    } catch (error: any) {
-        console.error("Error cancelling/leaving mess:", error);
-        return { success: false, error: 'Failed to update your status. Please try again.' };
-    }
-}
-
 async function reapplyToMess(userId: string, messId: string, messName: string): Promise<{ success: boolean; error?: string }> {
     if (!userId || !messId || !messName) return { success: false, error: 'User or mess information is missing.' };
     try {
@@ -122,11 +107,11 @@ function SelectMessComponent() {
     const handleClearRequest = () => {
         if (!user) return;
         startCancelTransition(async () => {
-            const result = await cancelOrLeaveMess(user.uid);
-            if (result.success) {
+            const result = await leaveMessAction(user.uid);
+            if (result) {
                 toast({ title: 'Request Cleared', description: 'You can now join a different mess.' });
             } else {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not clear request.' });
             }
         });
     };
@@ -148,7 +133,7 @@ function SelectMessComponent() {
     };
     
     const handleMessClick = (e: MouseEvent<HTMLAnchorElement>, mess: Mess) => {
-        if (user?.status === 'pending_approval' || user?.status === 'rejected' || user?.status === 'suspended') {
+        if (user?.status === 'pending_approval' || user?.status === 'rejected' || user?.status === 'suspended' || user?.status === 'left') {
             e.preventDefault();
             toast({
                 variant: 'destructive',
@@ -176,6 +161,10 @@ function SelectMessComponent() {
                                 </Badge>
                             </div>
                         </div>
+                        <Button variant="outline" onClick={handleClearRequest} disabled={isCancelling}>
+                            {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Clear & Join New Mess
+                        </Button>
                     </CardContent>
                 </Card>
             );
