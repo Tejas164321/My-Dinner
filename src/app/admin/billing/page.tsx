@@ -30,7 +30,14 @@ import { format, subMonths, startOfMonth, getMonth, getYear, getDaysInMonth, isS
 import { getMessInfo } from '@/lib/services/mess';
 
 const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[], perMealCharge: number) => {
-    if (!student || !student.uid || !student.messPlan || !student.joinDate) return { due: 0, paid: 0, status: 'Paid' };
+    const dateValue = student.planStartDate;
+    if (!student || !student.uid || !student.messPlan || !dateValue) {
+        return { due: 0, paid: 0, status: 'Paid' };
+    }
+
+    const planStartDate = typeof dateValue === 'string'
+        ? startOfDay(parseISO(dateValue))
+        : startOfDay((dateValue as any).toDate());
 
     const studentLeaves = leaves.filter(l => l.studentId === student.uid && getMonth(l.date) === getMonth(month));
     const messHolidays = holidays.filter(h => h.messId === student.messId && getMonth(h.date) === getMonth(month));
@@ -38,27 +45,39 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
     const monthIndex = getMonth(month);
     const year = getYear(month);
     const daysInMonth = getDaysInMonth(month);
-    const joinDate = startOfDay(parseISO(student.joinDate));
     
     let totalMeals = 0;
 
     for (let i = 1; i <= daysInMonth; i++) {
         const day = new Date(year, monthIndex, i);
-        if (isFuture(day) || day < joinDate) continue;
+        if (isFuture(day) || day < planStartDate) continue;
 
         const holiday = messHolidays.find(h => isSameDay(h.date, day));
         if (holiday) continue;
         
         const leave = studentLeaves.find(l => isSameDay(l.date, day));
-        if (leave) {
-            if (student.messPlan === 'full_day') {
-                if (leave.type === 'lunch_only') totalMeals++;
-                if (leave.type === 'dinner_only') totalMeals++;
+        
+        let lunchTaken = false;
+        let dinnerTaken = false;
+
+        // Check for Lunch
+        if (student.messPlan === 'full_day' || student.messPlan === 'lunch_only') {
+            if (!(isSameDay(day, planStartDate) && student.planStartMeal === 'dinner')) {
+                if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
+                    lunchTaken = true;
+                }
             }
-        } else {
-            if (student.messPlan === 'full_day') totalMeals += 2;
-            else totalMeals++;
         }
+        
+        // Check for Dinner
+        if (student.messPlan === 'full_day' || student.messPlan === 'dinner_only') {
+            if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
+                dinnerTaken = true;
+            }
+        }
+        
+        if(lunchTaken) totalMeals++;
+        if(dinnerTaken) totalMeals++;
     }
     
     const due = totalMeals * perMealCharge;

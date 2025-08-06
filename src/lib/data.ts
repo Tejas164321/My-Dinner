@@ -63,13 +63,13 @@ export interface AppUser {
     contact?: string;
     roomNo?: string;
     joinDate?: string;
-    originalJoinDate?: string; // New field to preserve history
     status?: 'active' | 'suspended' | 'pending_approval' | 'unaffiliated' | 'rejected' | 'pending_start' | 'left';
     messId?: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
     planStartDate?: string;
     planStartMeal?: 'lunch' | 'dinner';
+    originalJoinDate?: string;
     leaveDate?: string;
 }
 

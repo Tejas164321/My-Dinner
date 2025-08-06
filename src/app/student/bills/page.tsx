@@ -70,19 +70,29 @@ const calculateBillDetailsForMonth = (
     let absentDays = 0;
     let holidayCount = 0;
 
-    const planStartDate = user.planStartDate ? startOfDay(user.planStartDate as Date) : new Date(0);
+    const planStartDateValue = user.planStartDate;
+    let planStartDate: Date;
+
+    if (!planStartDateValue) {
+        planStartDate = user.joinDate ? startOfDay(parseISO(user.joinDate)) : new Date(0);
+    } else if (typeof planStartDateValue === 'string') {
+        planStartDate = startOfDay(parseISO(planStartDateValue));
+    } else {
+        planStartDate = startOfDay((planStartDateValue as any).toDate());
+    }
+
 
     for (let i = 1; i <= daysInMonth; i++) {
         const day = new Date(year, month, i);
         if (isFuture(day) || day < planStartDate) continue;
 
         const holiday = holidays.find(h => isSameDay(h.date, day));
-        const leave = leaves.find(l => isSameDay(l.date, day));
-
         if (holiday) {
             holidayCount++;
             continue;
         }
+        
+        const leave = leaves.find(l => isSameDay(l.date, day));
 
         let mealsTakenToday = 0;
         let mealsAvailableToday = 0;
@@ -120,9 +130,9 @@ const calculateBillDetailsForMonth = (
         
         totalMeals += mealsTakenToday;
         
-        if (mealsTakenToday === 0 && (leave || holiday)) {
+        if (mealsTakenToday === 0 && leave) {
             absentDays++;
-        } else if (mealsTakenToday < mealsAvailableToday) {
+        } else if (mealsTakenToday > 0 && mealsTakenToday < mealsAvailableToday) {
             halfDays++;
         } else if (mealsTakenToday > 0) {
             fullDays++;
@@ -196,7 +206,7 @@ export default function StudentBillsPage() {
     const bills: Bill[] = [];
     const today = new Date();
     // Use originalJoinDate for history, fallback to joinDate for new users
-    const firstJoinDate = user.originalJoinDate ? startOfDay(user.originalJoinDate as Date) : (user.joinDate ? startOfDay(user.joinDate as Date) : new Date(0));
+    const firstJoinDate = user.originalJoinDate ? startOfDay(parseISO(user.originalJoinDate)) : (user.joinDate ? startOfDay(parseISO(user.joinDate)) : new Date(0));
     
     // Generate bills from join month up to current month
     let loopDate = startOfMonth(firstJoinDate);

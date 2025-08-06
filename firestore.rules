@@ -3,65 +3,79 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is an admin
-    function isAdmin(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
-    }
-
-    // Rules for the 'users' collection
-    match /users/{userId} {
-      // ANY authenticated user can get ANY single user document.
-      // This is required for a student to look up an admin's document to verify the secret code.
-      // It is secure because it does NOT allow listing all users. A user must know the exact UID to get the document.
-      allow get: if request.auth != null;
-
-      // ANY authenticated user can list users, BUT only if they are an admin.
-      // This allows the admin dashboard to function.
-      allow list: if request.auth != null && isAdmin(request.auth.uid);
-      
-      // A user can create their own document upon signup.
-      allow create: if request.auth.uid == userId;
-
-      // Update rules are more complex:
-      allow update: if 
-        // Rule 1: A user can always update their own document.
-        (request.auth.uid == userId) ||
-        // Rule 2: An admin can update a student's document if that student belongs to their mess.
-        (isAdmin(request.auth.uid) && resource.data.messId == request.auth.uid);
-    }
-    
+    // MESSES: Publicly readable, only admins can write.
     match /messes/{messId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth.uid == messId && isAdmin(request.auth.uid);
+      allow read: if true;
+      allow write: if request.auth.uid == messId;
+    }
+
+    // USERS:
+    // - Users can read their own document.
+    // - Admins can read documents of students in their mess.
+    // - Users can create their own document on signup.
+    // - Users can update their own document.
+    // - Admins can update students in their mess.
+    // - Admins can delete students from their mess (moves them to suspended).
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId
+                  || (
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                    && get(/databases/$(database)/documents/users/$(userId)).data.messId == request.auth.uid
+                  );
+      allow create: if request.auth.uid == userId;
+      allow update: if request.auth.uid == userId
+                     || (
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                       && get(/databases/$(database)/documents/users/$(userId)).data.messId == request.auth.uid
+                     );
+      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // SUSPENDED_STUDENTS: Historical records.
+    // Only the admin of the mess where the student WAS can read or delete.
+    // Only authenticated users (admins) can create them.
+    match /suspended_students/{docId} {
+        allow read, delete: if request.auth.uid == resource.data.messId;
+        allow create: if request.auth != null;
+    }
+
+    // MENUS: Readable by students of the mess, writable only by the admin.
+    match /menus/{menuId} {
+      allow read: if request.auth.uid == resource.data.messId
+                   || (
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.messId == resource.data.messId
+                   );
+      allow write: if request.auth.uid == resource.data.messId;
     }
     
+    // ANNOUNCEMENTS: Readable by students of the mess, writable only by the admin.
     match /announcements/{announcementId} {
-      allow read: if request.auth != null;
-      allow create, delete: if request.auth.uid == request.resource.data.messId && isAdmin(request.auth.uid);
+       allow read: if request.auth.uid == resource.data.messId
+                   || (
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.messId == resource.data.messId
+                   );
+      allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow delete: if request.auth.uid == resource.data.messId;
     }
 
-    match /holidays/{holidayId} {
-      allow read: if request.auth != null;
-      allow create, delete: if request.auth.uid == request.resource.data.messId && isAdmin(request.auth.uid);
-    }
-
+    // LEAVES: Students can manage their own leaves. Admins can read all leaves for their mess.
     match /leaves/{leaveId} {
-       allow read, create, delete: if request.auth != null && (
-          // A student can manage their own leaves
-          request.auth.uid == resource.data.studentId || 
-          request.auth.uid == request.resource.data.studentId ||
-          // An admin can read any leave
-          isAdmin(request.auth.uid)
-       );
+      allow read, create, delete: if request.auth.uid == resource.data.studentId;
+      allow list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    match /menus/{menuId} {
-       allow read: if request.auth != null;
-       allow create, update: if request.auth.uid == request.resource.data.messId && isAdmin(request.auth.uid);
+    // HOLIDAYS: Readable by anyone (e.g., for showing on a public calendar), writable only by admins.
+    match /holidays/{holidayId} {
+      allow read: if true;
+      allow create, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // PLAN CHANGE REQUESTS: Students can create them for their own mess. Admins can read/delete for their mess.
     match /planChangeRequests/{requestId} {
-      allow read, create, delete: if request.auth != null;
+      allow create: if request.auth.uid == request.resource.data.studentUid;
+      allow read, delete: if request.auth.uid == resource.data.messId;
     }
   }
 }

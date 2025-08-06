@@ -45,17 +45,19 @@ export default function StudentLoginPage() {
         const userData = userDoc.data() as AppUser;
         toast({ title: 'Login Successful!' });
         
+        // This check is now handled by the layout, but as a backup:
         if (userData.status === 'active') {
           router.replace('/student/dashboard');
         } else {
-          // For 'rejected', 'pending_approval', 'unaffiliated', etc.
+          // For 'rejected', 'pending_approval', 'unaffiliated', 'suspended' etc.
           router.replace('/student/select-mess');
         }
       } else {
         // This case should ideally not happen if signup is working correctly.
-        // But as a fallback, we deny access.
+        // It means user exists in Auth, but their document was deleted in Firestore.
+        // This can happen if an admin permanently deletes the user.
         await auth.signOut();
-        toast({ variant: 'destructive', title: 'Login Failed', description: 'User data not found.' });
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'User data not found. Your account may have been deleted.' });
       }
 
     } catch (error: any) {
@@ -109,3 +111,4 @@ export default function StudentLoginPage() {
     </main>
   );
 }
+

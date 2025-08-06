@@ -6,13 +6,12 @@ import { useEffect, useState, useTransition, Suspense, type MouseEvent, useMemo 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { db, auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, writeBatch, deleteDoc, getDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, ChevronRight, Loader2, Hourglass, XCircle, FileQuestion, LogOut, RefreshCw, Trash2, ShieldX, History, Search } from 'lucide-react';
-import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -27,10 +26,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
 import { leaveMessAction } from '@/lib/actions/user';
+import { Input } from '@/components/ui/input';
+import type { Student } from '@/lib/data';
 
 
 interface Mess {
@@ -38,7 +37,7 @@ interface Mess {
     messName: string;
 }
 
-// Client-side actions
+// Client-side action
 async function reapplyToMess(userId: string, messId: string, messName: string): Promise<{ success: boolean; error?: string }> {
     if (!userId || !messId || !messName) return { success: false, error: 'User or mess information is missing.' };
     try {
@@ -47,7 +46,6 @@ async function reapplyToMess(userId: string, messId: string, messName: string): 
             status: 'pending_approval',
             messId,
             messName,
-            leaveDate: null,
         });
         return { success: true };
     } catch (error: any) {
@@ -107,12 +105,13 @@ function SelectMessComponent() {
     const handleClearRequest = () => {
         if (!user) return;
         startCancelTransition(async () => {
-            const result = await leaveMessAction(user.uid);
-            if (result) {
-                toast({ title: 'Request Cleared', description: 'You can now join a different mess.' });
-            } else {
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not clear request.' });
-            }
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, {
+                status: 'unaffiliated',
+                messId: null,
+                messName: null,
+            });
+            toast({ title: 'Request Cleared', description: 'You can now join a different mess.' });
         });
     };
     
@@ -146,28 +145,6 @@ function SelectMessComponent() {
     const renderRequestStatus = () => {
         if (authLoading) {
             return <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-        }
-        
-        if (user?.status === 'left') {
-            return (
-                <Card className="bg-secondary/50">
-                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <History className="h-8 w-8 text-blue-500 flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold">You left {user.messName}</p>
-                                <Badge variant="outline" className="border-blue-500/30 text-blue-400">
-                                    {user.leaveDate ? `on ${format(parseISO(user.leaveDate), 'MMM do, yyyy')}` : 'Recently'}
-                                </Badge>
-                            </div>
-                        </div>
-                        <Button variant="outline" onClick={handleClearRequest} disabled={isCancelling}>
-                            {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Clear & Join New Mess
-                        </Button>
-                    </CardContent>
-                </Card>
-            );
         }
 
         if (user?.status === 'pending_approval') {
@@ -247,21 +224,31 @@ function SelectMessComponent() {
                                  <Badge variant="destructive">Suspended</Badge>
                             </div>
                         </div>
-                         <div className="flex items-center gap-2">
-                             <Button size="sm" disabled={isReapplying} onClick={handleReapply}>
-                                {isReapplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                                Re-request to Join
-                            </Button>
+                    </CardContent>
+                </Card>
+             );
+        } else if (user?.status === 'left') {
+             return (
+                <Card className="bg-secondary/50">
+                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <History className="h-8 w-8 text-primary flex-shrink-0" />
+                            <div>
+                                <p className="font-semibold">
+                                    You have left <span className="text-primary">{user.messName}</span>
+                                </p>
+                                 <Badge variant="outline">Left Mess</Badge>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
-             )
+             );
         } else {
             return (
                  <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
                     <FileQuestion className="h-10 w-10 mb-4" />
                     <h3 className="text-lg font-semibold text-foreground">No Pending Requests</h3>
-                    <p>You haven't applied to any mess yet.</p>
+                    <p>You haven't applied to any mess yet. Select one from the "All Messes" tab.</p>
                 </div>
             )
         }
@@ -354,3 +341,6 @@ export default function SelectMessPage() {
         </main>
     );
 }
+
+
+    

@@ -64,7 +64,7 @@ export default function StudentAttendancePage() {
         if (typeof dateValue === 'string') {
             return startOfDay(parseISO(dateValue));
         }
-        return (dateValue as any).toDate ? startOfDay((dateValue as any).toDate()) : startOfDay(new Date(dateValue as any));
+        return startOfDay((dateValue as any).toDate());
     }, [user]);
 
     const monthlyStats = useMemo(() => {
@@ -346,7 +346,7 @@ export default function StudentAttendancePage() {
                         }}
                         components={{ DayContent: CustomDayContent }}
                         modifiersClassNames={{
-                            today: 'bg-accent/30 text-accent-foreground',
+                            today: 'bg-accent/30 text-accent-foreground rounded-full',
                             holiday: 'bg-primary/40 text-primary-foreground',
                             full_leave: 'bg-destructive text-destructive-foreground',
                             half_leave: 'bg-chart-3 text-primary-foreground',

@@ -1,13 +1,14 @@
+
 'use server';
 
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { AppUser } from '../data';
 
 /**
- * Handles the "soft delete" of a student leaving a mess.
- * It archives their original join date for historical billing purposes,
- * updates their status, and clears their current mess association.
+ * Handles a student voluntarily leaving a mess.
+ * This moves their current user data to a historical collection and
+ * resets their main user document to an 'unaffiliated' state.
  * @param studentUid The UID of the student leaving the mess.
  */
 export async function leaveMessAction(studentUid: string): Promise<void> {
@@ -22,20 +23,49 @@ export async function leaveMessAction(studentUid: string): Promise<void> {
         if (!userSnap.exists()) {
             throw new Error("Student document not found.");
         }
-        const userData = userSnap.data() as AppUser;
+        
+        const studentData = userSnap.data() as AppUser;
+        if (!studentData.messId) {
+            // If there's no messId, they've already left or are unaffiliated.
+            // We can just ensure their status is correct.
+             await updateDoc(userRef, { 
+                status: 'unaffiliated',
+                messId: null,
+                messName: null,
+                planStartDate: null,
+                planStartMeal: null,
+                studentId: null,
+                joinDate: null,
+                leaveDate: new Date().toISOString(),
+            });
+            return;
+        }
+        
+        const historicalDocRef = doc(db, 'suspended_students', `${studentData.messId}_${studentUid}`);
+        
+        const batch = writeBatch(db);
 
-        // Preserve the first join date for historical billing
-        const originalJoinDate = userData.originalJoinDate || userData.joinDate;
+        // 1. Copy the current student data to the historical collection
+        batch.set(historicalDocRef, { 
+            ...studentData, 
+            status: 'left', 
+            leaveDate: new Date().toISOString() 
+        });
 
-        await updateDoc(userRef, { 
+        // 2. Reset the original user document to an unaffiliated state
+        // Keep messName so the UI can display "You have left [Mess Name]"
+        batch.update(userRef, {
             status: 'left',
-            messId: null,
-            messName: null,
+            messId: null, 
             planStartDate: null,
             planStartMeal: null,
+            studentId: null,
+            joinDate: null,
             leaveDate: new Date().toISOString(),
-            originalJoinDate: originalJoinDate // Set or keep the original join date
         });
+
+        await batch.commit();
+
     } catch (error) {
         console.error(`Error during leave mess action for student ${studentUid}:`, error);
         throw new Error("Failed to process leave mess request.");

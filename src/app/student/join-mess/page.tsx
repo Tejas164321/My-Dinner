@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useState, FormEvent } from 'react';
@@ -9,8 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { KeyRound, Send, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
-import { updateDoc, doc, getDoc } from 'firebase/firestore';
+import { updateDoc, doc, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { Student } from '@/lib/data';
 
 function JoinMessContent() {
     const searchParams = useSearchParams();
@@ -18,7 +20,6 @@ function JoinMessContent() {
     const { toast } = useToast();
     const { user } = useAuth();
     
-    // This is the admin's UID, which is also the ID of their user document.
     const messAdminUid = searchParams.get('messId'); 
     const messName = searchParams.get('messName');
 
@@ -52,27 +53,66 @@ function JoinMessContent() {
                 return;
             }
 
-            // 2. Compare the secret code from the admin's user document.
             if (messAdminDoc.data()?.secretCode !== secretCode) {
                 toast({ variant: 'destructive', title: 'Incorrect Code', description: 'The secret code you entered is incorrect.' });
                 setIsSubmitting(false);
                 return;
             }
 
-            // 3. If the code is correct, update the student's OWN user document.
-            const studentId = `STU${user.uid.slice(-5).toUpperCase()}`;
             const studentRef = doc(db, 'users', user.uid);
+            const historicalDocId = `${messAdminUid}_${user.uid}`;
+            const historicalDocRef = doc(db, 'suspended_students', historicalDocId);
+            const historicalDocSnap = await getDoc(historicalDocRef);
             
-            await updateDoc(studentRef, {
-                messId: messAdminUid,
-                messName: messName,
-                status: 'pending_approval',
-                studentId: studentId,
-                joinDate: new Date().toISOString(),
-                messPlan: 'full_day',
-                // Keep originalJoinDate if it exists, otherwise set it for the first time
-                originalJoinDate: user.originalJoinDate || new Date().toISOString()
-            });
+            const batch = writeBatch(db);
+
+            if (historicalDocSnap.exists()) {
+                // Student is rejoining, restore their historical data.
+                const historicalData = historicalDocSnap.data() as Student;
+                
+                // **RE-IMPLEMENTED LOGIC**
+                // Create a clean object and manually map only the required fields.
+                // This prevents writing incompatible data like old Timestamps.
+                const updateData: Partial<Student> = {
+                    messId: messAdminUid,
+                    messName: messName,
+                    status: 'pending_approval',
+                    joinDate: new Date().toISOString(),
+                    messPlan: historicalData.messPlan || 'full_day',
+                    // Restore essential historical fields
+                    studentId: historicalData.studentId,
+                    originalJoinDate: historicalData.originalJoinDate,
+                    contact: historicalData.contact || '',
+                    roomNo: historicalData.roomNo || '',
+                    // Ensure these are nulled out on rejoin
+                    planStartDate: null,
+                    planStartMeal: null,
+                    leaveDate: null,
+                };
+
+                batch.update(studentRef, updateData);
+                // Delete the historical record as they are now active again.
+                batch.delete(historicalDocRef);
+            } else {
+                // This is a completely new student for this mess.
+                const studentId = `STU${user.uid.slice(-5).toUpperCase()}`;
+                const updateData: Partial<Student> = {
+                    messId: messAdminUid,
+                    messName: messName,
+                    status: 'pending_approval',
+                    studentId: studentId,
+                    joinDate: new Date().toISOString(),
+                    messPlan: 'full_day',
+                };
+                 // Only set originalJoinDate if it doesn't already exist
+                if (!user.originalJoinDate) {
+                    updateData.originalJoinDate = new Date().toISOString();
+                }
+
+                batch.update(studentRef, updateData);
+            }
+            
+            await batch.commit();
 
             toast({ title: 'Request Sent!', description: 'Your join request is pending admin approval.' });
             router.push('/student/select-mess?tab=requests');

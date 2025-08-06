@@ -404,7 +404,7 @@ export default function StudentSettingsPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will remove you from the current mess. Your account data will be preserved for historical purposes, and you can join another mess. This action cannot be undone.
+                                This will suspend your account from the current mess. You will need to re-apply to join again. This action cannot be undone.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

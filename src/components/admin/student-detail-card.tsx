@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState, useEffect, type ComponentProps } from "react";
@@ -55,10 +56,16 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         if (typeof dateValue === 'string') {
             return startOfDay(parseISO(dateValue));
         }
-        return (dateValue as any).toDate ? startOfDay((dateValue as any).toDate()) : startOfDay(new Date(dateValue as any));
+        return startOfDay((dateValue as any).toDate());
     }, [student]);
 
     const monthData = useMemo(() => {
+        if (!planStartDate) {
+             return {
+                presentMeals: 0, absentMeals: 0, holidayMeals: 0, bill: { total: 0, payments: [], paidAmount: 0, remaining: 0, details: { totalMeals: 0, chargePerMeal: 0, totalDaysInMonth: 0, holidays: 0, billableDays: 0, fullDays: 0, halfDays: 0, absentDays: 0 } }, status: 'Paid'
+            };
+        }
+
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
         const daysInMonth = getDaysInMonth(month);
@@ -77,28 +84,33 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
             const holiday = monthHolidays.find(h => isSameDay(h.date, day));
             const leave = studentLeaves.find(l => isSameDay(l.date, day));
 
-            let lunchStatus = 'available';
-            let dinnerStatus = 'available';
+            let lunchTaken = false;
+            let dinnerTaken = false;
 
-            if (holiday) {
-                if (holiday.type === 'full_day' || holiday.type === 'lunch_only') lunchStatus = 'holiday';
-                if (holiday.type === 'full_day' || holiday.type === 'dinner_only') dinnerStatus = 'holiday';
-            }
-
-            if (leave) {
-                if (lunchStatus === 'available' && (leave.type === 'full_day' || leave.type === 'lunch_only')) lunchStatus = 'leave';
-                if (dinnerStatus === 'available' && (leave.type === 'full_day' || leave.type === 'dinner_only')) dinnerStatus = 'leave';
-            }
-
+            // Check for Lunch
             if (student.messPlan === 'full_day' || student.messPlan === 'lunch_only') {
-                if (lunchStatus === 'available') presentMeals++;
-                else if (lunchStatus === 'leave') absentMeals++;
-                else if (lunchStatus === 'holiday') holidayMeals++;
+                if (!(isSameDay(day, planStartDate) && student.planStartMeal === 'dinner')) {
+                    if (!holiday && (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only'))) {
+                        lunchTaken = true;
+                    }
+                }
             }
+            
+            // Check for Dinner
             if (student.messPlan === 'full_day' || student.messPlan === 'dinner_only') {
-                if (dinnerStatus === 'available') presentMeals++;
-                else if (dinnerStatus === 'leave') absentMeals++;
-                else if (dinnerStatus === 'holiday') holidayMeals++;
+                 if (!holiday && (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only'))) {
+                    dinnerTaken = true;
+                }
+            }
+
+            if(lunchTaken) presentMeals++;
+            if(dinnerTaken) presentMeals++;
+            
+            if (holiday) {
+                holidayMeals += student.messPlan === 'full_day' ? 2 : 1;
+            } else if (leave) {
+                if (leave.type === 'full_day') absentMeals += 2;
+                else absentMeals++;
             }
         }
         
@@ -117,7 +129,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                 payments,
                 paidAmount,
                 remaining: remainingBill,
-                details: { totalMeals: presentMeals, chargePerMeal: CHARGE_PER_MEAL }
+                details: { totalMeals: presentMeals, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 0, holidays: 0, billableDays: 0, fullDays: 0, halfDays: 0, absentDays: 0 }
             },
             status
         };
@@ -198,7 +210,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
     }, [month, student, holidays, leaves, planStartDate]);
 
     const CustomDayContent = ({ date }: DayContentProps) => {
-        if (!today) {
+        if (!today || !planStartDate) {
             return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
         }
 
@@ -212,15 +224,24 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         const holidayType = dayInfo?.holidayType;
         const leaveType = dayInfo?.leaveType;
         
-        const isLunchAttended = !(
-            (holidayType === 'full_day' || holidayType === 'lunch_only') ||
-            (leaveType === 'full_day' || leaveType === 'lunch_only')
-        ) && (student.messPlan === 'full_day' || student.messPlan === 'lunch_only');
-    
-        const isDinnerAttended = !(
-            (holidayType === 'full_day' || holidayType === 'dinner_only') ||
-            (leaveType === 'full_day' || leaveType === 'dinner_only')
-        ) && (student.messPlan === 'full_day' || student.messPlan === 'dinner_only');
+        let isLunchAttended = false;
+        let isDinnerAttended = false;
+
+        // Check for Lunch
+        if (student.messPlan === 'full_day' || student.messPlan === 'lunch_only') {
+            if (!(isSameDay(date, planStartDate) && student.planStartMeal === 'dinner')) {
+                 if (!holidayType && (!leaveType || (leaveType !== 'full_day' && leaveType !== 'lunch_only'))) {
+                    isLunchAttended = true;
+                }
+            }
+        }
+        
+        // Check for Dinner
+        if (student.messPlan === 'full_day' || student.messPlan === 'dinner_only') {
+            if (!holidayType && (!leaveType || (leaveType !== 'full_day' && leaveType !== 'dinner_only'))) {
+                isDinnerAttended = true;
+            }
+        }
 
         const lunchDot = <div className={cn("h-1 w-1 rounded-full", isLunchAttended ? 'bg-white' : 'bg-white/30')} />;
         const dinnerDot = <div className={cn("h-1 w-1 rounded-full", isDinnerAttended ? 'bg-white' : 'bg-white/30')} />;

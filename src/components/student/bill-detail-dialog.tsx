@@ -142,15 +142,25 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
     const holidayType = dayInfo?.type === 'holiday' ? dayInfo.holidayType : null;
     const leaveType = dayInfo?.type === 'leave' ? dayInfo.leaveType : null;
     
-    const isLunchAttended = !(
-        (holidayType === 'full_day' || holidayType === 'lunch_only') ||
-        (leaveType === 'full_day' || leaveType === 'lunch_only')
-    ) && (student.messPlan === 'full_day' || student.messPlan === 'lunch_only');
+    let isLunchAttended = false;
+    let isDinnerAttended = false;
+    const planStartDate = student.planStartDate ? startOfDay(parseISO(student.planStartDate)) : new Date(0);
 
-    const isDinnerAttended = !(
-        (holidayType === 'full_day' || holidayType === 'dinner_only') ||
-        (leaveType === 'full_day' || leaveType === 'dinner_only')
-    ) && (student.messPlan === 'full_day' || student.messPlan === 'dinner_only');
+    // Check for Lunch
+    if (student.messPlan === 'full_day' || student.messPlan === 'lunch_only') {
+        if (!(isSameDay(date, planStartDate) && student.planStartMeal === 'dinner')) {
+            if (!holidayType && (!leaveType || (leaveType !== 'full_day' && leaveType !== 'lunch_only'))) {
+                isLunchAttended = true;
+            }
+        }
+    }
+    
+    // Check for Dinner
+    if (student.messPlan === 'full_day' || student.messPlan === 'dinner_only') {
+        if (!holidayType && (!leaveType || (leaveType !== 'full_day' && leaveType !== 'dinner_only'))) {
+            isDinnerAttended = true;
+        }
+    }
 
     const lunchDot = <div className={cn("h-1 w-1 rounded-full", isLunchAttended ? 'bg-white' : 'bg-white/30')} />;
     const dinnerDot = <div className={cn("h-1 w-1 rounded-full", isDinnerAttended ? 'bg-white' : 'bg-white/30')} />;
