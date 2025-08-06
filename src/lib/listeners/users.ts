@@ -61,7 +61,12 @@ export function onHistoricalUsersUpdate(messId: string, callback: (users: Studen
   );
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
-    const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Student));
+    const users = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // **CRITICAL FIX**: Explicitly map the firestore document ID to the 'id' field.
+      // The student's auth ID is already present in the data as 'uid'.
+      return { id: doc.id, ...data } as Student;
+    });
     users.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     callback(users);
   }, (error) => {
@@ -71,3 +76,4 @@ export function onHistoricalUsersUpdate(messId: string, callback: (users: Studen
 
   return unsubscribe;
 }
+

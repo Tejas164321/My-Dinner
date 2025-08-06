@@ -370,7 +370,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                 return nameMatch || idMatch;
             });
 
-        const filteredHistorical = historicalUsers.filter(({ student }) => {
+        const filteredHistorical = historicalUsers.filter((student) => {
             if (!searchQuery) return true;
             const searchLower = searchQuery.toLowerCase();
             const nameMatch = student.name.toLowerCase().includes(searchLower);
@@ -583,6 +583,3 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         </div>
     );
 }
-
-
-    

@@ -53,10 +53,10 @@ export async function leaveMessAction(studentUid: string): Promise<void> {
         });
 
         // 2. Reset the original user document to an unaffiliated state
-        // Keep messName so the UI can display "You have left [Mess Name]"
         batch.update(userRef, {
-            status: 'left',
+            status: 'unaffiliated',
             messId: null, 
+            messName: null,
             planStartDate: null,
             planStartMeal: null,
             studentId: null,

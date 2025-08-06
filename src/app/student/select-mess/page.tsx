@@ -132,7 +132,7 @@ function SelectMessComponent() {
     };
     
     const handleMessClick = (e: MouseEvent<HTMLAnchorElement>, mess: Mess) => {
-        if (user?.status === 'pending_approval' || user?.status === 'rejected' || user?.status === 'suspended' || user?.status === 'left') {
+        if (user?.status === 'pending_approval' || user?.status === 'rejected' || user?.status === 'suspended') {
             e.preventDefault();
             toast({
                 variant: 'destructive',
@@ -222,22 +222,6 @@ function SelectMessComponent() {
                                     Suspended from <span className="text-primary">{user.messName}</span>
                                 </p>
                                  <Badge variant="destructive">Suspended</Badge>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-             );
-        } else if (user?.status === 'left') {
-             return (
-                <Card className="bg-secondary/50">
-                    <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <History className="h-8 w-8 text-primary flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold">
-                                    You have left <span className="text-primary">{user.messName}</span>
-                                </p>
-                                 <Badge variant="outline">Left Mess</Badge>
                             </div>
                         </div>
                     </CardContent>
@@ -341,6 +325,3 @@ export default function SelectMessPage() {
         </main>
     );
 }
-
-
-    
