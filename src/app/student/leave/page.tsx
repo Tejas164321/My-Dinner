@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -83,8 +84,9 @@ export default function StudentLeavePage() {
 
   const upcomingLeaves = useMemo(() => {
     if (!today) return [];
+    // Filter out system-generated leaves first, then filter for upcoming dates.
     return leaves
-      .filter(l => l.date >= today)
+      .filter(l => l.name !== 'Plan Activation' && l.date >= today)
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [leaves, today]);
   
@@ -432,3 +434,4 @@ export default function StudentLeavePage() {
     </div>
   );
 }
+

@@ -70,11 +70,11 @@ const calculateBillDetailsForMonth = (
     let absentDays = 0;
     let holidayCount = 0;
 
-    const joinDate = user.joinDate ? startOfDay(parseISO(user.joinDate)) : new Date(0);
+    const planStartDate = user.planStartDate ? startOfDay(user.planStartDate as Date) : new Date(0);
 
     for (let i = 1; i <= daysInMonth; i++) {
         const day = new Date(year, month, i);
-        if (isFuture(day) || day < joinDate) continue;
+        if (isFuture(day) || day < planStartDate) continue;
 
         const holiday = holidays.find(h => isSameDay(h.date, day));
         const leave = leaves.find(l => isSameDay(l.date, day));
@@ -83,16 +83,49 @@ const calculateBillDetailsForMonth = (
             holidayCount++;
             continue;
         }
+
+        let mealsTakenToday = 0;
+        let mealsAvailableToday = 0;
         
-        if (leave) {
-            absentDays++;
-            if (user.messPlan === 'full_day') {
-                if (leave.type === 'lunch_only') { halfDays++; totalMeals++; }
-                if (leave.type === 'dinner_only') { halfDays++; totalMeals++; }
+        // Determine total meals available in plan for the day
+        if (user.messPlan === 'full_day') {
+            mealsAvailableToday = 2;
+        } else if (user.messPlan === 'lunch_only' || user.messPlan === 'dinner_only') {
+            mealsAvailableToday = 1;
+        }
+
+        // On the start day, adjust total meals if starting with dinner
+        if (isSameDay(day, planStartDate) && user.planStartMeal === 'dinner') {
+            if (user.messPlan === 'full_day') mealsAvailableToday = 1; // Only dinner is available
+        }
+        
+        // If no meals were available today, skip to the next day
+        if (mealsAvailableToday === 0) continue;
+        
+        // Calculate Lunch
+        if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
+            if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
+                if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
+                    mealsTakenToday++;
+                }
             }
-        } else {
-            if (user.messPlan === 'full_day') { fullDays++; totalMeals += 2; }
-            else { halfDays++; totalMeals++; }
+        }
+
+        // Calculate Dinner
+        if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
+             if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
+                mealsTakenToday++;
+            }
+        }
+        
+        totalMeals += mealsTakenToday;
+        
+        if (mealsTakenToday === 0 && (leave || holiday)) {
+            absentDays++;
+        } else if (mealsTakenToday < mealsAvailableToday) {
+            halfDays++;
+        } else if (mealsTakenToday > 0) {
+            fullDays++;
         }
     }
     
@@ -163,7 +196,7 @@ export default function StudentBillsPage() {
     const bills: Bill[] = [];
     const today = new Date();
     // Use originalJoinDate for history, fallback to joinDate for new users
-    const firstJoinDate = user.originalJoinDate ? startOfDay(parseISO(user.originalJoinDate)) : (user.joinDate ? startOfDay(parseISO(user.joinDate)) : new Date(0));
+    const firstJoinDate = user.originalJoinDate ? startOfDay(user.originalJoinDate as Date) : (user.joinDate ? startOfDay(user.joinDate as Date) : new Date(0));
     
     // Generate bills from join month up to current month
     let loopDate = startOfMonth(firstJoinDate);
@@ -439,6 +472,3 @@ export default function StudentBillsPage() {
     </div>
   );
 }
-
-    
-

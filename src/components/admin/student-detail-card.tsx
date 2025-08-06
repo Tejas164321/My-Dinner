@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useMemo, useState, useEffect, type ComponentProps } from "react";
@@ -52,10 +51,11 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
 
     const planStartDate = useMemo(() => {
         if (!student?.planStartDate) return null;
-        const dateValue = typeof student.planStartDate === 'string' 
-            ? parseISO(student.planStartDate) 
-            : (student.planStartDate as any).toDate ? (student.planStartDate as any).toDate() : new Date(student.planStartDate);
-        return startOfDay(dateValue);
+        const dateValue = student.planStartDate;
+        if (typeof dateValue === 'string') {
+            return startOfDay(parseISO(dateValue));
+        }
+        return (dateValue as any).toDate ? startOfDay((dateValue as any).toDate()) : startOfDay(new Date(dateValue as any));
     }, [student]);
 
     const monthData = useMemo(() => {
@@ -228,7 +228,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
         return (
             <div className="relative h-full w-full flex items-center justify-center">
                 <div className="relative z-10">{date.getDate()}</div>
-                 <div className="absolute bottom-1 flex items-center justify-center gap-0.5 z-10">
+                 <div className="absolute bottom-1 z-10 flex items-center justify-center gap-0.5">
                     {lunchDot}
                     {dinnerDot}
                 </div>
@@ -357,7 +357,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 }}
                                 components={{ DayContent: CustomDayContent }}
                                 modifiersClassNames={{
-                                    today: 'day-today-highlight',
+                                    today: 'bg-accent/30 text-accent-foreground',
                                     holiday: 'bg-primary/40 text-primary-foreground',
                                     full_leave: 'bg-destructive text-destructive-foreground',
                                     half_leave: 'bg-chart-3 text-primary-foreground',
@@ -384,7 +384,7 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
-                                <div className="flex items-center gap-1.5"><Badge variant="outline" className="h-5 border-accent/50 text-accent-foreground bg-accent/30">Today</Badge>Today</div>
+                                <div className="flex items-center gap-1.5"><div className="w-5 h-5 rounded-full bg-accent/30 border border-accent"></div>Today</div>
                             </div>
                         </div>
                     </div>

@@ -60,11 +60,11 @@ export default function StudentAttendancePage() {
 
     const planStartDate = useMemo(() => {
         if (!user?.planStartDate) return null;
-        const dateValue = typeof user.planStartDate === 'string' 
-            ? parseISO(user.planStartDate) 
-            : (user.planStartDate as any).toDate ? (user.planStartDate as any).toDate() : new Date(user.planStartDate);
-
-        return startOfDay(dateValue);
+        const dateValue = user.planStartDate;
+        if (typeof dateValue === 'string') {
+            return startOfDay(parseISO(dateValue));
+        }
+        return (dateValue as any).toDate ? startOfDay((dateValue as any).toDate()) : startOfDay(new Date(dateValue as any));
     }, [user]);
 
     const monthlyStats = useMemo(() => {
@@ -236,7 +236,7 @@ export default function StudentAttendancePage() {
         return (
             <div className="relative h-full w-full flex items-center justify-center">
                 <div className="relative z-10">{date.getDate()}</div>
-                <div className="absolute bottom-1 flex items-center justify-center gap-0.5 z-10">
+                <div className="absolute bottom-1 z-10 flex items-center justify-center gap-0.5">
                     {lunchDot}
                     {dinnerDot}
                 </div>
@@ -346,7 +346,7 @@ export default function StudentAttendancePage() {
                         }}
                         components={{ DayContent: CustomDayContent }}
                         modifiersClassNames={{
-                            today: 'day-today-highlight',
+                            today: 'bg-accent/30 text-accent-foreground',
                             holiday: 'bg-primary/40 text-primary-foreground',
                             full_leave: 'bg-destructive text-destructive-foreground',
                             half_leave: 'bg-chart-3 text-primary-foreground',
@@ -354,14 +354,6 @@ export default function StudentAttendancePage() {
                             half_present: 'bg-chart-3 text-primary-foreground',
                             before_plan: 'opacity-50 !bg-transparent text-muted-foreground/50 cursor-not-allowed',
                             future: '!bg-transparent',
-                        }}
-                        classNames={{
-                            months: "w-full",
-                            month: "w-full space-y-4",
-                            head_cell: "text-muted-foreground w-full font-normal text-sm",
-                            cell: "h-9 w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center",
-                            day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center",
-                            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                         }}
                         className="p-3"
                         showOutsideDays={false}
