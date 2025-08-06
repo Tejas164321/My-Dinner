@@ -117,16 +117,18 @@ export interface Announcement {
     id: string;
     title: string;
     message: string;
-    date: string;
+    date: string; // ISO string
     messId: string;
 }
 
-export interface PaymentReminder {
+export interface PersonalNotification {
     id: string;
+    studentId: string;
+    messId: string;
     title: string;
     message: string;
-    date: string;
+    date: string; // ISO string
+    type: 'billing' | 'request_status' | 'general';
+    isRead: boolean;
+    href?: string;
 }
-
-// In a real app, reminders would come from a backend process.
-export const paymentReminders: PaymentReminder[] = [];
