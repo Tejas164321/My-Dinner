@@ -19,6 +19,9 @@ export interface MessInfo {
   address?: string;
   perMealCharge?: number;
   joinRequestApproval?: 'manual' | 'auto';
+  leaveDeadlineEnabled?: boolean;
+  lunchDeadline?: string;
+  dinnerDeadline?: string;
 }
 
 /**

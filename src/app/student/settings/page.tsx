@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -33,7 +32,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { leaveMessAction } from '@/lib/actions/user';
 
@@ -58,163 +56,27 @@ const settingsNav = [
   { title: "Mess Info", href: "mess-info", icon: Building2 },
 ];
 
+const ProfileContent: FC<any> = ({ user, editableSettings, handleSettingChange, isSaving, handleSaveChanges }) => {
+    const { name, studentId, messPlan, joinDate, avatarUrl } = user;
+    const { profileName, contact } = editableSettings;
 
-export default function StudentSettingsPage() {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-    const { toast } = useToast();
-    const { user, authLoading } = useAuth();
-    const [isSaving, setIsSaving] = useState(false);
-    const [isLeaving, setIsLeaving] = useState(false);
-    const [isLoadingMessInfo, setIsLoadingMessInfo] = useState(true);
-
-    const activeTab = useMemo(() => searchParams.get('tab') || 'profile', [searchParams]);
-
-    // Profile Settings State
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [contact, setContact] = useState('');
-    
-    // Mess Info State
-    const [messInfo, setMessInfo] = useState<MessInfo | null>(null);
-
-    // Meal Plan Settings
-    const [currentPlan, setCurrentPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>('full_day');
-    const [selectedPlan, setSelectedPlan] = useState<'full_day' | 'lunch_only' | 'dinner_only'>('full_day');
-    const [isRequestPending, setIsRequestPending] = useState(false);
-    
-    // Dummy due amount for demonstration
-    const hasDue = useMemo(() => {
-        if (!user) return false;
-        // Test condition for piyush1@gmail.com
-        if (user.email === 'piyush1@gmail.com') {
-            return false;
-        }
-        if (!user.uid) return false;
-        const charCode = user.uid.charCodeAt(0);
-        return charCode % 3 === 0; // ~33% of users will have a due
-    }, [user]);
-
-    useEffect(() => {
-        if (user) {
-            setName(user.name || '');
-            setEmail(user.email || '');
-            setContact(user.contact || '');
-            setCurrentPlan(user.messPlan || 'full_day');
-            setSelectedPlan(user.messPlan || 'full_day');
-
-            if (user.messId) {
-                const fetchMessData = async () => {
-                    setIsLoadingMessInfo(true);
-                    const info = await getMessInfo(user.messId!);
-                    setMessInfo(info);
-                    setIsLoadingMessInfo(false);
-                };
-                fetchMessData();
-            } else {
-                setIsLoadingMessInfo(false);
-            }
-        }
-    }, [user]);
-
-    const handleTabChange = (value: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('tab', value);
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    };
-
-    const handleSaveChanges = async () => {
-        if (!user) return;
-        setIsSaving(true);
-        try {
-            const userRef = doc(db, 'users', user.uid);
-            await updateDoc(userRef, {
-                name: name,
-                contact: contact,
-            });
-            toast({
-                title: "Profile Updated",
-                description: "Your changes have been saved successfully.",
-            });
-        } catch (error) {
-            console.error("Error updating profile:", error);
-            toast({ variant: 'destructive', title: "Update Failed", description: "Could not save your changes. Please try again." });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    
-    const handlePlanChangeRequest = async () => {
-        if (!user || !user.uid || !user.studentId || !user.messId) {
-             toast({ variant: 'destructive', title: "Error", description: "User information is missing." });
-             return;
-        }
-
-        try {
-            await submitPlanChangeRequest(user.uid, user.studentId, user.name || 'Student', currentPlan, selectedPlan, user.messId);
-            setIsRequestPending(true);
-            toast({
-                title: "Request Submitted",
-                description: `Your request to change to the "${selectedPlan.replace('_', ' ')}" plan is pending admin approval.`,
-            });
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Submission Failed", description: "Could not submit your request. Please try again." });
-        }
-    };
-
-    const handleLeaveMess = async () => {
-        if (!user) return;
-        if (hasDue) {
-            toast({
-                variant: 'destructive',
-                title: 'Action Denied',
-                description: 'You cannot leave the mess with an outstanding balance. Please clear your dues first.'
-            });
-            return;
-        }
-        setIsLeaving(true);
-        try {
-            await leaveMessAction(user.uid);
-            toast({
-                title: 'Left Successfully',
-                description: 'You have left the mess. You can now join a new one.'
-            });
-            // The layout effect will now handle redirection to select-mess page
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to leave the mess. Please try again.' });
-        } finally {
-            setIsLeaving(false);
-        }
-    };
-    
-    const planDetails = {
-        full_day: { name: 'Full Day', description: 'Lunch & Dinner', icon: Utensils, color: 'text-primary' },
-        lunch_only: { name: 'Lunch Only', description: 'Only Lunch', icon: Sun, color: 'text-yellow-400' },
-        dinner_only: { name: 'Dinner Only', description: 'Only Dinner', icon: Moon, color: 'text-purple-400' }
-    };
-    
     const PlanBadge = ({ plan }: { plan: 'full_day' | 'lunch_only' | 'dinner_only' }) => {
-        const { icon: Icon, name, color } = planDetails[plan];
+        const planDetails = {
+            full_day: { name: 'Full Day', icon: Utensils, color: 'text-primary' },
+            lunch_only: { name: 'Lunch Only', icon: Sun, color: 'text-yellow-400' },
+            dinner_only: { name: 'Dinner Only', icon: Moon, color: 'text-purple-400' }
+        };
+        const { icon: Icon, name: planName, color } = planDetails[plan];
         return (
             <Badge variant="outline" className="font-semibold py-1">
                 <Icon className={cn("mr-1.5 h-3.5 w-3.5", color)} />
-                {name}
+                {planName}
             </Badge>
         );
     };
-
-    if (authLoading || !user) {
-        return (
-             <div className="space-y-6">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-96 w-full" />
-            </div>
-        )
-    }
-
-    const ProfileContent = () => (
-         <Card>
+    
+    return (
+        <Card>
             <CardHeader>
                 <CardTitle>My Profile</CardTitle>
                 <CardDescription>Manage your personal information.</CardDescription>
@@ -223,7 +85,7 @@ export default function StudentSettingsPage() {
                 <div className="flex flex-col sm:flex-row items-center gap-8">
                     <div className="relative flex-shrink-0">
                         <Avatar className="w-24 h-24 border-4 border-primary/20">
-                            <AvatarImage src={user.avatarUrl} alt={name} />
+                            <AvatarImage src={avatarUrl} alt={name} />
                             <AvatarFallback>{name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <Button size="icon" variant="outline" className="absolute -bottom-2 -right-2 z-10 rounded-full h-9 w-9 border-2 bg-background hover:bg-accent border-background">
@@ -236,15 +98,15 @@ export default function StudentSettingsPage() {
                         <div className="space-y-1 pt-2 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2 justify-center sm:justify-start">
                                 <span className="font-semibold text-foreground">Student ID:</span>
-                                <span>{user.studentId}</span>
+                                <span>{studentId}</span>
                             </div>
                              <div className="flex items-center gap-2 justify-center sm:justify-start">
                                 <span className="font-semibold text-foreground">Plan:</span>
-                                <PlanBadge plan={user.messPlan!} />
+                                {messPlan && <PlanBadge plan={messPlan} />}
                             </div>
                             <div className="flex items-center gap-2 justify-center sm:justify-start">
                                 <span className="font-semibold text-foreground">Joined:</span>
-                                <span>{user.joinDate ? format(parseISO(user.joinDate), 'd MMM, yyyy') : 'N/A'}</span>
+                                <span>{joinDate ? format(parseISO(joinDate), 'd MMM, yyyy') : 'N/A'}</span>
                             </div>
                         </div>
                     </div>
@@ -255,15 +117,15 @@ export default function StudentSettingsPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="profile-name">Full Name</Label>
-                            <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} />
+                            <Input id="profile-name" value={profileName} onChange={(e) => handleSettingChange('profileName', e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="profile-contact">Contact Number</Label>
-                            <Input id="profile-contact" type="tel" value={contact} onChange={(e) => setContact(e.target.value)} />
+                            <Input id="profile-contact" type="tel" value={contact} onChange={(e) => handleSettingChange('contact', e.target.value)} />
                         </div>
                         <div className="space-y-2 sm:col-span-2">
                             <Label htmlFor="profile-email">Email Address</Label>
-                            <Input id="profile-email" type="email" value={email} readOnly disabled />
+                            <Input id="profile-email" type="email" value={user.email} readOnly disabled />
                             <p className="text-xs text-muted-foreground">Your email address cannot be changed.</p>
                         </div>
                     </div>
@@ -272,13 +134,21 @@ export default function StudentSettingsPage() {
             <CardFooter>
                 <Button onClick={handleSaveChanges} disabled={isSaving}>
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isSaving ? 'Saving...' : 'Update Profile'}
+                    {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </CardFooter>
         </Card>
-    );
-    
-    const MealPlanContent = () => (
+    )
+};
+
+const MealPlanContent = ({ editableSettings, handleSettingChange, handleSaveChanges, isSaving, isRequestPending }) => {
+    const { currentPlan, selectedPlan } = editableSettings;
+     const planDetails = {
+        full_day: { name: 'Full Day', description: 'Lunch & Dinner', icon: Utensils, color: 'text-primary' },
+        lunch_only: { name: 'Lunch Only', description: 'Only Lunch', icon: Sun, color: 'text-yellow-400' },
+        dinner_only: { name: 'Dinner Only', description: 'Only Dinner', icon: Moon, color: 'text-purple-400' }
+    };
+    return (
          <Card>
             <CardHeader>
                 <CardTitle>Manage Meal Plan</CardTitle>
@@ -305,7 +175,7 @@ export default function StudentSettingsPage() {
                                 return (
                                     <button 
                                         key={key}
-                                        onClick={() => setSelectedPlan(key)} 
+                                        onClick={() => handleSettingChange('selectedPlan', key)} 
                                         className={cn(
                                             "flex flex-col items-center justify-center text-center rounded-md border-2 p-3 sm:p-4 font-normal hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all h-32", 
                                             selectedPlan === key ? 'border-primary' : 'border-muted bg-popover'
@@ -323,62 +193,206 @@ export default function StudentSettingsPage() {
             </CardContent>
              <CardFooter>
                 <Button 
-                    onClick={handlePlanChangeRequest}
-                    disabled={isRequestPending || currentPlan === selectedPlan}
+                    onClick={handleSaveChanges}
+                    disabled={isSaving || isRequestPending || currentPlan === selectedPlan}
                 >
-                    <Send className="mr-2 h-4 w-4" />
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isRequestPending ? "Request Sent" : "Submit Change Request"}
                 </Button>
             </CardFooter>
         </Card>
     );
+};
 
-    const MessInfoContent = () => (
-        <Card>
-            <CardHeader>
-                <CardTitle>Mess Information</CardTitle>
-                <CardDescription>View your mess contact details.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-4">
-                {isLoadingMessInfo ? <Skeleton className="h-48 w-full" /> : !messInfo ? <p>Could not load mess information.</p> : (
-                <>
-                <div className="flex items-start gap-4">
-                    <Building2 className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
-                    <div>
-                        <p className="font-semibold text-foreground">{messInfo.messName}</p>
-                        <p className="text-sm text-muted-foreground">Mess Name</p>
-                    </div>
+const MessInfoContent = ({ messInfo, isLoadingMessInfo }) => (
+    <Card>
+        <CardHeader>
+            <CardTitle>Mess Information</CardTitle>
+            <CardDescription>View your mess contact details.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-4">
+            {isLoadingMessInfo ? <Skeleton className="h-48 w-full" /> : !messInfo ? <p>Could not load mess information.</p> : (
+            <>
+            <div className="flex items-start gap-4">
+                <Building2 className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                <div>
+                    <p className="font-semibold text-foreground">{messInfo.messName}</p>
+                    <p className="text-sm text-muted-foreground">Mess Name</p>
                 </div>
-                 <Separator />
-                <div className="flex items-start gap-4">
-                    <MapPin className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
-                    <div>
-                        <p className="text-foreground">{messInfo.address || 'Not provided'}</p>
-                        <p className="text-sm text-muted-foreground">Address</p>
-                    </div>
+            </div>
+             <Separator />
+            <div className="flex items-start gap-4">
+                <MapPin className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                <div>
+                    <p className="text-foreground">{messInfo.address || 'Not provided'}</p>
+                    <p className="text-sm text-muted-foreground">Address</p>
                 </div>
-                 <Separator />
-                <div className="flex items-start gap-4">
-                    <Mail className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
-                    <div>
-                        <p className="text-foreground">{messInfo.contactEmail || 'Not provided'}</p>
-                        <p className="text-sm text-muted-foreground">Contact Email</p>
-                    </div>
+            </div>
+             <Separator />
+            <div className="flex items-start gap-4">
+                <Mail className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                <div>
+                    <p className="text-foreground">{messInfo.contactEmail || 'Not provided'}</p>
+                    <p className="text-sm text-muted-foreground">Contact Email</p>
                 </div>
-                 <Separator />
-                <div className="flex items-start gap-4">
-                    <Phone className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
-                    <div>
-                        <p className="text-foreground">{messInfo.contactPhone || 'Not provided'}</p>
-                        <p className="text-sm text-muted-foreground">Contact Phone</p>
-                    </div>
+            </div>
+             <Separator />
+            <div className="flex items-start gap-4">
+                <Phone className="h-6 w-6 text-muted-foreground mt-1 flex-shrink-0" />
+                <div>
+                    <p className="text-foreground">{messInfo.contactPhone || 'Not provided'}</p>
+                    <p className="text-sm text-muted-foreground">Contact Phone</p>
                 </div>
-                </>
-                )}
-            </CardContent>
-        </Card>
-    );
+            </div>
+            </>
+            )}
+        </CardContent>
+    </Card>
+);
 
+export default function StudentSettingsPage() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const { toast } = useToast();
+    const { user, authLoading } = useAuth();
+    
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLeaving, setIsLeaving] = useState(false);
+    const [isLoadingMessInfo, setIsLoadingMessInfo] = useState(true);
+    const [isDirty, setIsDirty] = useState(false);
+
+    const [editableSettings, setEditableSettings] = useState({
+        profileName: '',
+        contact: '',
+        currentPlan: 'full_day' as Student['messPlan'],
+        selectedPlan: 'full_day' as Student['messPlan'],
+    });
+
+    const [originalSettings, setOriginalSettings] = useState(editableSettings);
+    const [messInfo, setMessInfo] = useState<MessInfo | null>(null);
+    const [isRequestPending, setIsRequestPending] = useState(false);
+
+    const activeTab = useMemo(() => searchParams.get('tab') || 'profile', [searchParams]);
+
+    const hasDue = useMemo(() => {
+        if (!user || !user.uid) return false;
+        const charCode = user.uid.charCodeAt(0);
+        return charCode % 3 === 0;
+    }, [user]);
+    
+    useEffect(() => {
+        if (user) {
+            const initialData = {
+                profileName: user.name || '',
+                contact: user.contact || '',
+                currentPlan: user.messPlan || 'full_day',
+                selectedPlan: user.messPlan || 'full_day',
+            };
+            setEditableSettings(initialData);
+            setOriginalSettings(initialData);
+            setIsDirty(false);
+
+            if (user.messId) {
+                const fetchMessData = async () => {
+                    setIsLoadingMessInfo(true);
+                    const info = await getMessInfo(user.messId!);
+                    setMessInfo(info);
+                    setIsLoadingMessInfo(false);
+                };
+                fetchMessData();
+            } else {
+                setIsLoadingMessInfo(false);
+            }
+        }
+    }, [user]);
+
+    const handleSettingChange = (field: keyof typeof editableSettings, value: any) => {
+        setEditableSettings(prev => ({ ...prev, [field]: value }));
+    };
+
+    useEffect(() => {
+        const hasUnsavedChanges = JSON.stringify(editableSettings) !== JSON.stringify(originalSettings);
+        setIsDirty(hasUnsavedChanges);
+    }, [editableSettings, originalSettings]);
+
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (isDirty) {
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isDirty]);
+    
+    const handleSaveChanges = async () => {
+        if (!user) return;
+        setIsSaving(true);
+        try {
+            if (activeTab === 'profile') {
+                const userRef = doc(db, 'users', user.uid);
+                await updateDoc(userRef, {
+                    name: editableSettings.profileName,
+                    contact: editableSettings.contact,
+                });
+                toast({ title: "Profile Updated", description: "Your changes have been saved successfully." });
+            } else if (activeTab === 'meal-plan') {
+                if (!user.studentId || !user.messId) throw new Error("Student or Mess ID missing");
+                await submitPlanChangeRequest(user.uid, user.studentId, user.name || 'Student', editableSettings.currentPlan, editableSettings.selectedPlan, user.messId);
+                setIsRequestPending(true);
+                toast({ title: "Request Submitted", description: `Your plan change request has been sent.` });
+            }
+            
+            setOriginalSettings(editableSettings);
+            setIsDirty(false);
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            toast({ variant: 'destructive', title: "Update Failed", description: "Could not save your changes." });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleLeaveMess = async () => {
+        if (!user) return;
+        if (hasDue) {
+            toast({
+                variant: 'destructive',
+                title: 'Action Denied',
+                description: 'You cannot leave the mess with an outstanding balance. Please clear your dues first.'
+            });
+            return;
+        }
+        setIsLeaving(true);
+        try {
+            await leaveMessAction(user.uid);
+            toast({
+                title: 'Left Successfully',
+                description: 'You have left the mess. You can now join a new one.'
+            });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to leave the mess.' });
+        } finally {
+            setIsLeaving(false);
+        }
+    };
+
+    const handleTabChange = (value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', value);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    };
+
+    if (authLoading || !user) {
+        return (
+             <div className="space-y-6">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-96 w-full" />
+            </div>
+        )
+    }
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -430,9 +444,30 @@ export default function StudentSettingsPage() {
                     })}
                 </TabsList>
                 
-                <TabsContent value="profile" className="mt-6"><ProfileContent /></TabsContent>
-                <TabsContent value="meal-plan" className="mt-6"><MealPlanContent /></TabsContent>
-                <TabsContent value="mess-info" className="mt-6"><MessInfoContent /></TabsContent>
+                <TabsContent value="profile" className="mt-6">
+                    <ProfileContent 
+                        user={user}
+                        editableSettings={editableSettings}
+                        handleSettingChange={handleSettingChange}
+                        isSaving={isSaving}
+                        handleSaveChanges={handleSaveChanges}
+                    />
+                </TabsContent>
+                <TabsContent value="meal-plan" className="mt-6">
+                    <MealPlanContent 
+                        editableSettings={editableSettings}
+                        handleSettingChange={handleSettingChange}
+                        handleSaveChanges={handleSaveChanges}
+                        isSaving={isSaving}
+                        isRequestPending={isRequestPending}
+                    />
+                </TabsContent>
+                <TabsContent value="mess-info" className="mt-6">
+                    <MessInfoContent 
+                        messInfo={messInfo}
+                        isLoadingMessInfo={isLoadingMessInfo}
+                    />
+                </TabsContent>
             </Tabs>
         </div>
     );
