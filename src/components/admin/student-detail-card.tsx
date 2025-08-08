@@ -22,15 +22,14 @@ const planInfo = {
     dinner_only: { icon: Moon, text: 'Dinner Only', color: 'text-purple-400' }
 };
 
-const CHARGE_PER_MEAL = 65; // This could be moved to mess settings later
-
 interface StudentDetailCardProps {
     student: Student;
     leaves: Leave[];
     initialMonth: Date;
+    perMealCharge: number;
 }
 
-export function StudentDetailCard({ student, leaves, initialMonth }: StudentDetailCardProps) {
+export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge }: StudentDetailCardProps) {
     const [month, setMonth] = useState<Date>(initialMonth);
     const [today, setToday] = useState<Date | undefined>();
     const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -103,18 +102,15 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                 }
             }
 
-            if(lunchTaken) presentMeals++;
-            if(dinnerTaken) presentMeals++;
+            if(lunchTaken) presentMeals++; else absentMeals++;
+            if(dinnerTaken) presentMeals++; else absentMeals++;
             
             if (holiday) {
                 holidayMeals += student.messPlan === 'full_day' ? 2 : 1;
-            } else if (leave) {
-                if (leave.type === 'full_day') absentMeals += 2;
-                else absentMeals++;
             }
         }
         
-        const totalBill = presentMeals * CHARGE_PER_MEAL;
+        const totalBill = presentMeals * perMealCharge;
         const payments = [];
         const paidAmount = payments.reduce((sum, p) => sum + p.amount, 0);
         const remainingBill = totalBill - paidAmount;
@@ -129,11 +125,11 @@ export function StudentDetailCard({ student, leaves, initialMonth }: StudentDeta
                 payments,
                 paidAmount,
                 remaining: remainingBill,
-                details: { totalMeals: presentMeals, chargePerMeal: CHARGE_PER_MEAL, totalDaysInMonth: 0, holidays: 0, billableDays: 0, fullDays: 0, halfDays: 0, absentDays: 0 }
+                details: { totalMeals: presentMeals, chargePerMeal: perMealCharge, totalDaysInMonth: 0, holidays: 0, billableDays: 0, fullDays: 0, halfDays: 0, absentDays: 0 }
             },
             status
         };
-    }, [month, student, holidays, leaves, planStartDate]);
+    }, [month, student, holidays, leaves, planStartDate, perMealCharge]);
     
     const {
         holidayDays,

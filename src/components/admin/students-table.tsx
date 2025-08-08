@@ -576,6 +576,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             student={studentToView} 
                             leaves={leavesForStudent} 
                             initialMonth={filterMonth} 
+                            perMealCharge={perMealCharge}
                         />
                     )}
                 </DialogContent>

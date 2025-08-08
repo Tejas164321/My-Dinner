@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -40,9 +41,9 @@ import { getMenuForDateAction, type DailyMenu } from '@/lib/actions/student-dash
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getMessInfo } from '@/lib/services/mess';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
-const CHARGE_PER_MEAL = 65;
 
 function ActivationCountdown({ activationDate, startMeal }: { activationDate: Date; startMeal: string }) {
     const [countdown, setCountdown] = useState('');
@@ -89,7 +90,10 @@ export default function StudentDashboardPage() {
   
   const [leavesLoading, setLeavesLoading] = useState(true);
   const [holidaysLoading, setHolidaysLoading] = useState(true);
-  const isDataLoading = leavesLoading || holidaysLoading;
+  const [perMealCharge, setPerMealCharge] = useState(65);
+  const [messInfoLoading, setMessInfoLoading] = useState(true);
+  
+  const isDataLoading = leavesLoading || holidaysLoading || messInfoLoading;
   
   const planActivationInfo = useMemo(() => {
     if (!user?.planStartDate || !user?.planStartMeal) return null;
@@ -128,14 +132,27 @@ export default function StudentDashboardPage() {
     setSelectedDate(now);
     setToday(now);
 
-    setLeavesLoading(true);
-    setHolidaysLoading(true);
-
     if (!user) {
         setLeavesLoading(false);
         setHolidaysLoading(false);
+        setMessInfoLoading(false);
         return;
     };
+    
+    setLeavesLoading(true);
+    setHolidaysLoading(true);
+    setMessInfoLoading(true);
+
+    if (user.messId) {
+        getMessInfo(user.messId).then(info => {
+            if(info?.perMealCharge) {
+                setPerMealCharge(info.perMealCharge);
+            }
+            setMessInfoLoading(false);
+        });
+    } else {
+        setMessInfoLoading(false);
+    }
     
     const leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
       setLeaves(updatedLeaves);
@@ -197,28 +214,38 @@ export default function StudentDashboardPage() {
         totalCountedDays++;
         const leave = studentLeaves.find(l => isSameDay(l.date, day));
         
-        if (leave) {
-            absentDays++;
-            if (user.messPlan === 'full_day') {
-                if (leave.type === 'lunch_only') totalMeals++;
-                if (leave.type === 'dinner_only') totalMeals++;
-            }
-        } else {
-            presentDays++;
-            if (user.messPlan === 'full_day') {
-                totalMeals += 2;
-            } else {
-                totalMeals++;
+        let lunchTaken = false;
+        let dinnerTaken = false;
+
+        // Check for Lunch
+        if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
+            if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
+                if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
+                    lunchTaken = true;
+                }
             }
         }
+        
+        // Check for Dinner
+        if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
+            if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
+                dinnerTaken = true;
+            }
+        }
+        
+        if (lunchTaken) totalMeals++;
+        if (dinnerTaken) totalMeals++;
+
+        if (lunchTaken || dinnerTaken) presentDays++;
+        else absentDays++;
     });
 
     const attendance = totalCountedDays > 0 ? ((presentDays / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
 
     return {
-        attendance, totalMeals, presentDays, absentDays, dueAmount: totalMeals * CHARGE_PER_MEAL,
+        attendance, totalMeals, presentDays, absentDays, dueAmount: totalMeals * perMealCharge,
     };
-  }, [today, user, leaves, holidays, isDataLoading, planStartDate]);
+  }, [today, user, leaves, holidays, isDataLoading, planStartDate, perMealCharge]);
 
   const { onLeave } = useMemo(() => {
     if (!selectedDate) return { onLeave: null };

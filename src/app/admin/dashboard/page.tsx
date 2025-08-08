@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,7 +25,7 @@ import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
 import { PendingPaymentsCard } from '@/components/admin/pending-payments-card';
 
 export default function AdminDashboardPage() {
-  const { user: adminUser, loading: authLoading } = useAuth();
+  const { user: adminUser, authLoading } = useAuth();
 
   const [students, setStudents] = useState<AppUser[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
