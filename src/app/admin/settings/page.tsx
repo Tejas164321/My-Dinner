@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getMessInfo, updateMessInfo } from '@/lib/services/mess';
+import { getMessInfo, updateMessInfo, type MessInfo } from '@/lib/services/mess';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const settingsNav = [
@@ -77,6 +77,7 @@ function SettingsPageContent() {
                     setContactPhone(messData.contactPhone || '');
                     setAddress(messData.address || '');
                     setPerMealCharge(messData.perMealCharge?.toString() || '65');
+                    setJoinRequestApproval(messData.joinRequestApproval || 'manual');
                 }
                 setIsLoadingMessInfo(false);
             };
@@ -121,9 +122,9 @@ function SettingsPageContent() {
         if (!adminUser) return;
         setIsSaving(true);
         try {
-            let dataToUpdate = {};
+            let dataToUpdate: Partial<MessInfo> = {};
             if (activeTab === 'general') {
-                dataToUpdate = { messName, contactEmail, contactPhone, address };
+                dataToUpdate = { messName, contactEmail, contactPhone, address, joinRequestApproval };
             } else if (activeTab === 'billing') {
                 const charge = parseFloat(perMealCharge);
                 if (isNaN(charge) || charge < 0) {

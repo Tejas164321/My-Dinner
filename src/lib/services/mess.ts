@@ -18,6 +18,7 @@ export interface MessInfo {
   contactPhone?: string;
   address?: string;
   perMealCharge?: number;
+  joinRequestApproval?: 'manual' | 'auto';
 }
 
 /**

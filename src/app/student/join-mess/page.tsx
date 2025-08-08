@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Suspense, useState, FormEvent } from 'react';
@@ -10,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { KeyRound, Send, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
-import { updateDoc, doc, getDoc, writeBatch, deleteDoc } from 'firebase/firestore';
+import { updateDoc, doc, getDoc, writeBatch, deleteDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Student } from '@/lib/data';
+import { getMessInfo } from '@/lib/services/mess';
 
 function JoinMessContent() {
     const searchParams = useSearchParams();
@@ -43,10 +45,10 @@ function JoinMessContent() {
         }
 
         try {
-            // 1. Fetch the admin's user document to validate the secret code.
+            // 1. Fetch the admin's user document to validate the secret code & get settings.
             const messAdminUserRef = doc(db, 'users', messAdminUid);
             const messAdminDoc = await getDoc(messAdminUserRef);
-
+            
             if (!messAdminDoc.exists() || messAdminDoc.data()?.role !== 'admin') {
                 toast({ variant: 'destructive', title: 'Validation Failed', description: 'Invalid mess selected.' });
                 setIsSubmitting(false);
@@ -59,63 +61,46 @@ function JoinMessContent() {
                 return;
             }
 
+            // 2. Fetch mess-specific settings to check for auto-approval
+            const messSettings = await getMessInfo(messAdminUid);
+            const isAutoApproval = messSettings?.joinRequestApproval === 'auto';
+
             const studentRef = doc(db, 'users', user.uid);
-            const historicalDocId = `${messAdminUid}_${user.uid}`;
-            const historicalDocRef = doc(db, 'suspended_students', historicalDocId);
-            const historicalDocSnap = await getDoc(historicalDocRef);
-            
-            const batch = writeBatch(db);
+            const studentId = `STU${user.uid.slice(-5).toUpperCase()}`;
 
-            if (historicalDocSnap.exists()) {
-                // Student is rejoining, restore their historical data.
-                const historicalData = historicalDocSnap.data() as Student;
-                
-                // **RE-IMPLEMENTED LOGIC**
-                // Create a clean object and manually map only the required fields.
-                // This prevents writing incompatible data like old Timestamps.
-                const updateData: Partial<Student> = {
-                    messId: messAdminUid,
-                    messName: messName,
-                    status: 'pending_approval',
-                    joinDate: new Date().toISOString(),
-                    messPlan: historicalData.messPlan || 'full_day',
-                    // Restore essential historical fields
-                    studentId: historicalData.studentId,
-                    originalJoinDate: historicalData.originalJoinDate,
-                    contact: historicalData.contact || '',
-                    roomNo: historicalData.roomNo || '',
-                    // Ensure these are nulled out on rejoin
-                    planStartDate: null,
-                    planStartMeal: null,
-                    leaveDate: null,
-                };
+            const updateData: Partial<Student> = {
+                messId: messAdminUid,
+                messName: messName,
+                status: isAutoApproval ? 'pending_start' : 'pending_approval',
+                studentId: studentId,
+                joinDate: new Date().toISOString(),
+                messPlan: 'full_day',
+            };
 
-                batch.update(studentRef, updateData);
-                // Delete the historical record as they are now active again.
-                batch.delete(historicalDocRef);
-            } else {
-                // This is a completely new student for this mess.
-                const studentId = `STU${user.uid.slice(-5).toUpperCase()}`;
-                const updateData: Partial<Student> = {
-                    messId: messAdminUid,
-                    messName: messName,
-                    status: 'pending_approval',
-                    studentId: studentId,
-                    joinDate: new Date().toISOString(),
-                    messPlan: 'full_day',
-                };
-                 // Only set originalJoinDate if it doesn't already exist
-                if (!user.originalJoinDate) {
-                    updateData.originalJoinDate = new Date().toISOString();
-                }
-
-                batch.update(studentRef, updateData);
+            if (!user.originalJoinDate) {
+                updateData.originalJoinDate = new Date().toISOString();
             }
-            
-            await batch.commit();
 
-            toast({ title: 'Request Sent!', description: 'Your join request is pending admin approval.' });
-            router.push('/student/select-mess?tab=requests');
+            await updateDoc(studentRef, updateData);
+            
+            // 3. If auto-approved, create a notification for the admin
+            if (isAutoApproval) {
+                 await addDoc(collection(db, 'notifications'), {
+                    studentId: messAdminUid, // Send notification TO the admin
+                    messId: messAdminUid,
+                    title: 'New Student Joined',
+                    message: `${user.name} has automatically joined your mess.`,
+                    date: new Date().toISOString(),
+                    type: 'general',
+                    isRead: false,
+                    href: `/admin/students?view=${user.uid}`
+                });
+                toast({ title: 'Joined Successfully!', description: 'Your plan is ready to be activated.' });
+                router.push('/student/start-mess');
+            } else {
+                toast({ title: 'Request Sent!', description: 'Your join request is pending admin approval.' });
+                router.push('/student/select-mess?tab=requests');
+            }
 
         } catch (error: any) {
             console.error("Error submitting join request:", error);
