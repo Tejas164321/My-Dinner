@@ -25,34 +25,21 @@ export async function leaveMessAction(studentUid: string): Promise<void> {
         }
         
         const studentData = userSnap.data() as AppUser;
-        if (!studentData.messId) {
-            // If there's no messId, they've already left or are unaffiliated.
-            // We can just ensure their status is correct.
-             await updateDoc(userRef, { 
-                status: 'unaffiliated',
-                messId: null,
-                messName: null,
-                planStartDate: null,
-                planStartMeal: null,
-                studentId: null,
-                joinDate: null,
-                leaveDate: new Date().toISOString(),
-            });
-            return;
-        }
         
-        const historicalDocRef = doc(db, 'suspended_students', `${studentData.messId}_${studentUid}`);
+        // This action can be performed regardless of messId, it just resets the user
+        const historicalDocRef = doc(db, 'suspended_students', `${studentData.messId || 'unknown'}_${studentUid}`);
         
         const batch = writeBatch(db);
 
-        // 1. Copy the current student data to the historical collection
+        // 1. Copy the current student data to the historical collection with 'left' status
+        // Even if they are already unaffiliated, this captures their last known state.
         batch.set(historicalDocRef, { 
             ...studentData, 
-            status: 'left', 
+            status: 'left', // Use 'left' status for voluntary leaving
             leaveDate: new Date().toISOString() 
-        });
+        }, { merge: true });
 
-        // 2. Reset the original user document to an unaffiliated state
+        // 2. Reset the original user document to an unaffiliated state so they can join another mess
         batch.update(userRef, {
             status: 'unaffiliated',
             messId: null, 
