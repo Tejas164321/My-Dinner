@@ -35,7 +35,7 @@ function SettingsPageContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { user: adminUser, loading: authLoading } = useAuth();
+    const { user: adminUser, authLoading } = useAuth();
     
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingMessInfo, setIsLoadingMessInfo] = useState(true);

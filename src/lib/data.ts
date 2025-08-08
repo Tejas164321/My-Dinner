@@ -19,6 +19,7 @@ export const adminNavItems = [
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
     { href: '/admin/announcements', label: 'Announcements', icon: 'Megaphone' },
     { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
+    { href: '/admin/support', label: 'Support', icon: 'LifeBuoy' },
 ];
 
 export interface BillDetails {
@@ -67,13 +68,14 @@ export interface AppUser {
     messId?: string;
     messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
     avatarUrl?: string;
-    planStartDate?: string;
+    planStartDate?: any;
     planStartMeal?: 'lunch' | 'dinner';
     originalJoinDate?: string;
     leaveDate?: string;
 }
 
 export interface Student extends AppUser {
+    id: string; // Firestore document ID for suspended_students
     role: 'student';
     studentId: string;
     contact: string;

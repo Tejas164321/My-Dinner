@@ -143,9 +143,9 @@ export default function AdminDashboardPage() {
       <div className="flex-wrap justify-between items-center gap-4 hidden md:flex">
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
         <Button asChild variant="outline">
-            <Link href="/admin/students?tab=requests">
+            <Link href="/admin/notifications">
                 <Bell className="mr-2 h-4 w-4"/>
-                View Requests
+                View Notifications
             </Link>
         </Button>
       </div>

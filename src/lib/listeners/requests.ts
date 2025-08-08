@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
@@ -7,11 +8,12 @@ import type { PlanChangeRequest, JoinRequest } from '@/lib/data';
 const USERS_COLLECTION = 'users';
 const PLAN_CHANGE_REQUESTS_COLLECTION = 'planChangeRequests';
 
-export function onJoinRequestsUpdate(callback: (requests: JoinRequest[]) => void) {
+export function onJoinRequestsUpdate(messId: string, callback: (requests: JoinRequest[]) => void) {
   const q = query(
     collection(db, USERS_COLLECTION),
     where("role", "==", "student"),
-    where("status", "==", "pending_approval")
+    where("status", "==", "pending_approval"),
+    where("messId", "==", messId)
   );
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {

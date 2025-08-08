@@ -64,7 +64,7 @@ export default function StudentSettingsPage() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { user, loading: authLoading } = useAuth();
+    const { user, authLoading } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
     const [isLeaving, setIsLeaving] = useState(false);
     const [isLoadingMessInfo, setIsLoadingMessInfo] = useState(true);
