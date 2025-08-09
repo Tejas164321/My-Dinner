@@ -97,7 +97,7 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
         const { date, displayMonth } = props;
         
         if (!isSameMonth(date, displayMonth)) {
-             return <div className="h-full w-full opacity-50 flex items-center justify-center p-0 font-normal">{date.getDate()}</div>;
+             return <div />;
         }
         
         const dateKey = format(date, 'yyyy-MM-dd');
@@ -115,12 +115,12 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
             <TooltipProvider delayDuration={100}>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                         <div className={cn("relative w-full h-full flex flex-col items-center justify-center p-0 font-normal", isToday && "rounded-md ring-2 ring-primary ring-offset-1 ring-offset-background")}>
-                            <div className="absolute inset-0 flex flex-col overflow-hidden rounded-md">
+                         <div className={cn("relative w-full h-full flex flex-col items-center justify-center p-0 font-normal", isToday && "rounded-full ring-2 ring-primary ring-offset-1 ring-offset-background")}>
+                            <div className="absolute inset-0 flex flex-col overflow-hidden rounded-full">
                                 <div className={cn("flex-1", lunchColor)}></div>
                                 <div className={cn("flex-1", dinnerColor)}></div>
                             </div>
-                            <span className="relative z-10 text-white mix-blend-exclusion">
+                            <span className="relative z-10 text-white font-semibold">
                                 {date.getDate()}
                             </span>
                         </div>
@@ -143,6 +143,7 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
             onMonthChange={onMonthChange}
             components={{ Day: CustomDay }}
             className="p-0"
+            showOutsideDays={false}
         />
     );
 };
