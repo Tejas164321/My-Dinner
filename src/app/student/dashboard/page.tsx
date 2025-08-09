@@ -13,35 +13,21 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Trash2, Hourglass } from 'lucide-react';
+import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Hourglass } from 'lucide-react';
 import { Leave, Holiday, AppUser } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
-import { doc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/auth-context';
-import { format, startOfDay, getDaysInMonth, isSameMonth, isSameDay, getYear, getMonth, formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { format, startOfDay, isSameDay, getYear, getMonth, formatDistanceToNowStrict, parseISO, isSameMonth } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { getMenuForDateAction, type DailyMenu } from '@/lib/actions/student-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getMessInfo } from '@/lib/services/mess';
+import { UpcomingEventsCard } from '@/components/student/upcoming-events-card';
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
@@ -54,7 +40,6 @@ function ActivationCountdown({ activationDate, startMeal }: { activationDate: Da
             if (now > activationDate) {
                 setCountdown('Your plan is now active!');
                 clearInterval(interval);
-                // Optionally, refresh the page or user state
                 window.location.reload();
             } else {
                 setCountdown(formatDistanceToNowStrict(activationDate, { addSuffix: true }));
@@ -76,14 +61,12 @@ function ActivationCountdown({ activationDate, startMeal }: { activationDate: Da
     );
 }
 
-
 export default function StudentDashboardPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [today, setToday] = useState<Date | undefined>();
+  const [today, setToday] = useState<Date>(startOfDay(new Date()));
   
   const [displayedMenu, setDisplayedMenu] = useState<Omit<DailyMenu, 'messId'>>({ lunch: [], dinner: [] });
   const [isMenuLoading, setIsMenuLoading] = useState(false);
@@ -98,7 +81,6 @@ export default function StudentDashboardPage() {
   const planActivationInfo = useMemo(() => {
     if (!user?.planStartDate || !user?.planStartMeal) return null;
     
-    // Safely handle both Timestamp and ISO string formats
     const dateValue = user.planStartDate;
     let activationDate: Date;
 
@@ -107,11 +89,9 @@ export default function StudentDashboardPage() {
     } else if (dateValue && typeof (dateValue as any).toDate === 'function') {
         activationDate = (dateValue as any).toDate();
     } else {
-        // Fallback for unexpected formats, though less likely with Firestore
         activationDate = new Date(dateValue as any);
     }
 
-    // Check if the plan is still pending activation
     return activationDate > new Date() ? { activationDate, startMeal: user.planStartMeal } : null;
   }, [user]);
 
@@ -128,9 +108,7 @@ export default function StudentDashboardPage() {
 
 
   useEffect(() => {
-    const now = startOfDay(new Date());
-    setSelectedDate(now);
-    setToday(now);
+    setSelectedDate(today);
 
     if (!user) {
         setLeavesLoading(false);
@@ -168,7 +146,7 @@ export default function StudentDashboardPage() {
         leavesUnsubscribe();
         holidaysUnsubscribe();
     };
-  }, [user]);
+  }, [user, today]);
 
   useEffect(() => {
       if (!selectedDate || !user?.messId) return;
@@ -189,7 +167,7 @@ export default function StudentDashboardPage() {
 
 
   const currentMonthStats = useMemo(() => {
-    if (!today || !user || isDataLoading || !planStartDate) {
+    if (isDataLoading || !planStartDate) {
       return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, dueAmount: 0 };
     }
     
@@ -217,7 +195,6 @@ export default function StudentDashboardPage() {
         let lunchTaken = false;
         let dinnerTaken = false;
 
-        // Check for Lunch
         if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
             if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
                 if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
@@ -226,7 +203,6 @@ export default function StudentDashboardPage() {
             }
         }
         
-        // Check for Dinner
         if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
             if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
                 dinnerTaken = true;
@@ -264,31 +240,6 @@ export default function StudentDashboardPage() {
 
   const isLunchOff = onLeave?.type === 'full_day' || onLeave?.type === 'lunch_only';
   const isDinnerOff = onLeave?.type === 'full_day' || onLeave?.type === 'dinner_only';
-  
-  const upcomingHolidays = useMemo(() => {
-    if (!today) return [];
-    return holidays
-      .filter(h => h.date >= today)
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [today, holidays]);
-
-  const upcomingLeaves = useMemo(() => {
-    if (!today) return [];
-    return leaves
-      .filter(l => l.date >= today && l.name !== 'Plan Activation') // Exclude activation leaves
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [leaves, today]);
-
-  const handleDeleteLeave = async (leaveId: string) => {
-    try {
-      if (!leaveId) throw new Error("Leave ID is required.");
-      const docRef = doc(db, 'leaves', leaveId);
-      await deleteDoc(docRef);
-      toast({ title: 'Leave Cancelled' });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to cancel leave.' });
-    }
-  };
 
   const renderMenuContent = (items: string[]) => {
     if (isMenuLoading) {
@@ -352,140 +303,67 @@ export default function StudentDashboardPage() {
 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          
-          {/* Today's Menu */}
-          <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
-            <CardHeader>
-               <div className="flex flex-wrap items-center justify-between gap-2">
-                 <div className="flex items-center gap-2">
-                    <Utensils className="h-5 w-5 text-primary" />
-                    <CardTitle>{menuTitle}</CardTitle>
-                 </div>
-                 <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn("w-full sm:w-[240px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <CalendarPicker
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-              </div>
-              <CardDescription className="pt-2">Select a date to view the menu for that day.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-6 md:grid-cols-2">
-              <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
-                  {isLunchOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
-                  <div className="bg-secondary/50 p-3 rounded-lg">
-                      <Sun className="h-6 w-6 text-yellow-400"/>
+            <Card className="animate-in fade-in-0 zoom-in-95 duration-500">
+                <CardHeader>
+                   <div className="flex flex-wrap items-center justify-between gap-2">
+                     <div className="flex items-center gap-2">
+                        <Utensils className="h-5 w-5 text-primary" />
+                        <CardTitle>{menuTitle}</CardTitle>
+                     </div>
+                     <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn("w-full sm:w-[240px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <CalendarPicker
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                   </div>
-                  <div>
-                      <h3 className="font-semibold text-lg">Lunch</h3>
-                      {renderMenuContent(displayedMenu.lunch)}
+                  <CardDescription className="pt-2">Select a date to view the menu for that day.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-6 md:grid-cols-2">
+                  <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+                      {isLunchOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
+                      <div className="bg-secondary/50 p-3 rounded-lg">
+                          <Sun className="h-6 w-6 text-yellow-400"/>
+                      </div>
+                      <div>
+                          <h3 className="font-semibold text-lg">Lunch</h3>
+                          {renderMenuContent(displayedMenu.lunch)}
+                      </div>
                   </div>
-              </div>
-              <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
-                  {isDinnerOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
-                  <div className="bg-secondary/50 p-3 rounded-lg">
-                      <Moon className="h-6 w-6 text-purple-400"/>
+                  <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+                      {isDinnerOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
+                      <div className="bg-secondary/50 p-3 rounded-lg">
+                          <Moon className="h-6 w-6 text-purple-400"/>
+                      </div>
+                      <div>
+                          <h3 className="font-semibold text-lg">Dinner</h3>
+                          {renderMenuContent(displayedMenu.dinner)}
+                      </div>
                   </div>
-                  <div>
-                      <h3 className="font-semibold text-lg">Dinner</h3>
-                      {renderMenuContent(displayedMenu.dinner)}
-                  </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Leaves */}
-          <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400 flex flex-col">
-              <CardHeader>
-                  <div className="flex items-center justify-between">
-                      <CardTitle>My Upcoming Leaves</CardTitle>
-                      <UserX className="h-5 w-5 text-primary" />
-                  </div>
-                  <CardDescription>Your next scheduled meal skips. You can cancel a leave from here.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow p-2 pt-0">
-                  <ScrollArea className="h-48">
-                    <div className="p-4 pt-0 space-y-2">
-                        {leavesLoading ? (
-                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading leaves...</p></div>
-                        ) : upcomingLeaves.length > 0 ? (
-                            upcomingLeaves.map((leave) => (
-                                <div key={leave.id} className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50">
-                                    <div className="flex items-center gap-3">
-                                        {leave.type === 'full_day' && <Utensils className="h-5 w-5 text-destructive flex-shrink-0" />}
-                                        {leave.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
-                                        {leave.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-3 flex-shrink-0" />}
-                                        <div>
-                                            <p className="font-semibold text-sm capitalize">{leave.type.replace('_', ' ')}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {format(leave.date, 'EEEE, MMM do')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This action cannot be undone. This will cancel your leave for {format(leave.date, 'MMMM do, yyyy')}.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteLeave(leave.id)}>
-                                                    Confirm
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4">
-                                <p>You have no upcoming leaves scheduled.</p>
-                            </div>
-                        )}
-                    </div>
-                  </ScrollArea>
-              </CardContent>
-              <CardFooter>
-                  <Button asChild className="w-full" variant="outline">
-                      <Link href="/student/leave">
-                          Apply for More Leaves
-                      </Link>
-                  </Button>
-              </CardFooter>
-          </Card>
+                </CardContent>
+            </Card>
+            <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={isDataLoading} />
         </div>
 
-        {/* Right Column */}
         <div className="lg:col-span-1 flex flex-col gap-6">
-            
-            {/* Billing */}
             <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-200">
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle>Bill for {format(selectedDate || new Date(), 'MMMM')}</CardTitle>
+                        <CardTitle>Bill for {format(today, 'MMMM')}</CardTitle>
                         <Wallet className="h-5 w-5 text-primary" />
                     </div>
                 </CardHeader>
@@ -506,47 +384,6 @@ export default function StudentDashboardPage() {
                     </Button>
                 </CardContent>
             </Card>
-
-            {/* Upcoming Holidays */}
-            <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400 flex flex-col">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Upcoming Holidays</CardTitle>
-                        <CalendarDays className="h-5 w-5 text-primary" />
-                    </div>
-                    <CardDescription>The mess will be closed on these days.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow p-2 pt-0">
-                  <ScrollArea className="h-48">
-                    <div className="p-4 pt-0 space-y-4">
-                      {holidaysLoading ? (
-                         <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading holidays...</p></div>
-                      ) : upcomingHolidays.length > 0 ? (
-                          <ul className="space-y-4">
-                              {upcomingHolidays.map((holiday) => (
-                                  <li key={holiday.date.toISOString()} className="flex items-start gap-3">
-                                      {holiday.type === 'full_day' && <Utensils className="h-5 w-5 mt-1 text-destructive flex-shrink-0" />}
-                                      {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
-                                      {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 mt-1 text-chart-3 flex-shrink-0" />}
-                                      <div>
-                                          <p className="font-semibold text-sm">{holiday.name}</p>
-                                          <p className="text-xs text-muted-foreground">
-                                              {format(holiday.date, 'EEEE, MMM do')}
-                                          </p>
-                                      </div>
-                                  </li>
-                              ))}
-                          </ul>
-                      ) : (
-                          <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4">
-                            <p>No upcoming holidays scheduled.</p>
-                          </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-            </Card>
-
         </div>
       </div>
     </div>

@@ -1,38 +1,29 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { format, isFuture, eachDayOfInterval, startOfDay, isBefore, isSameDay, getHours, getMinutes, parse } from 'date-fns';
-import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon, Loader2 } from 'lucide-react';
-import { collection, writeBatch, doc, deleteDoc } from 'firebase/firestore';
+import { Calendar as CalendarIcon, Plus, Loader2 } from 'lucide-react';
+import { collection, writeBatch, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Leave, Holiday } from '@/lib/data';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
 import { useAuth } from '@/contexts/auth-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getMessInfo } from '@/lib/services/mess';
+import { Sun, Moon, Utensils } from 'lucide-react';
+import { UpcomingEventsCard } from '@/components/student/upcoming-events-card';
+import { AttendanceCalendar } from '@/components/shared/attendance-calendar';
 
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
@@ -45,12 +36,12 @@ export default function StudentLeavePage() {
   const { toast } = useToast();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [leavesLoading, setLeavesLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
   // Form State
   const [leaveType, setLeaveType] = useState<LeaveType>('one_day');
-  const [oneDayDate, setOneDayDate] = useState<Date | undefined>();
+  const [oneDayDate, setOneDayDate] = useState<Date | undefined>(startOfDay(new Date()));
   const [oneDayType, setOneDayType] = useState<HolidayType>('full_day');
   const [longLeaveFromDate, setLongLeaveFromDate] = useState<Date | undefined>();
   const [longLeaveToDate, setLongLeaveToDate] = useState<Date | undefined>();
@@ -62,6 +53,8 @@ export default function StudentLeavePage() {
   // Deadline state
   const [lunchDeadline, setLunchDeadline] = useState('10:00'); 
   const [dinnerDeadline, setDinnerDeadline] = useState('18:00');
+  
+  const [month, setMonth] = useState<Date>(startOfDay(new Date()));
 
   // --- For disabling options based on time ---
   const now = new Date();
@@ -81,14 +74,12 @@ export default function StudentLeavePage() {
 
 
   useEffect(() => {
-    setOneDayDate(today);
-
     if (!user || !user.uid || !user.messId) {
-        setLeavesLoading(false);
+        setDataLoading(false);
         return;
     }
     
-    setLeavesLoading(true);
+    setDataLoading(true);
 
     const fetchSettings = async () => {
         const messInfo = await getMessInfo(user.messId!);
@@ -96,14 +87,14 @@ export default function StudentLeavePage() {
         if (messInfo?.dinnerDeadline) setDinnerDeadline(messInfo.dinnerDeadline);
     };
 
-    fetchSettings();
-
-    const leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
-        setLeaves(updatedLeaves);
-        setLeavesLoading(false);
-    });
-    
+    const leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
     const holidaysUnsubscribe = onHolidaysUpdate(user.messId, setHolidays);
+    
+    Promise.all([
+        fetchSettings(),
+        new Promise(res => onLeavesUpdate(user.uid, (d) => { setLeaves(d); res(d); })),
+        new Promise(res => onHolidaysUpdate(user.messId, (d) => { setHolidays(d); res(d); })),
+    ]).then(() => setDataLoading(false));
     
     return () => {
         leavesUnsubscribe();
@@ -124,59 +115,6 @@ export default function StudentLeavePage() {
           setLongLeaveFromType('dinner_only');
       }
   }, [isLongLeaveTodaySelected, isLongLeaveLunchDisabled, longLeaveFromType]);
-  
-
-  const upcomingLeaves = useMemo(() => {
-    const rawUpcoming = leaves
-      .filter(l => l.name !== 'Plan Activation' && l.date >= today)
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    const leavesByDate = new Map<string, Leave[]>();
-
-    // Group leaves by date
-    for (const leave of rawUpcoming) {
-        const dateKey = format(leave.date, 'yyyy-MM-dd');
-        if (!leavesByDate.has(dateKey)) {
-            leavesByDate.set(dateKey, []);
-        }
-        leavesByDate.get(dateKey)!.push(leave);
-    }
-    
-    const mergedLeaves: Leave[] = [];
-
-    // Process grouped leaves
-    for (const [dateKey, dateLeaves] of leavesByDate.entries()) {
-        if (dateLeaves.length === 1) {
-            mergedLeaves.push(dateLeaves[0]);
-            continue;
-        }
-
-        const hasFullDay = dateLeaves.some(l => l.type === 'full_day');
-        const hasLunch = dateLeaves.some(l => l.type === 'lunch_only');
-        const hasDinner = dateLeaves.some(l => l.type === 'dinner_only');
-
-        if (hasFullDay || (hasLunch && hasDinner)) {
-            // Create a synthetic full day leave
-            const representativeLeave = dateLeaves[0];
-            mergedLeaves.push({
-                ...representativeLeave,
-                id: `${dateKey}-merged`, // Create a stable unique ID
-                type: 'full_day'
-            });
-        } else {
-            // Push them individually if they are not a pair (e.g., two lunch leaves, shouldn't happen)
-            mergedLeaves.push(...dateLeaves);
-        }
-    }
-
-    return mergedLeaves.sort((a,b) => a.date.getTime() - b.date.getTime());
-  }, [leaves, today]);
-  
-  const upcomingHolidays = useMemo(() => {
-    return holidays
-        .filter(h => h.date >= today)
-        .slice(0, 5);
-  }, [holidays, today]);
   
   const isActionAllowedForDate = (date: Date, mealType: HolidayType = 'full_day'): boolean => {
     if (isBefore(date, today)) return false; 
@@ -325,60 +263,23 @@ export default function StudentLeavePage() {
     }
   };
 
-  const handleDeleteLeave = async (leave: Leave) => {
-    try {
-        if (!isActionAllowedForDate(leave.date, leave.type)) {
-            toast({ variant: 'destructive', title: 'Deadline Passed', description: 'You can no longer cancel this leave as the deadline has passed.' });
-            return;
-        }
-
-        if (leave.id.endsWith('-merged')) {
-            const dateKey = format(leave.date, 'yyyy-MM-dd');
-            const partialLeavesToDelete = leaves.filter(l => format(l.date, 'yyyy-MM-dd') === dateKey && (l.type === 'lunch_only' || l.type === 'dinner_only'));
-
-            if (partialLeavesToDelete.length > 0) {
-                const batch = writeBatch(db);
-                partialLeavesToDelete.forEach(l => {
-                    batch.delete(doc(db, 'leaves', l.id));
-                });
-                await batch.commit();
-                toast({ title: "Full Day Leave Cancelled" });
-            }
-        } else {
-            const docRef = doc(db, 'leaves', leave.id);
-            await deleteDoc(docRef);
-            toast({ title: "Leave Cancelled" });
-        }
-    } catch (error) {
-      console.error("Error cancelling leave:", error);
-      toast({ variant: "destructive", title: "Error", description: "Failed to cancel leave." });
-    }
-  };
-  
-  const getLeaveTypeText = (type: Leave['type']) => {
-    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
-
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div className="hidden md:block">
-        <h1 className="text-2xl font-bold tracking-tight">Apply for Leave</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Leave & Attendance</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <div className="lg:col-span-3 flex flex-col gap-8">
            <Tabs defaultValue="apply" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="apply">Apply</TabsTrigger>
-                    <TabsTrigger value="upcoming">
-                        Upcoming
-                        {upcomingLeaves.length > 0 && <Badge className="ml-2">{upcomingLeaves.length}</Badge>}
-                    </TabsTrigger>
+                    <TabsTrigger value="apply">Apply for Leave</TabsTrigger>
+                    <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 </TabsList>
                  <TabsContent value="apply" className="mt-4">
                     <Card className="flex flex-col h-full">
                         <CardHeader>
-                            <CardTitle className="text-xl">Apply for Leave</CardTitle>
+                          <CardTitle className="text-xl">Apply for Leave</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 md:p-6 pt-0 space-y-6 flex-grow">
                             <div className="space-y-2">
@@ -512,105 +413,34 @@ export default function StudentLeavePage() {
                     </Card>
                  </TabsContent>
                  <TabsContent value="upcoming">
-                    <Card className="flex flex-col h-full">
-                        <CardHeader>
-                            <CardTitle className="text-xl">Upcoming Leaves</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-grow p-2 pt-0">
-                        <ScrollArea className="h-96">
-                            <div className="p-4 pt-0 space-y-2">
-                            {leavesLoading ? (
-                                <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10"><p>Loading...</p></div>
-                            ) : upcomingLeaves.length > 0 ? (
-                                upcomingLeaves.map((leave) => (
-                                <div key={leave.id} className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50">
-                                    <div className="flex items-center gap-3">
-                                        {leave.type === 'full_day' && <Utensils className="h-5 w-5 text-destructive flex-shrink-0" />}
-                                        {leave.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
-                                        {leave.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-3 flex-shrink-0" />}
-                                        <div>
-                                            <p className="font-semibold text-sm">{format(leave.date, 'MMMM do, yyyy')}</p>
-                                            <p className="text-xs text-muted-foreground">{getLeaveTypeText(leave.type)}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={!isActionAllowedForDate(leave.date, leave.type)}>
-                                                <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This will cancel your leave for {format(leave.date, 'MMMM do, yyyy')}. This action cannot be undone.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteLeave(leave)}>
-                                                        Confirm Cancellation
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </div>
-                                ))
-                            ) : (
-                                <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
-                                <p>You have no upcoming leaves.</p>
-                                </div>
-                            )}
-                            </div>
-                        </ScrollArea>
-                        </CardContent>
-                    </Card>
+                    <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={dataLoading} />
                  </TabsContent>
            </Tabs>
         </div>
-        <div className="lg:col-span-2 flex flex-col">
-           <Card className="flex flex-col flex-grow">
-            <CardHeader>
-              <CardTitle className="text-xl">Upcoming Holidays</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow p-2 pt-0">
-              <ScrollArea className="h-48">
-                <div className="p-4 pt-0 space-y-2">
-                  {leavesLoading ? (
-                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
-                      <p>Loading...</p>
+
+        <div className="lg:col-span-2 flex flex-col gap-8">
+            <Card className="flex flex-col h-full">
+                <CardHeader>
+                  <CardTitle>Attendance Calendar</CardTitle>
+                  <CardDescription>View your attendance status for {format(month, 'MMMM yyyy')}.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow flex flex-col items-center justify-center gap-8">
+                    {user && <AttendanceCalendar user={user} leaves={leaves} holidays={holidays} month={month} onMonthChange={setMonth} />}
+                </CardContent>
+                 <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">
+                    <p className="font-semibold text-foreground text-base mb-1">Legend</p>
+                    <div className="flex w-full flex-wrap items-center justify-start gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-green-500" />Present</div>
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-destructive" />Leave</div>
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-orange-500" />Holiday</div>
+                        <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-background"></div>Today</div>
                     </div>
-                  ) : upcomingHolidays.length > 0 ? (
-                    upcomingHolidays.map((holiday) => (
-                      <div
-                        key={holiday.date.toISOString()}
-                        className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50"
-                      >
-                         <div className="flex items-center gap-3">
-                            {holiday.type === 'full_day' && <Utensils className="h-5 w-5 text-orange-500 flex-shrink-0" />}
-                            {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 text-orange-500 flex-shrink-0" />}
-                            {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 text-orange-500 flex-shrink-0" />}
-                            <div>
-                                <p className="font-semibold text-sm">{holiday.name}</p>
-                                <p className="text-xs text-muted-foreground">{format(holiday.date, 'MMMM do, yyyy')}</p>
-                            </div>
-                         </div>
-                         <Badge variant="outline" className={cn("capitalize border-dashed border-orange-500 text-orange-500")}>{getLeaveTypeText(holiday.type as HolidayType)}</Badge>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
-                      <p>No upcoming holidays.</p>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                </CardFooter>
+            </Card>
         </div>
       </div>
     </div>
   );
 }
+
+

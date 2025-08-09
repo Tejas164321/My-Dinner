@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, type FC } from 'react';
 import type { DayProps } from 'react-day-picker';
 import { format, eachDayOfInterval, startOfDay, isSameMonth, isSameDay, isAfter, isFuture, isBefore, parse, getHours, getMinutes } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon, Info, Loader2 } from 'lucide-react';
-import { doc, getDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import type { Holiday } from '@/lib/data';
@@ -129,9 +129,36 @@ export default function HolidaysPage() {
 
 
   const upcomingHolidays = useMemo(() => {
-    return holidays
-      .filter(h => isSameDay(h.date, today) || isAfter(h.date, today))
-      .sort((a,b) => a.date.getTime() - b.date.getTime());
+      const upcoming = holidays
+          .filter(h => h.date >= today)
+          .sort((a,b) => a.date.getTime() - b.date.getTime());
+
+      // Merge logic for display
+      const mergedHolidays: Holiday[] = [];
+      const dateMap = new Map<string, Holiday[]>();
+
+      for (const holiday of upcoming) {
+          const dateKey = format(holiday.date, 'yyyy-MM-dd');
+          if (!dateMap.has(dateKey)) {
+              dateMap.set(dateKey, []);
+          }
+          dateMap.get(dateKey)!.push(holiday);
+      }
+
+      for (const [dateKey, holidayGroup] of dateMap.entries()) {
+          if (holidayGroup.length === 1) {
+              mergedHolidays.push(holidayGroup[0]);
+          } else {
+              const hasLunch = holidayGroup.some(h => h.type === 'lunch_only');
+              const hasDinner = holidayGroup.some(h => h.type === 'dinner_only');
+              if (hasLunch && hasDinner) {
+                  mergedHolidays.push({ ...holidayGroup[0], type: 'full_day' });
+              } else {
+                  mergedHolidays.push(...holidayGroup);
+              }
+          }
+      }
+      return mergedHolidays;
   }, [holidays, today]);
   
   const dayTypeMap = useMemo(() => {
@@ -231,21 +258,36 @@ export default function HolidaysPage() {
 
     try {
         const batch = writeBatch(db);
+        let setDocs = 0;
+
         for (const holiday of holidaysToSubmit) {
             const dateKey = `${holiday.messId}_${format(holiday.date, 'yyyy-MM-dd')}`;
             const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                toast({ variant: 'destructive', title: 'Holiday Exists', description: `A holiday for ${format(holiday.date, 'yyyy-MM-dd')} already exists.`});
-                setIsSaving(false);
-                return;
+                 const existingData = docSnap.data() as Holiday;
+                 if (existingData.type === 'full_day') {
+                     continue; // Skip if full day holiday already exists
+                 }
+                 // If a partial exists and we want to make it a full day
+                 if ((existingData.type === 'lunch_only' && holiday.type === 'dinner_only') || (existingData.type === 'dinner_only' && holiday.type === 'lunch_only') || holiday.type === 'full_day') {
+                    batch.update(docRef, { type: 'full_day', name: holiday.name });
+                    setDocs++;
+                 }
+            } else {
+                 batch.set(docRef, holiday);
+                 setDocs++;
             }
-            batch.set(docRef, holiday);
         }
-
-        await batch.commit();
-        toast({ title: "Success", description: "Holiday(s) added successfully." });
+        
+        if (setDocs > 0) {
+            await batch.commit();
+             toast({ title: "Success", description: "Holiday(s) added successfully."});
+        } else {
+            toast({ title: "Already Set", description: "All selected dates already have full-day holidays." });
+        }
+        
         setNewHolidayName('');
         setOneDayDate(today);
         setOneDayType('full_day');
@@ -287,21 +329,26 @@ export default function HolidaysPage() {
 
     let lunchColor, dinnerColor;
     let tooltipLunchStatus = 'Open', tooltipDinnerStatus = 'Open';
-    
-    if (isFutureDate) {
-        lunchColor = statusColors.Future;
-        dinnerColor = statusColors.Future;
-        tooltipLunchStatus = 'Future';
-        tooltipDinnerStatus = 'Future';
-    } else {
-        const isLunchHoliday = holiday?.type === 'full_day' || holiday?.type === 'lunch_only';
-        const isDinnerHoliday = holiday?.type === 'full_day' || holiday?.type === 'dinner_only';
-        
-        lunchColor = isLunchHoliday ? statusColors.Holiday : statusColors.Open;
-        dinnerColor = isDinnerHoliday ? statusColors.Holiday : statusColors.Open;
 
-        tooltipLunchStatus = isLunchHoliday ? 'Holiday' : 'Open';
-        tooltipDinnerStatus = isDinnerHoliday ? 'Holiday' : 'Open';
+    const isLunchHoliday = holiday?.type === 'full_day' || holiday?.type === 'lunch_only';
+    const isDinnerHoliday = holiday?.type === 'full_day' || holiday?.type === 'dinner_only';
+
+    // Determine lunch status and color
+    if (isLunchHoliday) {
+        lunchColor = statusColors.Holiday;
+        tooltipLunchStatus = 'Holiday';
+    } else {
+        lunchColor = isFutureDate ? statusColors.Future : statusColors.Open;
+        tooltipLunchStatus = 'Open';
+    }
+
+    // Determine dinner status and color
+    if (isDinnerHoliday) {
+        dinnerColor = statusColors.Holiday;
+        tooltipDinnerStatus = 'Holiday';
+    } else {
+        dinnerColor = isFutureDate ? statusColors.Future : statusColors.Open;
+        tooltipDinnerStatus = 'Open';
     }
     
     return (
@@ -313,7 +360,7 @@ export default function HolidaysPage() {
                     <div className={cn("flex-1", lunchColor)}></div>
                     <div className={cn("flex-1", dinnerColor)}></div>
                 </div>
-                <span className={cn("relative z-10 font-semibold text-white", isFutureDate && "text-muted-foreground")}>
+                <span className={cn("relative z-10 font-semibold", isFutureDate && !holiday ? "text-muted-foreground" : "text-white")}>
                     {date.getDate()}
                 </span>
             </div>
@@ -383,7 +430,7 @@ export default function HolidaysPage() {
                                         {oneDayDate ? format(oneDayDate, 'PPP') : <span>Pick a date</span>}
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={oneDayDate} onSelect={setOneDayDate} initialFocus disabled={(date) => isBefore(date, today)} /></PopoverContent>
+                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={oneDayDate} onSelect={setOneDayDate} initialFocus disabled={(date) => isBefore(date, today)} showOutsideDays={false} /></PopoverContent>
                                     </Popover>
                                 </div>
                                 <div className="space-y-3">
@@ -425,7 +472,7 @@ export default function HolidaysPage() {
                                           {longLeaveFromDate ? format(longLeaveFromDate, 'PPP') : <span>Pick a date</span>}
                                         </Button>
                                       </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveFromDate} onSelect={setLongLeaveFromDate} initialFocus disabled={(date) => isBefore(date, today)} /></PopoverContent>
+                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveFromDate} onSelect={setLongLeaveFromDate} initialFocus disabled={(date) => isBefore(date, today)} showOutsideDays={false} /></PopoverContent>
                                     </Popover>
                                   </div>
                                   <div className="space-y-2">
@@ -437,7 +484,7 @@ export default function HolidaysPage() {
                                           {longLeaveToDate ? format(longLeaveToDate, 'PPP') : <span>Pick a date</span>}
                                         </Button>
                                       </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveToDate} onSelect={setLongLeaveToDate} initialFocus disabled={(date) => isBefore(date, today)} /></PopoverContent>
+                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveToDate} onSelect={setLongLeaveToDate} initialFocus disabled={(date) => isBefore(date, today)} showOutsideDays={false} /></PopoverContent>
                                     </Popover>
                                   </div>
                                 </div>
@@ -582,6 +629,7 @@ export default function HolidaysPage() {
                       months: 'w-full',
                       month: 'w-full space-y-4',
                   }}
+                  disabled={(date) => isBefore(date, today)}
                   showOutsideDays={false}
                 />
               )}
