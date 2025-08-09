@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
@@ -36,9 +37,10 @@ interface UpcomingEventsCardProps {
     holidays: Holiday[];
     isLoading: boolean;
     showFooter?: boolean;
+    className?: string;
 }
 
-export function UpcomingEventsCard({ leaves, holidays, isLoading, showFooter = true }: UpcomingEventsCardProps) {
+export function UpcomingEventsCard({ leaves, holidays, isLoading, showFooter = true, className }: UpcomingEventsCardProps) {
     const { toast } = useToast();
     const today = useMemo(() => startOfDay(new Date()), []);
     
@@ -106,7 +108,7 @@ export function UpcomingEventsCard({ leaves, holidays, isLoading, showFooter = t
     };
 
     return (
-        <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-400 flex flex-col h-full">
+        <Card className={cn("animate-in fade-in-0 zoom-in-95 duration-500 delay-400 flex flex-col", className)}>
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle>Upcoming Events</CardTitle>
@@ -114,9 +116,9 @@ export function UpcomingEventsCard({ leaves, holidays, isLoading, showFooter = t
                 </div>
                 <CardDescription>Your upcoming leaves and mess holidays.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow p-2 pt-0">
-                <ScrollArea className="h-[230px]">
-                    <div className="p-4 pt-0 space-y-2">
+            <CardContent className="flex-grow p-2 pt-0 relative">
+                <ScrollArea className="absolute inset-0 p-4 pt-0">
+                    <div className="space-y-2">
                         {isLoading ? (
                             <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading schedule...</p></div>
                         ) : upcomingEvents.length > 0 ? (

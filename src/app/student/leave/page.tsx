@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, isFuture, eachDayOfInterval, startOfDay, isBefore, isSameDay, getHours, getMinutes, parse } from 'date-fns';
 import { Calendar as CalendarIcon, Plus, Loader2 } from 'lucide-react';
-import { collection, writeBatch, doc } from 'firebase/firestore';
+import { collection, writeBatch, doc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -269,14 +269,14 @@ export default function StudentLeavePage() {
         <h1 className="text-2xl font-bold tracking-tight">Leave & Attendance</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-stretch">
         <div className="lg:col-span-3 flex flex-col gap-8">
-           <Tabs defaultValue="apply" className="w-full">
+           <Tabs defaultValue="apply" className="w-full flex flex-col flex-grow h-full">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="apply">Apply for Leave</TabsTrigger>
                     <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="apply" className="mt-4">
+                 <TabsContent value="apply" className="mt-4 flex-grow">
                     <Card className="flex flex-col h-full">
                         <CardHeader>
                           <CardTitle className="text-xl">Apply for Leave</CardTitle>
@@ -315,22 +315,22 @@ export default function StudentLeavePage() {
                                     <RadioGroup 
                                       value={isOneDayLunchDisabled ? 'dinner_only' : oneDayType}
                                       onValueChange={(value: HolidayType) => setOneDayType(value)} 
-                                      className="grid grid-cols-3 gap-2 md:gap-4"
+                                      className="grid grid-cols-3 gap-2"
                                     >
-                                        <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal transition-all", isOneDayLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                        <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal transition-all h-24", isOneDayLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
                                             <RadioGroupItem value="full_day" id="full_day" className="sr-only" disabled={isOneDayLunchDisabled} />
-                                            <Utensils className="mb-2 h-5 w-5 md:mb-3 md:h-6 md:w-6" />
-                                            <span className="text-xs md:text-sm">Full Day</span>
+                                            <Utensils className="mb-2 h-5 w-5" />
+                                            <span className="text-xs">Full Day</span>
                                         </Label>
-                                         <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal transition-all", isOneDayLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                         <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal transition-all h-24", isOneDayLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
                                             <RadioGroupItem value="lunch_only" id="lunch_only" className="sr-only" disabled={isOneDayLunchDisabled} />
-                                            <Sun className="mb-2 h-5 w-5 md:mb-3 md:h-6 md:w-6" />
-                                            <span className="text-xs md:text-sm">Lunch Only</span>
+                                            <Sun className="mb-2 h-5 w-5" />
+                                            <span className="text-xs">Lunch Only</span>
                                         </Label>
-                                         <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal transition-all", isOneDayDinnerDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                         <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal transition-all h-24", isOneDayDinnerDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
                                             <RadioGroupItem value="dinner_only" id="dinner_only" className="sr-only" disabled={isOneDayDinnerDisabled} />
-                                            <Moon className="mb-2 h-5 w-5 md:mb-3 md:h-6 md:w-6" />
-                                            <span className="text-xs md:text-sm">Dinner Only</span>
+                                            <Moon className="mb-2 h-5 w-5" />
+                                            <span className="text-xs">Dinner Only</span>
                                         </Label>
                                     </RadioGroup>
                                 </div>
@@ -373,27 +373,27 @@ export default function StudentLeavePage() {
                                         onValueChange={(value: HolidayType) => setLongLeaveFromType(value)} 
                                         className="grid grid-cols-1 gap-2"
                                     >
-                                        <Label htmlFor="from_full_day" className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal transition-all", isLongLeaveLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
-                                            <RadioGroupItem value="full_day" id="from_full_day" className="sr-only" disabled={isLongLeaveLunchDisabled}/>
-                                            <Utensils className="mb-2 h-5 w-5" />
-                                            Full Day
-                                        </Label>
-                                        <Label htmlFor="from_dinner_only" className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal transition-all", isLongLeaveDinnerDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
-                                            <RadioGroupItem value="dinner_only" id="from_dinner_only" className="sr-only" disabled={isLongLeaveDinnerDisabled}/>
-                                            <Moon className="mb-2 h-5 w-5" />
-                                            Dinner Only
-                                        </Label>
+                                        <Label htmlFor="from_full_day" className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal transition-all text-xs h-24", isLongLeaveLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                                <RadioGroupItem value="full_day" id="from_full_day" className="sr-only" disabled={isLongLeaveLunchDisabled}/>
+                                                <Utensils className="mb-2 h-5 w-5" />
+                                                Full Day
+                                            </Label>
+                                            <Label htmlFor="from_dinner_only" className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal transition-all text-xs h-24", isLongLeaveDinnerDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                                <RadioGroupItem value="dinner_only" id="from_dinner_only" className="sr-only" disabled={isLongLeaveDinnerDisabled}/>
+                                                <Moon className="mb-2 h-5 w-5" />
+                                                Dinner Only
+                                            </Label>
                                     </RadioGroup>
                                 </div>
                                 <div className="space-y-3">
                                     <Label>To (Last Day)</Label>
                                     <RadioGroup value={longLeaveToType} onValueChange={(value: HolidayType) => setLongLeaveToType(value)} className="grid grid-cols-1 gap-2">
-                                        <Label htmlFor="to_full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
+                                        <Label htmlFor="to_full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all text-xs h-24">
                                             <RadioGroupItem value="full_day" id="to_full_day" className="sr-only" />
                                             <Utensils className="mb-2 h-5 w-5" />
                                             Full Day
                                         </Label>
-                                        <Label htmlFor="to_lunch_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
+                                        <Label htmlFor="to_lunch_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all text-xs h-24">
                                             <RadioGroupItem value="lunch_only" id="to_lunch_only" className="sr-only" />
                                             <Sun className="mb-2 h-5 w-5" />
                                             Lunch Only
@@ -412,22 +412,22 @@ export default function StudentLeavePage() {
                         </CardFooter>
                     </Card>
                  </TabsContent>
-                 <TabsContent value="upcoming">
-                    <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={dataLoading} showFooter={false} />
+                 <TabsContent value="upcoming" className="mt-4 flex-grow">
+                    <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={dataLoading} showFooter={false} className="h-full" />
                  </TabsContent>
            </Tabs>
         </div>
 
-        <div className="lg:col-span-2 flex flex-col gap-8">
-            <Card className="flex flex-col h-full">
+        <div className="lg:col-span-2 flex flex-col">
+            <Card className="flex flex-col">
                 <CardHeader>
                   <CardTitle>Attendance Calendar</CardTitle>
                   <CardDescription>View your attendance status for {format(month, 'MMMM yyyy')}.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow flex flex-col items-center justify-center gap-8">
+                <CardContent className="flex flex-col items-center justify-center gap-y-4 p-4">
                     {user && <AttendanceCalendar user={user} leaves={leaves} holidays={holidays} month={month} onMonthChange={setMonth} />}
                 </CardContent>
-                 <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">
+                 <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t">
                     <p className="font-semibold text-foreground text-base mb-1">Legend</p>
                     <div className="flex w-full flex-wrap items-center justify-start gap-x-4 gap-y-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-green-500" />Present</div>
