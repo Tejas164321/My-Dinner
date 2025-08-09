@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { format, isSameMonth, isSameDay, startOfDay, parseISO, isBefore, isAfter } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
-type MealStatus = 'Present' | 'Leave' | 'Holiday' | 'Not Applicable';
+type MealStatus = 'Present' | 'Leave' | 'Holiday' | 'Not Applicable' | 'Future';
 
 interface DayStatus {
     lunch: MealStatus;
@@ -20,6 +20,7 @@ const statusColors: { [key in MealStatus]: string } = {
     'Present': 'bg-green-500',
     'Leave': 'bg-destructive',
     'Holiday': 'bg-orange-500',
+    'Future': 'bg-muted/50',
     'Not Applicable': 'bg-transparent',
 };
 
@@ -44,7 +45,16 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
         if (!user || !planStartDate) return dtMap;
 
         const today = startOfDay(new Date());
-        const studentLeaves = new Map(leaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
+
+        const leavesByDate = new Map<string, Leave[]>();
+        for (const leave of leaves) {
+            const dateKey = format(leave.date, 'yyyy-MM-dd');
+            if (!leavesByDate.has(dateKey)) {
+                leavesByDate.set(dateKey, []);
+            }
+            leavesByDate.get(dateKey)!.push(leave);
+        }
+
         const messHolidays = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
         
         const allDaysInMonth = Array.from({ length: new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate() }, (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1));
@@ -53,13 +63,18 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
             const dateKey = format(day, 'yyyy-MM-dd');
             let dayStatus: DayStatus = { lunch: 'Not Applicable', dinner: 'Not Applicable' };
             
-            if (isBefore(day, planStartDate) || isAfter(day, today)) {
+            if (isBefore(day, planStartDate)) {
                  dtMap.set(dateKey, dayStatus);
                  return;
             }
 
-            const leaveType = studentLeaves.get(dateKey);
+            const dayLeaves = leavesByDate.get(dateKey) || [];
             const holidayType = messHolidays.get(dateKey);
+            
+            const isFutureDate = isAfter(day, today);
+
+            const hasLunchLeave = dayLeaves.some(l => l.type === 'full_day' || l.type === 'lunch_only');
+            const hasDinnerLeave = dayLeaves.some(l => l.type === 'full_day' || l.type === 'dinner_only');
 
             // Lunch Status
             if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
@@ -68,8 +83,10 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
                  } else {
                      if (holidayType === 'full_day' || holidayType === 'lunch_only') {
                         dayStatus.lunch = 'Holiday';
-                     } else if (leaveType === 'full_day' || leaveType === 'lunch_only') {
+                     } else if (hasLunchLeave) {
                         dayStatus.lunch = 'Leave';
+                     } else if (isFutureDate) {
+                        dayStatus.lunch = 'Future';
                      } else {
                         dayStatus.lunch = 'Present';
                      }
@@ -80,8 +97,10 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
             if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
                 if (holidayType === 'full_day' || holidayType === 'dinner_only') {
                     dayStatus.dinner = 'Holiday';
-                 } else if (leaveType === 'full_day' || leaveType === 'dinner_only') {
+                 } else if (hasDinnerLeave) {
                     dayStatus.dinner = 'Leave';
+                 } else if (isFutureDate) {
+                    dayStatus.dinner = 'Future';
                  } else {
                     dayStatus.dinner = 'Present';
                  }
@@ -111,6 +130,9 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
         const dinnerColor = statusColors[status.dinner];
         const isToday = isSameDay(date, new Date());
     
+        const isEvent = status.lunch === 'Holiday' || status.lunch === 'Leave' || status.dinner === 'Holiday' || status.dinner === 'Leave';
+        const isFutureDate = status.lunch === 'Future' || status.dinner === 'Future';
+
         return (
             <TooltipProvider delayDuration={100}>
                 <Tooltip>
@@ -120,7 +142,7 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
                                 <div className={cn("flex-1", lunchColor)}></div>
                                 <div className={cn("flex-1", dinnerColor)}></div>
                             </div>
-                            <span className="relative z-10 text-white font-semibold">
+                            <span className={cn("relative z-10 font-semibold", isFutureDate && !isEvent ? "text-muted-foreground" : "text-white")}>
                                 {date.getDate()}
                             </span>
                         </div>
@@ -128,8 +150,8 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ user, leaves, 
                     <TooltipContent>
                          <div className="space-y-1 text-center">
                             <p className="font-bold">{format(date, "PPP")}</p>
-                            <p className="text-sm"><span className="font-semibold">Lunch:</span> {status.lunch}</p>
-                            <p className="text-sm"><span className="font-semibold">Dinner:</span> {status.dinner}</p>
+                            <p className="text-sm"><span className="font-semibold">Lunch:</span> {status.lunch === 'Future' ? 'Open' : status.lunch}</p>
+                            <p className="text-sm"><span className="font-semibold">Dinner:</span> {status.dinner === 'Future' ? 'Open' : status.dinner}</p>
                         </div>
                     </TooltipContent>
                 </Tooltip>

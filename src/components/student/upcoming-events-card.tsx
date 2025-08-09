@@ -35,9 +35,10 @@ interface UpcomingEventsCardProps {
     leaves: Leave[];
     holidays: Holiday[];
     isLoading: boolean;
+    showFooter?: boolean;
 }
 
-export function UpcomingEventsCard({ leaves, holidays, isLoading }: UpcomingEventsCardProps) {
+export function UpcomingEventsCard({ leaves, holidays, isLoading, showFooter = true }: UpcomingEventsCardProps) {
     const { toast } = useToast();
     const today = useMemo(() => startOfDay(new Date()), []);
     
@@ -114,7 +115,7 @@ export function UpcomingEventsCard({ leaves, holidays, isLoading }: UpcomingEven
                 <CardDescription>Your upcoming leaves and mess holidays.</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow p-2 pt-0">
-                <ScrollArea className="h-[210px]">
+                <ScrollArea className="h-[230px]">
                     <div className="p-4 pt-0 space-y-2">
                         {isLoading ? (
                             <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading schedule...</p></div>
@@ -140,7 +141,7 @@ export function UpcomingEventsCard({ leaves, holidays, isLoading }: UpcomingEven
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <p className="font-semibold text-sm">{title}</p>
-                                                    <Badge variant={isLeave ? 'destructive' : 'secondary'} className={cn('bg-opacity-20', isLeave ? 'bg-destructive text-destructive' : 'bg-orange-500 text-orange-400')}>{isLeave ? 'Leave' : 'Holiday'}</Badge>
+                                                    <Badge variant={isLeave ? 'destructive' : 'secondary'} className={cn('bg-opacity-20 capitalize', isLeave ? 'bg-destructive/20 text-destructive' : 'bg-orange-500/20 text-orange-400')}>{isLeave ? 'Leave' : 'Holiday'}</Badge>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground">{description}</p>
                                             </div>
@@ -177,13 +178,15 @@ export function UpcomingEventsCard({ leaves, holidays, isLoading }: UpcomingEven
                     </div>
                 </ScrollArea>
             </CardContent>
-            <CardFooter>
-                <Button asChild className="w-full" variant="outline">
-                    <Link href="/student/leave">
-                        Manage Schedule
-                    </Link>
-                </Button>
-            </CardFooter>
+            {showFooter && (
+                <CardFooter>
+                    <Button asChild className="w-full" variant="outline">
+                        <Link href="/student/leave?tab=apply">
+                            Apply for Leave
+                        </Link>
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
     );
 }

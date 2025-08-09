@@ -413,7 +413,7 @@ export default function StudentLeavePage() {
                     </Card>
                  </TabsContent>
                  <TabsContent value="upcoming">
-                    <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={dataLoading} />
+                    <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={dataLoading} showFooter={false} />
                  </TabsContent>
            </Tabs>
         </div>
@@ -442,5 +442,3 @@ export default function StudentLeavePage() {
     </div>
   );
 }
-
-
