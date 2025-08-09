@@ -1,14 +1,16 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { format, eachDayOfInterval, startOfDay } from 'date-fns';
-import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon } from 'lucide-react';
+import { useState, useEffect, useMemo, type FC } from 'react';
+import type { DayProps } from 'react-day-picker';
+import { format, eachDayOfInterval, startOfDay, isSameMonth, isSameDay, isAfter, isFuture, isBefore, parse, getHours, getMinutes } from 'date-fns';
+import { Calendar as CalendarIcon, Plus, Trash2, Utensils, Sun, Moon, Info, Loader2 } from 'lucide-react';
 import { doc, getDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import type { Holiday } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
+import { getMessInfo } from '@/lib/services/mess';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 
 type HolidayType = 'full_day' | 'lunch_only' | 'dinner_only';
@@ -40,10 +44,17 @@ type LeaveType = 'one_day' | 'long_leave';
 
 const HOLIDAYS_COLLECTION = 'holidays';
 
+const statusColors = {
+    Open: 'bg-green-500',
+    Holiday: 'bg-orange-500',
+    Future: 'bg-muted/50',
+};
+
 export default function HolidaysPage() {
   const { user: adminUser } = useAuth();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   
   // Form State
@@ -58,61 +69,132 @@ export default function HolidaysPage() {
   
   // Calendar View State
   const [month, setMonth] = useState<Date | undefined>();
-  const [today, setToday] = useState<Date | undefined>();
+  const [today, setToday] = useState<Date>(startOfDay(new Date()));
+
+  // Deadline state
+  const [lunchDeadline, setLunchDeadline] = useState('10:00'); 
+  const [dinnerDeadline, setDinnerDeadline] = useState('18:00');
+
+  // For disabling options based on time
+  const now = new Date();
+  const isTodaySelected = oneDayDate ? isSameDay(oneDayDate, now) : false;
+  const currentHour = getHours(now);
+  const lunchDeadlineHour = getHours(parse(lunchDeadline, 'HH:mm', new Date()));
+  const dinnerDeadlineHour = getHours(parse(dinnerDeadline, 'HH:mm', new Date()));
+  const isLunchDisabled = isTodaySelected && currentHour >= lunchDeadlineHour;
+  const isDinnerDisabled = isTodaySelected && currentHour >= dinnerDeadlineHour;
+
 
   useEffect(() => {
-    const now = startOfDay(new Date());
-    setMonth(now);
-    setToday(now);
-    setOneDayDate(now);
+    setMonth(today);
+    setOneDayDate(today);
 
     if (!adminUser) return;
     
     setIsLoading(true);
+    
+    const fetchSettings = async () => {
+        const messInfo = await getMessInfo(adminUser.uid);
+        if (messInfo?.lunchDeadline) setLunchDeadline(messInfo.lunchDeadline);
+        if (messInfo?.dinnerDeadline) setDinnerDeadline(messInfo.dinnerDeadline);
+    };
+
+    fetchSettings();
+
     const unsubscribe = onHolidaysUpdate(adminUser.uid, (updatedHolidays) => {
         setHolidays(updatedHolidays);
         setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [adminUser]);
+  }, [adminUser, today]);
+
+  // Effect to adjust one-day holiday type if deadline passes
+    useEffect(() => {
+        if (isLunchDisabled) {
+            setOneDayType('dinner_only');
+        } else if (!isLunchDisabled && oneDayType === 'dinner_only') {
+            setOneDayType('full_day');
+        }
+    }, [isLunchDisabled, oneDayType]);
+
 
   const upcomingHolidays = useMemo(() => {
-    if (!today) return [];
-    return holidays.filter(h => h.date >= today);
+    return holidays
+      .filter(h => isSameDay(h.date, today) || isAfter(h.date, today))
+      .sort((a,b) => a.date.getTime() - b.date.getTime());
   }, [holidays, today]);
+  
+  const dayTypeMap = useMemo(() => {
+    const map = new Map<string, Holiday>();
+    holidays.forEach(h => {
+        const dateKey = format(h.date, 'yyyy-MM-dd');
+        map.set(dateKey, h);
+    });
+    return map;
+  }, [holidays]);
+
+  const isActionAllowedForDate = (date: Date, mealType: 'lunch' | 'dinner' | 'full_day' = 'full_day'): boolean => {
+    if (isBefore(date, today)) return false; 
+
+    if (isSameDay(date, today)) {
+        const now = new Date();
+        const [lunchHours, lunchMinutes] = lunchDeadline.split(':').map(Number);
+        const lunchDeadlineTime = new Date();
+        lunchDeadlineTime.setHours(lunchHours, lunchMinutes, 0, 0);
+
+        const [dinnerHours, dinnerMinutes] = dinnerDeadline.split(':').map(Number);
+        const dinnerDeadlineTime = new Date();
+        dinnerDeadlineTime.setHours(dinnerHours, dinnerMinutes, 0, 0);
+
+        if (mealType === 'full_day' || mealType === 'lunch_only') {
+            if (now >= lunchDeadlineTime) return false;
+        }
+        if (mealType === 'full_day' || mealType === 'dinner_only') {
+            if (now >= dinnerDeadlineTime) return false;
+        }
+    }
+    return true; 
+  };
+
 
   const handleAddHoliday = async () => {
     if (!adminUser) {
-        toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to add holidays.' });
+        toast({ variant: 'destructive', title: 'Authentication Error' });
         return;
     }
     if (!newHolidayName) {
-        toast({
-            variant: "destructive",
-            title: "Missing Information",
-            description: "Please provide a name or reason for the holiday.",
-        });
+        toast({ variant: 'destructive', title: 'Missing Information', description: 'Please provide a name or reason.' });
         return;
     }
 
+    setIsSaving(true);
     let holidaysToSubmit: Omit<Holiday, 'date'> & { date: Date }[] = [];
 
     if (leaveType === 'one_day' && oneDayDate) {
-        holidaysToSubmit.push({ 
-            name: newHolidayName, 
-            date: oneDayDate, 
-            type: oneDayType,
-            messId: adminUser.uid,
-        });
+        if (!isActionAllowedForDate(oneDayDate, oneDayType)) {
+            let errorDesc = `You can no longer add a holiday for ${format(oneDayDate, 'PPP')}.`;
+            if (isTodaySelected && isLunchDisabled) {
+                errorDesc = "Lunch deadline has passed. You can only set a 'Dinner Off' holiday for today.";
+            }
+             if (isTodaySelected && isDinnerDisabled) {
+                errorDesc = "All meal deadlines have passed for today.";
+            }
+            toast({ variant: "destructive", title: "Deadline Passed", description: errorDesc });
+            setIsSaving(false);
+            return;
+        }
+        holidaysToSubmit.push({ name: newHolidayName, date: oneDayDate, type: oneDayType, messId: adminUser.uid });
     } else if (leaveType === 'long_leave' && longLeaveFromDate && longLeaveToDate) {
         if (longLeaveToDate < longLeaveFromDate) {
-            toast({
-                variant: "destructive",
-                title: "Invalid Date Range",
-                description: "The 'To Date' cannot be before the 'From Date'.",
-            });
+            toast({ variant: "destructive", title: "Invalid Date Range" });
+            setIsSaving(false);
             return;
+        }
+        if (!isActionAllowedForDate(longLeaveFromDate)) {
+             toast({ variant: "destructive", title: "Deadline Passed", description: `The start date ${format(longLeaveFromDate, 'PPP')} is in the past or its deadline has passed.` });
+             setIsSaving(false);
+             return;
         }
       
         const dates = eachDayOfInterval({ start: longLeaveFromDate, end: longLeaveToDate });
@@ -126,21 +208,14 @@ export default function HolidaysPage() {
         } else {
             holidaysToSubmit = dates.map((date, index) => {
                 let type: HolidayType = 'full_day';
-                if (index === 0) {
-                    type = longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day';
-                }
-                if (index === dates.length - 1) {
-                    type = longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day';
-                }
+                if (index === 0) type = longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day';
+                if (index === dates.length - 1) type = longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day';
                 return { name: newHolidayName, date: date, type, messId: adminUser.uid };
             });
         }
     } else {
-        toast({
-            variant: "destructive",
-            title: "Missing Information",
-            description: "Please select valid dates for the holiday.",
-        });
+        toast({ variant: "destructive", title: "Missing Information" });
+        setIsSaving(false);
         return;
     }
 
@@ -153,33 +228,23 @@ export default function HolidaysPage() {
 
             if (docSnap.exists()) {
                 toast({ variant: 'destructive', title: 'Holiday Exists', description: `A holiday for ${format(holiday.date, 'yyyy-MM-dd')} already exists.`});
-                return; // Stop if any holiday already exists
+                setIsSaving(false);
+                return;
             }
             batch.set(docRef, holiday);
         }
 
         await batch.commit();
-        toast({
-            title: "Success",
-            description: "Holiday(s) have been added successfully.",
-        });
-
-        // Reset form
+        toast({ title: "Success", description: "Holiday(s) added successfully." });
         setNewHolidayName('');
         setOneDayDate(today);
         setOneDayType('full_day');
         setLongLeaveFromDate(undefined);
         setLongLeaveToDate(undefined);
-        setLongLeaveFromType('dinner_only');
-        setLongLeaveToType('lunch_only');
-
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        toast({
-            variant: "destructive",
-            title: "Error adding holiday",
-            description: errorMessage,
-        });
+        toast({ variant: "destructive", title: "Error", description: (error as Error).message });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -189,22 +254,72 @@ export default function HolidaysPage() {
       const dateKey = `${adminUser.uid}_${format(dateToDelete, 'yyyy-MM-dd')}`;
       const docRef = doc(db, HOLIDAYS_COLLECTION, dateKey);
       await deleteDoc(docRef);
-      toast({
-        title: "Success",
-        description: "Holiday has been deleted.",
-      });
+      toast({ title: "Success", description: "Holiday deleted." });
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete holiday. Please try again.",
-      });
+      toast({ variant: "destructive", title: "Error", description: "Failed to delete holiday." });
     }
   };
   
   const getHolidayTypeText = (type: Holiday['type']) => {
     return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
+  
+  const CustomDay: FC<DayProps> = (props) => {
+    const { date, displayMonth } = props;
+    if (!isSameMonth(date, displayMonth)) {
+        return <div />;
+    }
+
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const holiday = dayTypeMap.get(dateKey);
+    const isToday = isSameDay(date, today);
+    const isFutureDate = isAfter(date, today);
+
+    let lunchColor, dinnerColor;
+    let tooltipLunchStatus = 'Open', tooltipDinnerStatus = 'Open';
+    
+    if (isFutureDate) {
+        lunchColor = statusColors.Future;
+        dinnerColor = statusColors.Future;
+        tooltipLunchStatus = 'Future';
+        tooltipDinnerStatus = 'Future';
+    } else {
+        const isLunchHoliday = holiday?.type === 'full_day' || holiday?.type === 'lunch_only';
+        const isDinnerHoliday = holiday?.type === 'full_day' || holiday?.type === 'dinner_only';
+        
+        lunchColor = isLunchHoliday ? statusColors.Holiday : statusColors.Open;
+        dinnerColor = isDinnerHoliday ? statusColors.Holiday : statusColors.Open;
+
+        tooltipLunchStatus = isLunchHoliday ? 'Holiday' : 'Open';
+        tooltipDinnerStatus = isDinnerHoliday ? 'Holiday' : 'Open';
+    }
+    
+    return (
+      <TooltipProvider delayDuration={100}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn("relative w-full h-full flex flex-col items-center justify-center p-0 font-normal", isToday && "rounded-full ring-2 ring-primary ring-offset-1 ring-offset-background")}>
+                <div className="absolute inset-0 flex flex-col overflow-hidden rounded-full">
+                    <div className={cn("flex-1", lunchColor)}></div>
+                    <div className={cn("flex-1", dinnerColor)}></div>
+                </div>
+                <span className={cn("relative z-10 font-semibold text-white", isFutureDate && "text-muted-foreground")}>
+                    {date.getDate()}
+                </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="space-y-1 text-center">
+              <p className="font-bold">{format(date, "PPP")}</p>
+              <p className="text-sm"><span className="font-semibold">Lunch:</span> {tooltipLunchStatus}</p>
+              <p className="text-sm"><span className="font-semibold">Dinner:</span> {tooltipDinnerStatus}</p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -224,12 +339,8 @@ export default function HolidaysPage() {
                 </TabsList>
                 <TabsContent value="add" className="mt-4">
                     <Card>
-                        <CardHeader className="md:hidden">
-                            <CardTitle className="text-xl">Add New Holiday</CardTitle>
-                        </CardHeader>
-                        <CardHeader className="hidden md:flex">
+                        <CardHeader>
                             <CardTitle className="text-xl sm:text-2xl">Add New Holiday</CardTitle>
-                            <CardDescription className="hidden sm:block">Schedule holidays for the mess.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="space-y-2">
@@ -262,24 +373,24 @@ export default function HolidaysPage() {
                                         {oneDayDate ? format(oneDayDate, 'PPP') : <span>Pick a date</span>}
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={oneDayDate} onSelect={setOneDayDate} initialFocus showOutsideDays={false} /></PopoverContent>
+                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={oneDayDate} onSelect={setOneDayDate} initialFocus disabled={(date) => isBefore(date, today)} /></PopoverContent>
                                     </Popover>
                                 </div>
                                 <div className="space-y-3">
                                     <Label>Holiday For</Label>
                                     <RadioGroup value={oneDayType} onValueChange={(value: HolidayType) => setOneDayType(value)} className="grid grid-cols-3 gap-2 md:gap-4">
-                                        <Label htmlFor="full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                            <RadioGroupItem value="full_day" id="full_day" className="sr-only" />
+                                        <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal  transition-all", isLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                            <RadioGroupItem value="full_day" id="full_day" className="sr-only" disabled={isLunchDisabled} />
                                             <Utensils className="mb-2 h-5 w-5 md:mb-3 md:h-6 md:w-6" />
                                             <span className="text-xs md:text-sm">Full Day</span>
                                         </Label>
-                                         <Label htmlFor="lunch_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                            <RadioGroupItem value="lunch_only" id="lunch_only" className="sr-only" />
+                                         <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal  transition-all", isLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                            <RadioGroupItem value="lunch_only" id="lunch_only" className="sr-only" disabled={isLunchDisabled} />
                                             <Sun className="mb-2 h-5 w-5 md:mb-3 md:h-6 md:w-6" />
                                             <span className="text-xs md:text-sm">Lunch Off</span>
                                         </Label>
-                                         <Label htmlFor="dinner_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                            <RadioGroupItem value="dinner_only" id="dinner_only" className="sr-only" />
+                                         <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal transition-all", isDinnerDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                            <RadioGroupItem value="dinner_only" id="dinner_only" className="sr-only" disabled={isDinnerDisabled} />
                                             <Moon className="mb-2 h-5 w-5 md:mb-3 md:h-6 md:w-6" />
                                             <span className="text-xs md:text-sm">Dinner Off</span>
                                         </Label>
@@ -300,7 +411,7 @@ export default function HolidaysPage() {
                                           {longLeaveFromDate ? format(longLeaveFromDate, 'PPP') : <span>Pick a date</span>}
                                         </Button>
                                       </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveFromDate} onSelect={setLongLeaveFromDate} initialFocus showOutsideDays={false} /></PopoverContent>
+                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveFromDate} onSelect={setLongLeaveFromDate} initialFocus disabled={(date) => isBefore(date, today)} /></PopoverContent>
                                     </Popover>
                                   </div>
                                   <div className="space-y-2">
@@ -312,7 +423,7 @@ export default function HolidaysPage() {
                                           {longLeaveToDate ? format(longLeaveToDate, 'PPP') : <span>Pick a date</span>}
                                         </Button>
                                       </PopoverTrigger>
-                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveToDate} onSelect={setLongLeaveToDate} initialFocus showOutsideDays={false} /></PopoverContent>
+                                      <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={longLeaveToDate} onSelect={setLongLeaveToDate} initialFocus disabled={(date) => isBefore(date, today)} /></PopoverContent>
                                     </Popover>
                                   </div>
                                 </div>
@@ -351,8 +462,9 @@ export default function HolidaysPage() {
                               </div>
                             )}
 
-                          <Button onClick={handleAddHoliday} className="w-full !mt-8">
-                            <Plus className="mr-2 h-4 w-4" /> Add Holiday(s)
+                          <Button onClick={handleAddHoliday} className="w-full !mt-8" disabled={isSaving}>
+                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Plus className="mr-2 h-4 w-4" />}
+                             {isSaving ? 'Adding...' : 'Add Holiday(s)'}
                           </Button>
                         </CardContent>
                     </Card>
@@ -361,14 +473,13 @@ export default function HolidaysPage() {
                     <Card className="flex flex-col">
                         <CardHeader>
                             <CardTitle>Upcoming Holidays</CardTitle>
-                            <CardDescription>A list of holidays yet to come.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow p-2 pt-0">
                           <ScrollArea className="h-[550px]">
                             <div className="p-4 pt-0 space-y-2">
                               {isLoading ? (
                                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
-                                  <p>Loading...</p>
+                                  <Loader2 className="h-5 w-5 animate-spin" />
                                 </div>
                               ) : upcomingHolidays.length > 0 ? (
                                 upcomingHolidays.map((holiday) => (
@@ -377,22 +488,23 @@ export default function HolidaysPage() {
                                     className="flex items-center justify-between rounded-lg p-2.5 bg-secondary/50"
                                   >
                                      <div className="flex items-center gap-3">
-                                        {holiday.type === 'full_day' && <Utensils className="h-5 w-5 text-destructive flex-shrink-0" />}
-                                        {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 text-chart-3 flex-shrink-0" />}
-                                        {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 text-chart-3 flex-shrink-0" />}
+                                        {holiday.type === 'full_day' && <Utensils className="h-5 w-5 text-orange-500 flex-shrink-0" />}
+                                        {holiday.type === 'lunch_only' && <Sun className="h-5 w-5 text-orange-500 flex-shrink-0" />}
+                                        {holiday.type === 'dinner_only' && <Moon className="h-5 w-5 text-orange-500 flex-shrink-0" />}
                                         <div>
                                             <p className="font-semibold text-sm">{holiday.name}</p>
                                             <p className="text-xs text-muted-foreground">{format(holiday.date, 'MMMM do, yyyy')}</p>
                                         </div>
                                      </div>
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className={cn("capitalize border-dashed hidden sm:inline-flex", holiday.type === 'full_day' && 'border-destructive text-destructive', holiday.type !== 'full_day' && 'border-chart-3 text-chart-3')}>{getHolidayTypeText(holiday.type)}</Badge>
+                                        <Badge variant="outline" className={cn("capitalize border-dashed border-orange-500 text-orange-500 hidden sm:inline-flex")}>{getHolidayTypeText(holiday.type)}</Badge>
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
                                             <Button
                                               variant="ghost"
                                               size="icon"
                                               className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                              disabled={!isActionAllowedForDate(holiday.date, holiday.type)}
                                             >
                                               <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -401,7 +513,7 @@ export default function HolidaysPage() {
                                             <AlertDialogHeader>
                                               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                               <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently delete the "{holiday.name}" holiday on {format(holiday.date, 'MMMM do, yyyy')}.
+                                                This will permanently delete the "{holiday.name}" holiday on {format(holiday.date, 'MMMM do, yyyy')}.
                                               </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -432,26 +544,17 @@ export default function HolidaysPage() {
           <Card>
             <CardHeader>
               <CardTitle>Holiday Calendar</CardTitle>
-              <CardDescription>An overview of all scheduled holidays.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center">
               {isLoading || !month ? (
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground py-10">
-                  <p>Loading calendar...</p>
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
               ) : (
                 <Calendar
-                  mode="multiple"
                   month={month}
                   onMonthChange={setMonth}
-                  modifiers={{
-                    holiday_full: holidays.filter(h => h.type === 'full_day').map(h => h.date),
-                    holiday_half: holidays.filter(h => h.type === 'lunch_only' || h.type === 'dinner_only').map(h => h.date),
-                  }}
-                  modifiersClassNames={{
-                    holiday_full: 'bg-destructive text-destructive-foreground',
-                    holiday_half: 'bg-chart-3 text-primary-foreground',
-                  }}
+                  components={{ Day: CustomDay }}
                   className="p-0"
                   classNames={{
                       months: 'w-full',
@@ -464,8 +567,9 @@ export default function HolidaysPage() {
              <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">
                 <p className="font-semibold text-foreground text-base mb-1">Legend</p>
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-destructive" /> Full Day Holiday</div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-chart-3" /> Half Day Holiday</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /> Open</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500" /> Holiday</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-muted/50" /> Future</div>
                 </div>
             </CardFooter>
           </Card>
