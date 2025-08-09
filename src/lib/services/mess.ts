@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview This file contains functions for interacting with mess-related
  * data in Firestore, such as fetching mess details. This centralizes data
@@ -19,7 +20,6 @@ export interface MessInfo {
   address?: string;
   perMealCharge?: number;
   joinRequestApproval?: 'manual' | 'auto';
-  leaveDeadlineEnabled?: boolean;
   lunchDeadline?: string;
   dinnerDeadline?: string;
 }

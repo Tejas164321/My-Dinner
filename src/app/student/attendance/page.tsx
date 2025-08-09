@@ -87,7 +87,7 @@ export default function StudentAttendancePage() {
             // Lunch Status
             if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
                  if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
-                     if (!holidayType && !(leaveType === 'full_day' || leaveType === 'lunch_only')) {
+                     if (holidayType !== 'full_day' && holidayType !== 'lunch_only' && leaveType !== 'full_day' && leaveType !== 'lunch_only') {
                         presentMealsCount++;
                         isPresentToday = true;
                      }
@@ -95,7 +95,7 @@ export default function StudentAttendancePage() {
             }
              // Dinner Status
             if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
-                 if (!holidayType && !(leaveType === 'full_day' || leaveType === 'dinner_only')) {
+                 if (holidayType !== 'full_day' && holidayType !== 'dinner_only' && leaveType !== 'full_day' && leaveType !== 'dinner_only') {
                     presentMealsCount++;
                     isPresentToday = true;
                  }

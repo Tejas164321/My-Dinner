@@ -64,7 +64,7 @@ export default function HolidaysPage() {
   const [oneDayType, setOneDayType] = useState<HolidayType>('full_day');
   const [longLeaveFromDate, setLongLeaveFromDate] = useState<Date | undefined>();
   const [longLeaveToDate, setLongLeaveToDate] = useState<Date | undefined>();
-  const [longLeaveFromType, setLongLeaveFromType] = useState<HolidayType>('dinner_only');
+  const [longLeaveFromType, setLongLeaveFromType] = useState<HolidayType>('full_day');
   const [longLeaveToType, setLongLeaveToType] = useState<HolidayType>('lunch_only');
   
   // Calendar View State
@@ -111,12 +111,21 @@ export default function HolidaysPage() {
 
   // Effect to adjust one-day holiday type if deadline passes
     useEffect(() => {
-        if (isLunchDisabled) {
-            setOneDayType('dinner_only');
-        } else if (!isLunchDisabled && oneDayType === 'dinner_only') {
-            setOneDayType('full_day');
+       const isToday = oneDayDate ? isSameDay(oneDayDate, now) : false;
+       const isLunchPast = isToday && getHours(now) >= lunchDeadlineHour;
+       if (isLunchPast && oneDayType !== 'dinner_only') {
+           setOneDayType('dinner_only');
+       }
+    }, [oneDayDate, lunchDeadlineHour, now, oneDayType]);
+    
+    // Effect to adjust long-leave 'From' type if deadline passes
+    useEffect(() => {
+        const isToday = longLeaveFromDate ? isSameDay(longLeaveFromDate, now) : false;
+        const isLunchPast = isToday && getHours(now) >= lunchDeadlineHour;
+        if (isLunchPast && longLeaveFromType !== 'dinner_only') {
+            setLongLeaveFromType('dinner_only');
         }
-    }, [isLunchDisabled, oneDayType]);
+    }, [longLeaveFromDate, lunchDeadlineHour, now, longLeaveFromType]);
 
 
   const upcomingHolidays = useMemo(() => {
@@ -134,24 +143,24 @@ export default function HolidaysPage() {
     return map;
   }, [holidays]);
 
-  const isActionAllowedForDate = (date: Date, mealType: 'lunch' | 'dinner' | 'full_day' = 'full_day'): boolean => {
+  const isActionAllowedForDate = (date: Date, mealType: HolidayType = 'full_day'): boolean => {
     if (isBefore(date, today)) return false; 
 
     if (isSameDay(date, today)) {
-        const now = new Date();
-        const [lunchHours, lunchMinutes] = lunchDeadline.split(':').map(Number);
-        const lunchDeadlineTime = new Date();
-        lunchDeadlineTime.setHours(lunchHours, lunchMinutes, 0, 0);
+        const timeNow = new Date();
+        const [lunchH, lunchM] = lunchDeadline.split(':').map(Number);
+        const lunchCutoff = new Date(date);
+        lunchCutoff.setHours(lunchH, lunchM, 0, 0);
 
-        const [dinnerHours, dinnerMinutes] = dinnerDeadline.split(':').map(Number);
-        const dinnerDeadlineTime = new Date();
-        dinnerDeadlineTime.setHours(dinnerHours, dinnerMinutes, 0, 0);
+        const [dinnerH, dinnerM] = dinnerDeadline.split(':').map(Number);
+        const dinnerCutoff = new Date(date);
+        dinnerCutoff.setHours(dinnerH, dinnerM, 0, 0);
 
-        if (mealType === 'full_day' || mealType === 'lunch_only') {
-            if (now >= lunchDeadlineTime) return false;
+        if (mealType.includes('lunch') || mealType === 'full_day') {
+            if (timeNow >= lunchCutoff) return false;
         }
-        if (mealType === 'full_day' || mealType === 'dinner_only') {
-            if (now >= dinnerDeadlineTime) return false;
+        if (mealType.includes('dinner') || mealType === 'full_day') {
+            if (timeNow >= dinnerCutoff) return false;
         }
     }
     return true; 
@@ -191,7 +200,7 @@ export default function HolidaysPage() {
             setIsSaving(false);
             return;
         }
-        if (!isActionAllowedForDate(longLeaveFromDate)) {
+        if (!isActionAllowedForDate(longLeaveFromDate, longLeaveFromType)) {
              toast({ variant: "destructive", title: "Deadline Passed", description: `The start date ${format(longLeaveFromDate, 'PPP')} is in the past or its deadline has passed.` });
              setIsSaving(false);
              return;
@@ -204,12 +213,13 @@ export default function HolidaysPage() {
             if (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only') type = 'full_day';
             else if (longLeaveFromType === 'dinner_only') type = 'dinner_only';
             else if (longLeaveToType === 'lunch_only') type = 'lunch_only';
+            else if (longLeaveFromType === 'full_day') type = 'full_day';
             holidaysToSubmit.push({ name: newHolidayName, date: dates[0], type, messId: adminUser.uid });
         } else {
             holidaysToSubmit = dates.map((date, index) => {
                 let type: HolidayType = 'full_day';
-                if (index === 0) type = longLeaveFromType === 'dinner_only' ? 'dinner_only' : 'full_day';
-                if (index === dates.length - 1) type = longLeaveToType === 'lunch_only' ? 'lunch_only' : 'full_day';
+                if (index === 0) type = longLeaveFromType;
+                if (index === dates.length - 1) type = longLeaveToType;
                 return { name: newHolidayName, date: date, type, messId: adminUser.uid };
             });
         }
@@ -378,7 +388,11 @@ export default function HolidaysPage() {
                                 </div>
                                 <div className="space-y-3">
                                     <Label>Holiday For</Label>
-                                    <RadioGroup value={oneDayType} onValueChange={(value: HolidayType) => setOneDayType(value)} className="grid grid-cols-3 gap-2 md:gap-4">
+                                    <RadioGroup 
+                                        value={isLunchDisabled ? 'dinner_only' : oneDayType}
+                                        onValueChange={(value: HolidayType) => setOneDayType(value)} 
+                                        className="grid grid-cols-3 gap-2 md:gap-4"
+                                    >
                                         <Label className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-2 md:p-4 font-normal  transition-all", isLunchDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
                                             <RadioGroupItem value="full_day" id="full_day" className="sr-only" disabled={isLunchDisabled} />
                                             <Utensils className="mb-2 h-5 w-5 md:mb-3 md:h-6 md:w-6" />
@@ -430,14 +444,22 @@ export default function HolidaysPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-3">
                                       <Label>From (First Day)</Label>
-                                      <RadioGroup value={longLeaveFromType} onValueChange={(value: HolidayType) => setLongLeaveFromType(value)} className="grid grid-cols-1 gap-4">
-                                           <Label htmlFor="from_full_day" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                                <RadioGroupItem value="full_day" id="from_full_day" className="sr-only" />
+                                      <RadioGroup 
+                                        value={
+                                            longLeaveFromDate && isSameDay(longLeaveFromDate, now) && currentHour >= lunchDeadlineHour 
+                                            ? 'dinner_only' 
+                                            : longLeaveFromType
+                                        } 
+                                        onValueChange={(value: HolidayType) => setLongLeaveFromType(value)} 
+                                        className="grid grid-cols-1 gap-4"
+                                      >
+                                           <Label htmlFor="from_full_day" className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal  transition-all", longLeaveFromDate && isSameDay(longLeaveFromDate, now) && currentHour >= lunchDeadlineHour ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                                <RadioGroupItem value="full_day" id="from_full_day" className="sr-only" disabled={longLeaveFromDate && isSameDay(longLeaveFromDate, now) && currentHour >= lunchDeadlineHour} />
                                                 <Utensils className="mb-3 h-6 w-6" />
                                                 Full Day
                                             </Label>
-                                            <Label htmlFor="from_dinner_only" className="flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all">
-                                                <RadioGroupItem value="dinner_only" id="from_dinner_only" className="sr-only" />
+                                            <Label htmlFor="from_dinner_only" className={cn("flex flex-col items-center justify-center text-center rounded-md border-2 border-muted bg-popover p-4 font-normal transition-all", longLeaveFromDate && isSameDay(longLeaveFromDate, now) && currentHour >= dinnerDeadlineHour ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary')}>
+                                                <RadioGroupItem value="dinner_only" id="from_dinner_only" className="sr-only" disabled={longLeaveFromDate && isSameDay(longLeaveFromDate, now) && currentHour >= dinnerDeadlineHour} />
                                                 <Moon className="mb-3 h-6 w-6" />
                                                 Dinner Off
                                             </Label>
