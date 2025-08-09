@@ -2,19 +2,16 @@
 'use client';
 
 import { useState, useMemo, useEffect } from "react";
-import type { DayContentProps } from "react-day-picker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
 import { Holiday, Leave, AppUser } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from "@/lib/listeners/leaves";
 import { useAuth } from "@/contexts/auth-context";
-import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, subMonths, parseISO, isFuture, isBefore, isAfter } from 'date-fns';
-import { Badge } from "@/components/ui/badge";
-import { CalendarCheck, Utensils, Percent, UserX, Sun, Moon } from "lucide-react";
+import { Percent, UserX, Utensils, CalendarCheck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AttendanceCalendar } from "@/components/shared/attendance-calendar";
 
 export default function StudentAttendancePage() {
     const { user } = useAuth();
@@ -31,12 +28,9 @@ export default function StudentAttendancePage() {
         setIsLoading(true);
         
         const leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
-
         const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
             setHolidays(updatedHolidays);
-            if(user) { // Only finish loading once both listeners are active
-                setIsLoading(false);
-            }
+            if(user) { setIsLoading(false); }
         });
         
         return () => {
@@ -50,10 +44,7 @@ export default function StudentAttendancePage() {
         const today = new Date();
         for (let i = 0; i < 6; i++) {
             const date = subMonths(today, i);
-            options.push({
-                value: format(date, 'yyyy-MM'),
-                label: format(date, 'MMMM yyyy'),
-            });
+            options.push({ value: format(date, 'yyyy-MM'), label: format(date, 'MMMM yyyy') });
         }
         return options;
     }, []);
@@ -61,202 +52,73 @@ export default function StudentAttendancePage() {
     const planStartDate = useMemo(() => {
         if (!user?.planStartDate) return null;
         const dateValue = user.planStartDate;
-        if (typeof dateValue === 'string') {
-            return startOfDay(parseISO(dateValue));
-        }
-        return startOfDay((dateValue as any).toDate());
+        return typeof dateValue === 'string' ? startOfDay(parseISO(dateValue)) : startOfDay((dateValue as any).toDate());
     }, [user]);
 
     const monthlyStats = useMemo(() => {
         if (!user || isLoading || !planStartDate) {
-            return {
-                attendancePercent: '0%',
-                totalMeals: 0,
-                presentDays: 0,
-                absentDays: 0,
-            };
+            return { attendancePercent: '0%', totalMeals: 0, presentDays: 0, absentDays: 0 };
         }
 
-        const year = month.getFullYear();
-        const monthIndex = month.getMonth();
         const today = startOfDay(new Date());
-
-        const studentLeaves = leaves.filter(l => isSameMonth(l.date, month));
-        const monthHolidays = holidays.filter(h => isSameMonth(h.date, month));
-
-        let presentMealsCount = 0;
         let presentDaysCount = 0;
         let absentDaysCount = 0;
         let totalCountedDays = 0;
+        let presentMealsCount = 0;
+
+        const studentLeaves = new Map(leaves.filter(l => isSameMonth(l.date, month)).map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
+        const messHolidays = new Map(holidays.filter(h => isSameMonth(h.date, month)).map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
         
-        const consideredDays = Array.from({ length: getDaysInMonth(month) }, (_, i) => new Date(year, monthIndex, i + 1))
-            .filter(d => d <= today && d >= planStartDate);
+        const allDaysInMonth = Array.from({ length: getDaysInMonth(month) }, (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1));
+        
+        allDaysInMonth.forEach(day => {
+            if (isBefore(day, planStartDate) || isAfter(day, today)) return;
 
-        consideredDays.forEach(day => {
-            const isHoliday = monthHolidays.some(h => isSameDay(h.date, day));
-            if (isHoliday) return;
+            const dateKey = format(day, 'yyyy-MM-dd');
+            const leaveType = studentLeaves.get(dateKey);
+            const holidayType = messHolidays.get(dateKey);
+            let isPresentToday = false;
+            let isDayCounted = false;
 
-            totalCountedDays++;
-            const leave = studentLeaves.find(l => isSameDay(l.date, day));
+            if (!holidayType) {
+                isDayCounted = true;
+            }
 
-            if (leave) {
-                absentDaysCount++;
-                if (user.messPlan === 'full_day' && leave.type === 'lunch_only') presentMealsCount++;
-                if (user.messPlan === 'full_day' && leave.type === 'dinner_only') presentMealsCount++;
-            } else {
-                presentDaysCount++;
-                if (user.messPlan === 'full_day') {
-                    presentMealsCount += 2;
-                } else {
-                    presentMealsCount += 1;
-                }
+            // Lunch Status
+            if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
+                 if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
+                     if (!holidayType && !(leaveType === 'full_day' || leaveType === 'lunch_only')) {
+                        presentMealsCount++;
+                        isPresentToday = true;
+                     }
+                 }
+            }
+             // Dinner Status
+            if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
+                 if (!holidayType && !(leaveType === 'full_day' || leaveType === 'dinner_only')) {
+                    presentMealsCount++;
+                    isPresentToday = true;
+                 }
+            }
+            
+            if (isDayCounted) {
+                totalCountedDays++;
+                if (isPresentToday) presentDaysCount++;
+                else if (leaveType) absentDaysCount++;
             }
         });
         
         const attendance = totalCountedDays > 0 ? ((presentDaysCount / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
         
-        return {
-            attendancePercent: attendance,
-            totalMeals: presentMealsCount,
-            presentDays: presentDaysCount,
-            absentDays: absentDaysCount,
-        };
+        return { attendancePercent: attendance, totalMeals: presentMealsCount, presentDays: presentDaysCount, absentDays: absentDaysCount };
     }, [month, user, holidays, leaves, isLoading, planStartDate]);
 
-    const {
-        holidayDays,
-        fullLeaveDays,
-        halfLeaveDays,
-        fullPresentDays,
-        halfPresentDays,
-        beforePlanDays,
-        futureDays,
-        dayTypeMap,
-    } = useMemo(() => {
-        if (!user || !planStartDate) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], beforePlanDays: [], futureDays: [], dayTypeMap: new Map() };
-        
-        const year = month.getFullYear();
-        const monthIndex = month.getMonth();
-        const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
-        const allDaysInMonth = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
-        const today = startOfDay(new Date());
-
-        const hDays: Date[] = [];
-        const flDays: Date[] = [];
-        const hlDays: Date[] = [];
-        const fpDays: Date[] = [];
-        const hpDays: Date[] = [];
-        const bpDays: Date[] = [];
-        const ftDays: Date[] = [];
-        const dtMap = new Map();
-
-        const studentLeaves = leaves.filter(l => isSameMonth(l.date, month));
-        const monthHolidays = holidays.filter(h => isSameMonth(h.date, month));
-
-        const ltm = new Map(studentLeaves.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
-        const htm = new Map(monthHolidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
-
-        allDaysInMonth.forEach(day => {
-            const dateKey = format(day, 'yyyy-MM-dd');
-            
-            if (isBefore(day, planStartDate)) {
-                bpDays.push(day);
-                dtMap.set(dateKey, { type: 'before_plan' });
-                return;
-            }
-            if (isAfter(day, today)) {
-                ftDays.push(day);
-                dtMap.set(dateKey, { type: 'future' });
-                return;
-            }
-
-            const holidayType = htm.get(dateKey);
-            const leaveType = ltm.get(dateKey);
-
-            if (holidayType) {
-                hDays.push(day);
-                dtMap.set(dateKey, { type: 'holiday', holidayType });
-            } else if (leaveType) {
-                if (leaveType === 'full_day') {
-                    flDays.push(day);
-                } else {
-                    hlDays.push(day);
-                }
-                dtMap.set(dateKey, { type: 'leave', leaveType });
-            } else {
-                 if (user.messPlan === 'full_day') {
-                    fpDays.push(day);
-                } else {
-                    hpDays.push(day);
-                }
-                dtMap.set(dateKey, { type: 'present' });
-            }
-        });
-
-        return { 
-            holidayDays: hDays,
-            fullLeaveDays: flDays,
-            halfLeaveDays: hlDays,
-            fullPresentDays: fpDays,
-            halfPresentDays: hpDays,
-            beforePlanDays: bpDays,
-            futureDays: ftDays,
-            dayTypeMap: dtMap,
-        };
-    }, [month, user, holidays, leaves, planStartDate]);
-
-    const CustomDayContent = ({ date }: DayContentProps) => {
-        if (!user) {
-            return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
-        }
-
-        const dateKey = format(date, 'yyyy-MM-dd');
-        const dayInfo = dayTypeMap.get(dateKey);
-        
-        if (dayInfo?.type === 'before_plan' || dayInfo?.type === 'future') {
-             return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
-        }
-        
-        const holidayType = dayInfo?.type === 'holiday' ? dayInfo.holidayType : null;
-        const leaveType = dayInfo?.type === 'leave' ? dayInfo.leaveType : null;
-        
-        const isLunchAttended = !(
-            (holidayType === 'full_day' || holidayType === 'lunch_only') ||
-            (leaveType === 'full_day' || leaveType === 'lunch_only')
-        ) && (user.messPlan === 'full_day' || user.messPlan === 'lunch_only');
-    
-        const isDinnerAttended = !(
-            (holidayType === 'full_day' || holidayType === 'dinner_only') ||
-            (leaveType === 'full_day' || leaveType === 'dinner_only')
-        ) && (user.messPlan === 'full_day' || user.messPlan === 'dinner_only');
-
-        const lunchDot = <div className={cn("h-1 w-1 rounded-full", isLunchAttended ? 'bg-white' : 'bg-white/30')} />;
-        const dinnerDot = <div className={cn("h-1 w-1 rounded-full", isDinnerAttended ? 'bg-white' : 'bg-white/30')} />;
-
-        return (
-            <div className="relative h-full w-full flex items-center justify-center">
-                <div className="relative z-10">{date.getDate()}</div>
-                <div className="absolute bottom-1 z-10 flex items-center justify-center gap-0.5">
-                    {lunchDot}
-                    {dinnerDot}
-                </div>
-            </div>
-        );
-    };
 
     if (isLoading || !user) {
         return (
             <div className="space-y-8">
-                <div className="flex justify-between items-center">
-                    <Skeleton className="h-8 w-48" />
-                    <Skeleton className="h-10 w-48" />
-                </div>
-                <div className="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                </div>
+                <div className="flex justify-between items-center"><Skeleton className="h-8 w-48" /><Skeleton className="h-10 w-48" /></div>
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-24 w-full" /><Skeleton className="h-24 w-full" /><Skeleton className="h-24 w-full" /></div>
                 <Skeleton className="h-96 w-full" />
             </div>
         )
@@ -266,104 +128,28 @@ export default function StudentAttendancePage() {
         <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold tracking-tight hidden md:block">My Attendance</h1>
-                 <Select
-                    value={format(month, 'yyyy-MM')}
-                    onValueChange={(value) => setMonth(startOfDay(new Date(`${value}-01`)))}
-                >
-                    <SelectTrigger className="w-full md:w-[200px]">
-                        <SelectValue placeholder="Select month" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {monthOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                        ))}
-                    </SelectContent>
+                 <Select value={format(month, 'yyyy-MM')} onValueChange={(value) => setMonth(startOfDay(new Date(`${value}-01`)))}>
+                    <SelectTrigger className="w-full md:w-[200px]"><SelectValue placeholder="Select month" /></SelectTrigger>
+                    <SelectContent>{monthOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent>
                 </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Attendance ({format(month, 'MMMM')})</CardTitle>
-                        <Percent className="h-5 w-5 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{monthlyStats.attendancePercent}</div>
-                        <p className="text-xs text-muted-foreground">This month's attendance</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Meals Taken</CardTitle>
-                        <Utensils className="h-5 w-5 text-primary" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{monthlyStats.totalMeals}</div>
-                        <p className="text-xs text-muted-foreground">Meals this month</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Present</CardTitle>
-                        <CalendarCheck className="h-5 w-5 text-green-400" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{monthlyStats.presentDays} Days</div>
-                        <p className="text-xs text-muted-foreground">Days present this month</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Absent</CardTitle>
-                        <UserX className="h-5 w-5 text-destructive" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{monthlyStats.absentDays}</div>
-                        <p className="text-xs text-muted-foreground">Days absent this month</p>
-                    </CardContent>
-                </Card>
+                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Attendance ({format(month, 'MMMM')})</CardTitle><Percent className="h-5 w-5 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">{monthlyStats.attendancePercent}</div><p className="text-xs text-muted-foreground">This month's attendance</p></CardContent></Card>
+                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Meals Taken</CardTitle><Utensils className="h-5 w-5 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">{monthlyStats.totalMeals}</div><p className="text-xs text-muted-foreground">Meals this month</p></CardContent></Card>
+                 <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Present</CardTitle><CalendarCheck className="h-5 w-5 text-green-400" /></CardHeader><CardContent><div className="text-2xl font-bold">{monthlyStats.presentDays} Days</div><p className="text-xs text-muted-foreground">Days present this month</p></CardContent></Card>
+                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Absent</CardTitle><UserX className="h-5 w-5 text-destructive" /></CardHeader><CardContent><div className="text-2xl font-bold">{monthlyStats.absentDays}</div><p className="text-xs text-muted-foreground">Days absent this month</p></CardContent></Card>
             </div>
             
             <Card>
-                <CardHeader>
-                    <CardTitle>Attendance Calendar for {format(month, 'MMMM yyyy')}</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle>Attendance Calendar for {format(month, 'MMMM yyyy')}</CardTitle></CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-8 lg:flex-row">
-                    <Calendar
-                        month={month}
-                        onMonthChange={setMonth}
-                        modifiers={{
-                            today: new Date(),
-                            holiday: holidayDays,
-                            full_leave: fullLeaveDays,
-                            half_leave: halfLeaveDays,
-                            full_present: fullPresentDays,
-                            half_present: halfPresentDays,
-                            before_plan: beforePlanDays,
-                            future: futureDays,
-                        }}
-                        components={{ DayContent: CustomDayContent }}
-                        modifiersClassNames={{
-                            today: 'bg-accent/30 text-accent-foreground rounded-full',
-                            holiday: 'bg-primary/40 text-primary-foreground',
-                            full_leave: 'bg-destructive text-destructive-foreground',
-                            half_leave: 'bg-chart-3 text-primary-foreground',
-                            full_present: 'bg-chart-2 text-primary-foreground',
-                            half_present: 'bg-chart-3 text-primary-foreground',
-                            before_plan: 'opacity-50 !bg-transparent text-muted-foreground/50 cursor-not-allowed',
-                            future: '!bg-transparent',
-                        }}
-                        className="p-3"
-                        showOutsideDays={false}
-                    />
+                    <AttendanceCalendar user={user} leaves={leaves} holidays={holidays} month={month} onMonthChange={setMonth} />
                     <div className="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground lg:w-auto lg:flex-col lg:items-start lg:justify-start lg:gap-y-4">
-                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-chart-2" />Present</div>
-                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-chart-3" />Half Day</div>
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-green-500" />Present</div>
                         <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-destructive" />Leave</div>
-                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-primary/40" />Holiday</div>
-                        <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full bg-accent/30 border border-accent"></div>Today</div>
+                        <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-orange-500" />Holiday</div>
+                        <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-md ring-2 ring-primary ring-offset-2 ring-offset-background"></div>Today</div>
                     </div>
                 </CardContent>
             </Card>

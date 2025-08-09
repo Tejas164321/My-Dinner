@@ -2,19 +2,18 @@
 
 'use client';
 
-import { useMemo, useState, useEffect, type ComponentProps } from "react";
-import type { DayContentProps } from "react-day-picker";
+import { useMemo, useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import type { Student, Holiday, Leave } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
-import { User, Phone, Home, Calendar as CalendarIcon, X, Utensils, Sun, Moon, Check, UserCheck, UserX, CalendarDays, Wallet, FileDown, Mail } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon, Utensils, Sun, Moon, UserCheck, UserX, CalendarDays, Wallet, FileDown, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, parseISO, isFuture, isBefore, isAfter } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, parseISO, isFuture, isBefore } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { AttendanceCalendar } from "@/components/shared/attendance-calendar";
 
 const planInfo = {
     full_day: { icon: Utensils, text: 'Full Day', color: 'text-primary' },
@@ -31,17 +30,12 @@ interface StudentDetailCardProps {
 
 export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge }: StudentDetailCardProps) {
     const [month, setMonth] = useState<Date>(initialMonth);
-    const [today, setToday] = useState<Date | undefined>();
     const [holidays, setHolidays] = useState<Holiday[]>([]);
 
     useEffect(() => {
-        const now = startOfDay(new Date());
-        setToday(now);
-
         const unsubscribe = onHolidaysUpdate(student.messId, (data) => {
             setHolidays(data);
         });
-
         return () => unsubscribe();
     }, [student.messId]);
 
@@ -102,8 +96,8 @@ export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge
                 }
             }
 
-            if(lunchTaken) presentMeals++; else absentMeals++;
-            if(dinnerTaken) presentMeals++; else absentMeals++;
+            if(lunchTaken) presentMeals++; else if (!holiday) absentMeals++;
+            if(dinnerTaken) presentMeals++; else if (!holiday) absentMeals++;
             
             if (holiday) {
                 holidayMeals += student.messPlan === 'full_day' ? 2 : 1;
@@ -125,133 +119,11 @@ export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge
                 payments,
                 paidAmount,
                 remaining: remainingBill,
-                details: { totalMeals: presentMeals, chargePerMeal: perMealCharge, totalDaysInMonth: 0, holidays: 0, billableDays: 0, fullDays: 0, halfDays: 0, absentDays: 0 }
+                details: { totalMeals: presentMeals, chargePerMeal, totalDaysInMonth: 0, holidays: 0, billableDays: 0, fullDays: 0, halfDays: 0, absentDays: 0 }
             },
             status
         };
     }, [month, student, holidays, leaves, planStartDate, perMealCharge]);
-    
-    const {
-        holidayDays,
-        fullLeaveDays,
-        halfLeaveDays,
-        fullPresentDays,
-        halfPresentDays,
-        beforePlanDays,
-        futureDays,
-        dayTypeMap
-    } = useMemo(() => {
-        if (!planStartDate) return { holidayDays: [], fullLeaveDays: [], halfLeaveDays: [], fullPresentDays: [], halfPresentDays: [], beforePlanDays: [], futureDays: [], dayTypeMap: new Map() };
-
-        const year = month.getFullYear();
-        const monthIndex = month.getMonth();
-        const daysInMonth = getDaysInMonth(new Date(year, monthIndex, 1));
-        const allDaysInMonth = Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
-        const today = startOfDay(new Date());
-        
-        const hDays: Date[] = [];
-        const flDays: Date[] = [];
-        const hlDays: Date[] = [];
-        const fpDays: Date[] = [];
-        const hpDays: Date[] = [];
-        const bpDays: Date[] = [];
-        const ftDays: Date[] = [];
-        const dtMap = new Map();
-
-        const studentLeavesForMonth = leaves.filter(l => isSameMonth(l.date, month));
-        const monthHolidays = holidays.filter(h => isSameMonth(h.date, month));
-
-        const ltm = new Map(studentLeavesForMonth.map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
-        const htm = new Map(monthHolidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
-
-        allDaysInMonth.forEach(day => {
-            const dateKey = format(day, 'yyyy-MM-dd');
-            if (day < planStartDate) {
-                bpDays.push(day);
-                dtMap.set(dateKey, { type: 'before_plan' });
-                return;
-            }
-             if (isAfter(day, today)) {
-                ftDays.push(day);
-                dtMap.set(dateKey, { type: 'future' });
-                return;
-            }
-
-            const holidayType = htm.get(dateKey);
-            const leaveType = ltm.get(dateKey);
-
-            dtMap.set(dateKey, { type: 'day', holidayType, leaveType });
-
-            if (holidayType) {
-                hDays.push(day);
-            } else if (leaveType) {
-                if (leaveType === 'full_day') flDays.push(day);
-                else hlDays.push(day);
-            } else {
-                 if (student.messPlan === 'full_day') fpDays.push(day);
-                 else hpDays.push(day);
-            }
-        });
-
-        return { 
-            holidayDays: hDays,
-            fullLeaveDays: flDays,
-            halfLeaveDays: hlDays,
-            fullPresentDays: fpDays,
-            halfPresentDays: hpDays,
-            beforePlanDays: bpDays,
-            futureDays: ftDays,
-            dayTypeMap: dtMap
-        };
-    }, [month, student, holidays, leaves, planStartDate]);
-
-    const CustomDayContent = ({ date }: DayContentProps) => {
-        if (!today || !planStartDate) {
-            return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
-        }
-
-        const dateKey = format(date, 'yyyy-MM-dd');
-        const dayInfo = dayTypeMap.get(dateKey);
-
-        if (dayInfo?.type === 'before_plan' || dayInfo?.type === 'future') {
-            return <div className="relative h-full w-full flex items-center justify-center">{date.getDate()}</div>;
-        }
-
-        const holidayType = dayInfo?.holidayType;
-        const leaveType = dayInfo?.leaveType;
-        
-        let isLunchAttended = false;
-        let isDinnerAttended = false;
-
-        // Check for Lunch
-        if (student.messPlan === 'full_day' || student.messPlan === 'lunch_only') {
-            if (!(isSameDay(date, planStartDate) && student.planStartMeal === 'dinner')) {
-                 if (!holidayType && (!leaveType || (leaveType !== 'full_day' && leaveType !== 'lunch_only'))) {
-                    isLunchAttended = true;
-                }
-            }
-        }
-        
-        // Check for Dinner
-        if (student.messPlan === 'full_day' || student.messPlan === 'dinner_only') {
-            if (!holidayType && (!leaveType || (leaveType !== 'full_day' && leaveType !== 'dinner_only'))) {
-                isDinnerAttended = true;
-            }
-        }
-
-        const lunchDot = <div className={cn("h-1 w-1 rounded-full", isLunchAttended ? 'bg-white' : 'bg-white/30')} />;
-        const dinnerDot = <div className={cn("h-1 w-1 rounded-full", isDinnerAttended ? 'bg-white' : 'bg-white/30')} />;
-
-        return (
-            <div className="relative h-full w-full flex items-center justify-center">
-                <div className="relative z-10">{date.getDate()}</div>
-                 <div className="absolute bottom-1 z-10 flex items-center justify-center gap-0.5">
-                    {lunchDot}
-                    {dinnerDot}
-                </div>
-            </div>
-        );
-    };
 
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
@@ -359,49 +231,14 @@ export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge
                     <h3 className="font-semibold text-base">Attendance for {format(month, 'MMMM yyyy')}</h3>
                      <div className="p-2 border rounded-lg bg-secondary/30 flex flex-col flex-1">
                         <div className="flex flex-grow justify-center items-center">
-                            <Calendar
-                                month={month}
-                                onMonthChange={setMonth}
-                                modifiers={{
-                                    today: new Date(),
-                                    holiday: holidayDays,
-                                    full_leave: fullLeaveDays,
-                                    half_leave: halfLeaveDays,
-                                    full_present: fullPresentDays,
-                                    half_present: halfPresentDays,
-                                    before_plan: beforePlanDays,
-                                    future: futureDays,
-                                }}
-                                components={{ DayContent: CustomDayContent }}
-                                modifiersClassNames={{
-                                    today: 'bg-accent/30 text-accent-foreground',
-                                    holiday: 'bg-primary/40 text-primary-foreground',
-                                    full_leave: 'bg-destructive text-destructive-foreground',
-                                    half_leave: 'bg-chart-3 text-primary-foreground',
-                                    full_present: 'bg-chart-2 text-primary-foreground',
-                                    half_present: 'bg-chart-3 text-primary-foreground',
-                                    before_plan: 'opacity-50 !bg-transparent text-muted-foreground/50 cursor-not-allowed',
-                                    future: '!bg-transparent',
-                                }}
-                                classNames={{
-                                    months: "w-full",
-                                    month: "w-full space-y-2 md:space-y-4",
-                                    head_cell: "text-muted-foreground rounded-md w-8 md:w-9 font-normal text-[0.7rem] md:text-[0.8rem]",
-                                    cell: "h-8 w-8 md:h-9 md:w-9 text-center text-sm p-0 relative rounded-full flex items-center justify-center",
-                                    day: "h-8 w-8 md:h-9 md:w-9 p-0 font-normal aria-selected:opacity-100 rounded-full flex items-center justify-center",
-                                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                                }}
-                                className="p-1 md:p-2"
-                                showOutsideDays={false}
-                            />
+                            <AttendanceCalendar user={student} leaves={leaves} holidays={holidays} month={month} onMonthChange={setMonth} />
                         </div>
                         <div className="p-2 pt-2 mt-2 border-t">
                             <div className="flex w-full items-center justify-center gap-x-2 md:gap-x-3 gap-y-2 text-xs text-muted-foreground flex-wrap">
-                                <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-2" />Present</div>
-                                <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-chart-3" />Half Day</div>
+                                <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-500" />Present</div>
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
-                                <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/40" />Holiday</div>
-                                <div className="flex items-center gap-1.5"><div className="w-5 h-5 rounded-full bg-accent/30 border border-accent"></div>Today</div>
+                                <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500" />Holiday</div>
+                                <div className="flex items-center gap-1.5"><div className="w-5 h-5 rounded-md ring-2 ring-primary ring-offset-2 ring-offset-background"></div>Today</div>
                             </div>
                         </div>
                     </div>
