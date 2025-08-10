@@ -8,12 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { Student, Holiday, Leave } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
-import { User, Phone, Home, Calendar as CalendarIcon, Utensils, Sun, Moon, UserCheck, UserX, CalendarDays, Wallet, FileDown, Mail } from "lucide-react";
+import { User, Phone, Home, Calendar as CalendarIcon, Utensils, Sun, Moon, UserCheck, UserX, CalendarDays, Wallet, FileDown, Mail, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, parseISO, isFuture, isBefore } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { AttendanceCalendar } from "@/components/shared/attendance-calendar";
+import jspdf from 'jspdf';
+import html2canvas from 'html2canvas';
+import { BillInvoice } from "../student/bill-invoice";
+import { onLeavesUpdate } from "@/lib/listeners/leaves";
+import { getMessInfo, type MessInfo } from '@/lib/services/mess';
+
 
 const planInfo = {
     full_day: { icon: Utensils, text: 'Full Day', color: 'text-primary' },
@@ -28,16 +34,23 @@ interface StudentDetailCardProps {
     perMealCharge: number;
 }
 
-export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge }: StudentDetailCardProps) {
+export function StudentDetailCard({ student, leaves: initialLeaves, initialMonth, perMealCharge }: StudentDetailCardProps) {
     const [month, setMonth] = useState<Date>(initialMonth);
     const [holidays, setHolidays] = useState<Holiday[]>([]);
+    const [leaves, setLeaves] = useState<Leave[]>(initialLeaves);
+    const [messInfo, setMessInfo] = useState<MessInfo | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     useEffect(() => {
-        const unsubscribe = onHolidaysUpdate(student.messId, (data) => {
-            setHolidays(data);
-        });
-        return () => unsubscribe();
-    }, [student.messId]);
+        const unsubHolidays = onHolidaysUpdate(student.messId, setHolidays);
+        const unsubLeaves = onLeavesUpdate(student.uid, setLeaves);
+        getMessInfo(student.messId).then(setMessInfo);
+        
+        return () => {
+            unsubHolidays();
+            unsubLeaves();
+        };
+    }, [student.messId, student.uid]);
 
     useEffect(() => {
         setMonth(initialMonth);
@@ -119,11 +132,30 @@ export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge
                 payments,
                 paidAmount,
                 remaining: remainingBill,
-                details: { totalMeals: presentMeals, chargePerMeal, totalDaysInMonth: 0, holidays: 0, billableDays: 0, fullDays: 0, halfDays: 0, absentDays: 0 }
+                details: { totalMeals: presentMeals, chargePerMeal: perMealCharge, totalDaysInMonth: 0, holidays: 0, billableDays: 0, fullDays: 0, halfDays: 0, absentDays: 0 }
             },
             status
         };
     }, [month, student, holidays, leaves, planStartDate, perMealCharge]);
+
+    const handleDownload = async () => {
+        setIsDownloading(true);
+        const invoiceElement = document.getElementById(`invoice-${student.uid}`);
+        if (invoiceElement) {
+            try {
+                const canvas = await html2canvas(invoiceElement, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf('p', 'px', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`MessoMate-Bill-${student.name}-${format(month, 'MMM-yyyy')}.pdf`);
+            } catch (error) {
+                console.error("Error generating PDF:", error);
+            }
+        }
+        setIsDownloading(false);
+    };
 
     const currentPlan = planInfo[student.messPlan];
     const PlanIcon = currentPlan.icon;
@@ -218,8 +250,9 @@ export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge
                             <span>Remaining Due:</span>
                             <span className={cn(monthData.bill.remaining > 0 ? 'text-destructive' : 'text-foreground')}>₹{monthData.bill.remaining.toLocaleString()}</span>
                         </div>
-                         <Button variant="outline" className="w-full !mt-4 h-9">
-                            <FileDown className="h-4 w-4 mr-2" /> Download Bill
+                         <Button variant="outline" className="w-full !mt-4 h-9" onClick={handleDownload} disabled={isDownloading}>
+                            {isDownloading ? <Loader2 className="animate-spin" /> : <FileDown />}
+                            {isDownloading ? 'Downloading...' : 'Download Bill'}
                         </Button>
                     </div>
                  </div>
@@ -238,12 +271,16 @@ export function StudentDetailCard({ student, leaves, initialMonth, perMealCharge
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-500" />Present</div>
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
                                 <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500" />Holiday</div>
-                                <div className="flex items-center gap-1.5"><div className="w-5 h-5 rounded-md ring-2 ring-primary ring-offset-2 ring-offset-background"></div>Today</div>
+                                <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-md ring-2 ring-primary ring-offset-2 ring-offset-background"></div>Today</div>
                             </div>
                         </div>
                     </div>
                  </div>
 
+            </div>
+            {/* Hidden component for PDF generation */}
+            <div className="absolute -left-[9999px] -top-[9999px]">
+                {messInfo && <BillInvoice bill={monthData.bill as any} student={student} holidays={holidays} leaves={leaves} messInfo={messInfo} />}
             </div>
         </Card>
     );

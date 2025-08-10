@@ -1,18 +1,21 @@
 
-
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { Bill, Holiday, Leave } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
-import { FileDown, Wallet } from 'lucide-react';
+import { FileDown, Wallet, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, parseISO, startOfDay, getMonth, getYear, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AttendanceCalendar } from '@/components/shared/attendance-calendar';
+import { BillInvoice } from './bill-invoice';
+import jspdf from 'jspdf';
+import html2canvas from 'html2canvas';
+import { getMessInfo, type MessInfo } from '@/lib/services/mess';
 
 const monthMap: { [key: string]: number } = {
   January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
@@ -30,11 +33,19 @@ interface BillDetailDialogProps {
 
 export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetailDialogProps) {
   const { user: student } = useAuth();
+  const [messInfo, setMessInfo] = useState<MessInfo | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const monthIndex = monthMap[bill.month];
   const monthDate = new Date(bill.year, monthIndex, 1);
   const paidAmount = getPaidAmount(bill);
   const dueAmount = bill.totalAmount - paidAmount;
     
+  useEffect(() => {
+    if (student?.messId) {
+        getMessInfo(student.messId).then(setMessInfo);
+    }
+  }, [student?.messId]);
+
   const getStatusInfo = (status: 'Paid' | 'Due') => {
     switch (status) {
       case 'Paid':
@@ -50,6 +61,26 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
   };
 
   const statusInfo = getStatusInfo(dueAmount > 0 ? 'Due' : 'Paid');
+  
+  const handleDownload = async () => {
+        if (!student) return;
+        setIsDownloading(true);
+        const invoiceElement = document.getElementById(`invoice-${bill.id}`);
+        if (invoiceElement) {
+            try {
+                const canvas = await html2canvas(invoiceElement, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf('p', 'px', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`MessoMate-Bill-${bill.month}-${bill.year}.pdf`);
+            } catch (error) {
+                console.error("Error generating PDF:", error);
+            }
+        }
+        setIsDownloading(false);
+    };
 
   if (!student) return null;
 
@@ -110,8 +141,9 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
 
                {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-4 mt-auto">
-                  <Button variant="outline" className="w-full">
-                      <FileDown /> Download Bill
+                  <Button variant="outline" className="w-full" onClick={handleDownload} disabled={isDownloading}>
+                      {isDownloading ? <Loader2 className="animate-spin" /> : <FileDown />}
+                      {isDownloading ? 'Downloading...' : 'Download Bill'}
                   </Button>
                   {dueAmount > 0 && (
                       <Button className="w-full" onClick={() => onPayNow(bill)}>
@@ -163,6 +195,10 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                </div>
           </div>
       </div>
+       {/* Hidden component for PDF generation */}
+        <div className="absolute -left-[9999px] -top-[9999px]">
+            {messInfo && <BillInvoice bill={bill} student={student} holidays={holidays} leaves={leaves} messInfo={messInfo} />}
+        </div>
     </>
   );
 }

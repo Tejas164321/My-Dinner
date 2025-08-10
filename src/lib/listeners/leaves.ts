@@ -1,3 +1,4 @@
+
 'use client';
 
 import { collection, onSnapshot, query, Timestamp, where, orderBy } from 'firebase/firestore';
@@ -13,6 +14,11 @@ const LEAVES_COLLECTION = 'leaves';
  * @returns An unsubscribe function to clean up the listener.
  */
 export function onLeavesUpdate(studentId: string, callback: (leaves: Leave[]) => void) {
+  if (!studentId) {
+      console.warn("onLeavesUpdate called without a studentId.");
+      callback([]);
+      return () => {};
+  }
   const q = query(
     collection(db, LEAVES_COLLECTION), 
     where("studentId", "==", studentId)
