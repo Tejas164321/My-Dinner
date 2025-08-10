@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from "react";
@@ -8,7 +9,7 @@ import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from "@/lib/listeners/leaves";
 import { useAuth } from "@/contexts/auth-context";
 import { format, isSameMonth, isSameDay, getDaysInMonth, startOfDay, subMonths, parseISO, isFuture, isBefore, isAfter } from 'date-fns';
-import { Percent, UserX, Utensils, CalendarCheck } from "lucide-react";
+import { Percent, UserX, Utensils, CalendarCheck, CalendarOff } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AttendanceCalendar } from "@/components/shared/attendance-calendar";
@@ -57,60 +58,60 @@ export default function StudentAttendancePage() {
 
     const monthlyStats = useMemo(() => {
         if (!user || isLoading || !planStartDate) {
-            return { attendancePercent: '0%', totalMeals: 0, presentDays: 0, absentDays: 0 };
+            return { attendancePercent: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, totalHolidays: 0 };
         }
 
         const today = startOfDay(new Date());
-        let presentDaysCount = 0;
-        let absentDaysCount = 0;
-        let totalCountedDays = 0;
-        let presentMealsCount = 0;
-
-        const studentLeaves = new Map(leaves.filter(l => isSameMonth(l.date, month)).map(l => [format(l.date, 'yyyy-MM-dd'), l.type]));
-        const messHolidays = new Map(holidays.filter(h => isSameMonth(h.date, month)).map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
+        let presentDays = 0;
+        let absentDays = 0;
+        let totalMeals = 0;
+        let totalHolidays = 0;
+        
+        const studentLeaves = leaves.filter(l => isSameMonth(l.date, month));
+        const monthHolidays = holidays.filter(h => isSameMonth(h.date, month));
         
         const allDaysInMonth = Array.from({ length: getDaysInMonth(month) }, (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1));
         
         allDaysInMonth.forEach(day => {
             if (isBefore(day, planStartDate) || isAfter(day, today)) return;
 
-            const dateKey = format(day, 'yyyy-MM-dd');
-            const leaveType = studentLeaves.get(dateKey);
-            const holidayType = messHolidays.get(dateKey);
-            let isPresentToday = false;
-            let isDayCounted = false;
-
-            if (!holidayType) {
-                isDayCounted = true;
+            const holiday = monthHolidays.find(h => isSameDay(h.date, day));
+            if (holiday) {
+                totalHolidays++;
+                return;
             }
+
+            const leave = studentLeaves.find(l => isSameDay(l.date, day));
+            let isPresentToday = false;
 
             // Lunch Status
             if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
                  if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
-                     if (holidayType !== 'full_day' && holidayType !== 'lunch_only' && leaveType !== 'full_day' && leaveType !== 'lunch_only') {
-                        presentMealsCount++;
+                     if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
+                        totalMeals++;
                         isPresentToday = true;
                      }
                  }
             }
              // Dinner Status
             if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
-                 if (holidayType !== 'full_day' && holidayType !== 'dinner_only' && leaveType !== 'full_day' && leaveType !== 'dinner_only') {
-                    presentMealsCount++;
+                 if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
+                    totalMeals++;
                     isPresentToday = true;
                  }
             }
             
-            if (isDayCounted) {
-                totalCountedDays++;
-                if (isPresentToday) presentDaysCount++;
-                else if (leaveType) absentDaysCount++;
+            if (isPresentToday) {
+                presentDays++;
+            } else if (leave) {
+                absentDays++;
             }
         });
         
-        const attendance = totalCountedDays > 0 ? ((presentDaysCount / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
+        const totalWorkableDays = presentDays + absentDays;
+        const attendance = totalWorkableDays > 0 ? ((presentDays / totalWorkableDays) * 100).toFixed(0) + '%' : 'N/A';
         
-        return { attendancePercent: attendance, totalMeals: presentMealsCount, presentDays: presentDaysCount, absentDays: absentDaysCount };
+        return { attendancePercent: attendance, totalMeals: totalMeals, presentDays: presentDays, absentDays: absentDays, totalHolidays };
     }, [month, user, holidays, leaves, isLoading, planStartDate]);
 
 
@@ -138,7 +139,7 @@ export default function StudentAttendancePage() {
                 <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Attendance ({format(month, 'MMMM')})</CardTitle><Percent className="h-5 w-5 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">{monthlyStats.attendancePercent}</div><p className="text-xs text-muted-foreground">This month's attendance</p></CardContent></Card>
                 <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Meals Taken</CardTitle><Utensils className="h-5 w-5 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">{monthlyStats.totalMeals}</div><p className="text-xs text-muted-foreground">Meals this month</p></CardContent></Card>
                  <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Present</CardTitle><CalendarCheck className="h-5 w-5 text-green-400" /></CardHeader><CardContent><div className="text-2xl font-bold">{monthlyStats.presentDays} Days</div><p className="text-xs text-muted-foreground">Days present this month</p></CardContent></Card>
-                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Absent</CardTitle><UserX className="h-5 w-5 text-destructive" /></CardHeader><CardContent><div className="text-2xl font-bold">{monthlyStats.absentDays}</div><p className="text-xs text-muted-foreground">Days absent this month</p></CardContent></Card>
+                <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Days Off</CardTitle><CalendarOff className="h-5 w-5 text-orange-400" /></CardHeader><CardContent><div className="flex items-baseline justify-center gap-4"><div className="text-center"><p className="text-2xl font-bold">{monthlyStats.absentDays}</p><p className="text-xs text-muted-foreground">Absent</p></div><div className="text-center"><p className="text-2xl font-bold">{monthlyStats.totalHolidays}</p><p className="text-xs text-muted-foreground">Holidays</p></div></div></CardContent></Card>
             </div>
             
             <Card>

@@ -2,17 +2,16 @@
 'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Announcement, type PersonalNotification } from '@/lib/data';
 import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
 import { onNotificationsUpdate } from '@/lib/listeners/notifications';
-import { Bell, Rss, ShieldAlert, Loader2, BellOff } from 'lucide-react';
+import { Bell, Rss, ShieldAlert, Loader2, BellOff, UserPlus, GitCompareArrows } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { NotificationCard, type NotificationItem } from '@/components/shared/notification-card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
-
-type CombinedNotification = (Announcement & { docType: 'announcement' }) | (PersonalNotification & { docType: 'notification' });
 
 export default function StudentNotificationsPage() {
     const { user } = useAuth();
@@ -100,27 +99,25 @@ export default function StudentNotificationsPage() {
                 </AlertDescription>
             </Alert>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {isLoading ? (
                     <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
                         <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
                 ) : combinedNotifications.length > 0 ? (
-                    combinedNotifications.map((item) => {
-                       const isAnnouncement = item.type === 'announcement';
-                       const isBilling = item.type === 'billing';
-                       
-                       const Icon = isAnnouncement ? Bell : (isBilling ? ShieldAlert : Bell);
-                       const iconColor = isAnnouncement ? 'text-primary' : (isBilling ? 'text-destructive' : 'text-primary');
-
-                       return (
-                         <NotificationCard
+                    combinedNotifications.map((item) => (
+                       <NotificationCard 
                             key={item.id}
                             {...item}
-                            icon={<Icon className={iconColor} />}
-                         />
-                       )
-                    })
+                            actionButton={
+                                item.href ? (
+                                    <Button asChild size="sm">
+                                        <Link href={item.href}>View</Link>
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
+                    ))
                 ) : (
                     <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40 border-2 border-dashed rounded-lg">
                         <BellOff className="h-10 w-10 mb-4" />

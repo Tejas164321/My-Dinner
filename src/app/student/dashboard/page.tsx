@@ -9,16 +9,17 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, CalendarDays, Hourglass } from 'lucide-react';
-import { Leave, Holiday, AppUser } from "@/lib/data";
+import { Utensils, Calendar, Sun, Moon, Wallet, Percent, CalendarCheck, UserX, Hourglass, CalendarOff } from 'lucide-react';
+import { Leave, Holiday, AppUser, Announcement, PersonalNotification } from "@/lib/data";
 import { onHolidaysUpdate } from "@/lib/listeners/holidays";
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
+import { onAnnouncementsUpdate } from '@/lib/listeners/announcements';
+import { onNotificationsUpdate } from '@/lib/listeners/notifications';
 import { useAuth } from '@/contexts/auth-context';
-import { format, startOfDay, isSameDay, getYear, getMonth, formatDistanceToNowStrict, parseISO, isSameMonth } from 'date-fns';
+import { format, startOfDay, isSameDay, getYear, getMonth, formatDistanceToNowStrict, parseISO, isSameMonth, getDaysInMonth, isBefore, isAfter } from 'date-fns';
 import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
@@ -28,6 +29,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getMessInfo } from '@/lib/services/mess';
 import { UpcomingEventsCard } from '@/components/student/upcoming-events-card';
+import { RecentNotificationsCard } from '@/components/student/recent-notifications-card';
+import type { NotificationItem } from '@/components/shared/notification-card';
+
 
 const formatDateKey = (date: Date): string => format(date, 'yyyy-MM-dd');
 
@@ -66,6 +70,8 @@ export default function StudentDashboardPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [personalNotifications, setPersonalNotifications] = useState<PersonalNotification[]>([]);
   const [today, setToday] = useState<Date>(startOfDay(new Date()));
   
   const [displayedMenu, setDisplayedMenu] = useState<Omit<DailyMenu, 'messId'>>({ lunch: [], dinner: [] });
@@ -73,10 +79,11 @@ export default function StudentDashboardPage() {
   
   const [leavesLoading, setLeavesLoading] = useState(true);
   const [holidaysLoading, setHolidaysLoading] = useState(true);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
   const [perMealCharge, setPerMealCharge] = useState(65);
   const [messInfoLoading, setMessInfoLoading] = useState(true);
   
-  const isDataLoading = leavesLoading || holidaysLoading || messInfoLoading;
+  const isDataLoading = leavesLoading || holidaysLoading || messInfoLoading || notificationsLoading;
   
   const planActivationInfo = useMemo(() => {
     if (!user?.planStartDate || !user?.planStartMeal) return null;
@@ -114,12 +121,14 @@ export default function StudentDashboardPage() {
         setLeavesLoading(false);
         setHolidaysLoading(false);
         setMessInfoLoading(false);
+        setNotificationsLoading(false);
         return;
     };
     
     setLeavesLoading(true);
     setHolidaysLoading(true);
     setMessInfoLoading(true);
+    setNotificationsLoading(true);
 
     if (user.messId) {
         getMessInfo(user.messId).then(info => {
@@ -132,19 +141,21 @@ export default function StudentDashboardPage() {
         setMessInfoLoading(false);
     }
     
-    const leavesUnsubscribe = onLeavesUpdate(user.uid, (updatedLeaves) => {
-      setLeaves(updatedLeaves);
-      setLeavesLoading(false);
-    });
+    const leavesUnsubscribe = onLeavesUpdate(user.uid, (data) => { setLeaves(data); setLeavesLoading(false); });
+    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (data) => { setHolidays(data); setHolidaysLoading(false); });
+    const announcementsUnsubscribe = onAnnouncementsUpdate(user.messId, (data) => setAnnouncements(data));
+    const personalNotificationsUnsubscribe = onNotificationsUpdate(user.uid, (data) => setPersonalNotifications(data));
     
-    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
-        setHolidays(updatedHolidays);
-        setHolidaysLoading(false);
-    });
-    
+    Promise.all([
+        new Promise(res => onAnnouncementsUpdate(user.messId!, d => res(d))),
+        new Promise(res => onNotificationsUpdate(user.uid, d => res(d)))
+    ]).then(() => setNotificationsLoading(false));
+
     return () => {
         leavesUnsubscribe();
         holidaysUnsubscribe();
+        announcementsUnsubscribe();
+        personalNotificationsUnsubscribe();
     };
   }, [user, today]);
 
@@ -167,12 +178,12 @@ export default function StudentDashboardPage() {
 
 
   const currentMonthStats = useMemo(() => {
-    if (isDataLoading || !planStartDate) {
-      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, dueAmount: 0 };
+    if (isDataLoading || !planStartDate || !user) {
+      return { attendance: '0%', totalMeals: 0, presentDays: 0, absentDays: 0, dueAmount: 0, totalHolidays: 0 };
     }
     
+    const month = getMonth(today);
     const year = getYear(today);
-    const monthIndex = getMonth(today);
     
     const studentLeaves = leaves.filter(l => isSameMonth(l.date, today));
     const monthHolidays = holidays.filter(h => isSameMonth(h.date, today));
@@ -180,46 +191,77 @@ export default function StudentDashboardPage() {
     let presentDays = 0;
     let absentDays = 0;
     let totalMeals = 0;
-    let totalCountedDays = 0;
+    let totalHolidays = 0;
 
-    const daysSoFar = Array.from({ length: today.getDate() }, (_, i) => new Date(year, monthIndex, i + 1))
-      .filter(d => d >= planStartDate);
+    const daysInMonth = getDaysInMonth(today);
     
-    daysSoFar.forEach(day => {
-        const isHoliday = monthHolidays.some(h => isSameDay(h.date, day));
-        if (isHoliday) return;
-
-        totalCountedDays++;
-        const leave = studentLeaves.find(l => isSameDay(l.date, day));
+    for (let i = 1; i <= daysInMonth; i++) {
+        const day = new Date(year, month, i);
         
-        let lunchTaken = false;
-        let dinnerTaken = false;
+        if (isBefore(day, planStartDate) || isAfter(day, today)) continue;
 
+        const holiday = monthHolidays.find(h => isSameDay(h.date, day));
+        if (holiday) {
+            totalHolidays++;
+            continue;
+        }
+
+        const leave = studentLeaves.find(l => isSameDay(l.date, day));
+        let isPresentToday = false;
+        let mealsAvailableToday = 0;
+
+        // Determine total meals available in plan for the day
+        if (user.messPlan === 'full_day') mealsAvailableToday = 2;
+        else if (user.messPlan === 'lunch_only' || user.messPlan === 'dinner_only') mealsAvailableToday = 1;
+
+        if (isSameDay(day, planStartDate) && user.planStartMeal === 'dinner' && user.messPlan === 'full_day') {
+            mealsAvailableToday = 1; // Only dinner available on start day
+        }
+
+        if (mealsAvailableToday === 0) continue;
+
+        let mealsOnLeave = 0;
+        if (leave) {
+            if (leave.type === 'full_day') mealsOnLeave = 2;
+            else mealsOnLeave = 1;
+        }
+
+        let mealsTakenToday = 0;
+
+        // Lunch
         if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
             if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
                 if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
-                    lunchTaken = true;
+                    mealsTakenToday++;
                 }
             }
         }
-        
+
+        // Dinner
         if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
             if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
-                dinnerTaken = true;
+                mealsTakenToday++;
             }
         }
         
-        if (lunchTaken) totalMeals++;
-        if (dinnerTaken) totalMeals++;
+        totalMeals += mealsTakenToday;
+        
+        if (mealsTakenToday > 0) {
+            isPresentToday = true;
+        }
+        
+        if (isPresentToday) {
+            presentDays++;
+        } else if (leave) {
+            absentDays++;
+        }
+    }
 
-        if (lunchTaken || dinnerTaken) presentDays++;
-        else absentDays++;
-    });
-
-    const attendance = totalCountedDays > 0 ? ((presentDays / totalCountedDays) * 100).toFixed(0) + '%' : 'N/A';
+    const totalWorkableDays = presentDays + absentDays;
+    const attendance = totalWorkableDays > 0 ? ((presentDays / totalWorkableDays) * 100).toFixed(0) + '%' : 'N/A';
 
     return {
-        attendance, totalMeals, presentDays, absentDays, dueAmount: totalMeals * perMealCharge,
+        attendance, totalMeals, presentDays, absentDays, dueAmount: totalMeals * perMealCharge, totalHolidays,
     };
   }, [today, user, leaves, holidays, isDataLoading, planStartDate, perMealCharge]);
 
@@ -234,6 +276,29 @@ export default function StudentDashboardPage() {
       const isToday = format(selectedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
       return isToday ? "Today's Menu" : `Menu for ${format(selectedDate, 'MMM do')}`;
   }, [selectedDate, today]);
+  
+  const combinedNotifications = useMemo(() => {
+        const liveAnnouncements: NotificationItem[] = announcements.map(ann => ({ 
+            id: `ann-${ann.id}`,
+            date: ann.date,
+            title: ann.title,
+            message: ann.message,
+            type: 'announcement',
+        }));
+        
+        const livePersonal: NotificationItem[] = personalNotifications.map(pn => ({
+            id: `pn-${pn.id}`,
+            date: pn.date,
+            title: pn.title,
+            message: pn.message,
+            type: pn.type,
+            href: pn.href,
+        }));
+
+        const allNotifications = [...liveAnnouncements, ...livePersonal];
+
+        return allNotifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [announcements, personalNotifications]);
 
   const dueAmount = currentMonthStats.dueAmount;
   const isPaid = dueAmount <= 0;
@@ -291,12 +356,20 @@ export default function StudentDashboardPage() {
           </Card>
           <Card className="animate-in fade-in-0 zoom-in-95 duration-500 delay-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Absent</CardTitle>
-                  <UserX className="h-5 w-5 text-destructive" />
+                  <CardTitle className="text-sm font-medium">Days Off</CardTitle>
+                  <CalendarOff className="h-5 w-5 text-orange-400" />
               </CardHeader>
               <CardContent>
-                  <div className="text-2xl font-bold">{currentMonthStats.absentDays}</div>
-                  <p className="text-xs text-muted-foreground truncate">Days</p>
+                  <div className="flex items-baseline justify-center gap-4">
+                     <div className="text-center">
+                        <p className="text-2xl font-bold">{currentMonthStats.absentDays}</p>
+                        <p className="text-xs text-muted-foreground">Absent</p>
+                     </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold">{currentMonthStats.totalHolidays}</p>
+                        <p className="text-xs text-muted-foreground">Holidays</p>
+                     </div>
+                  </div>
               </CardContent>
           </Card>
       </div>
@@ -384,6 +457,7 @@ export default function StudentDashboardPage() {
                     </Button>
                 </CardContent>
             </Card>
+             <RecentNotificationsCard notifications={combinedNotifications} isLoading={notificationsLoading} />
         </div>
       </div>
     </div>

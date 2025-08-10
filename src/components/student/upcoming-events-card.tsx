@@ -117,7 +117,7 @@ export function UpcomingEventsCard({ leaves, holidays, isLoading, showFooter = t
                 <CardDescription>Your upcoming leaves and mess holidays.</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow p-2 pt-0 relative">
-                <ScrollArea className="absolute inset-0 p-4 pt-0">
+                <ScrollArea className="h-[210px] absolute inset-0 p-4 pt-0">
                     <div className="space-y-2">
                         {isLoading ? (
                             <div className="flex h-full items-center justify-center text-sm text-muted-foreground text-center py-4"><p>Loading schedule...</p></div>

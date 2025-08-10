@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/auth-context';
 import type { Student } from '@/lib/data';
 import { getMessInfo, type MessInfo } from '@/lib/services/mess';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Building2, Utensils, Send, Camera, Loader2, Sun, Moon, LogOut, Mail, Phone, MapPin } from 'lucide-react';
+import { User, Building2, Utensils, Send, Camera, Loader2, Sun, Moon, LogOut, Mail, Phone, MapPin, LifeBuoy } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { addDoc, collection, doc, updateDoc, onSnapshot, query, where } from 'firebase/firestore';
@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { leaveMessAction } from '@/lib/actions/user';
+import Link from 'next/link';
 
 async function submitPlanChangeRequest(studentUid: string, studentId: string, studentName: string, fromPlan: Student['messPlan'], toPlan: Student['messPlan'], messId: string) {
     if (!fromPlan || !toPlan) {
@@ -153,29 +154,37 @@ export function StudentSettings() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Leave Mess
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This will remove you from the current mess. You will have to re-apply to join again. This action cannot be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleLeaveMess} disabled={isLeaving} className={cn(buttonVariants({ variant: "destructive" }))}>
-                                {isLeaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Confirm & Leave
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                 <div className="flex items-center gap-2">
+                     <Button asChild variant="outline">
+                         <Link href="/student/support">
+                            <LifeBuoy className="mr-2 h-4 w-4" />
+                            Support
+                         </Link>
+                     </Button>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Leave Mess
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will remove you from the current mess. You will have to re-apply to join again. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleLeaveMess} disabled={isLeaving} className={cn(buttonVariants({ variant: "destructive" }))}>
+                                    {isLeaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Confirm & Leave
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 </div>
             </div>
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

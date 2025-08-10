@@ -271,17 +271,17 @@ export default function StudentLeavePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-stretch">
         <div className="lg:col-span-3 flex flex-col gap-8">
-           <Tabs defaultValue="apply" className="w-full flex flex-col flex-grow h-full">
+           <Tabs defaultValue="apply" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="apply">Apply for Leave</TabsTrigger>
                     <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="apply" className="mt-4 flex-grow">
-                    <Card className="flex flex-col h-full">
+                 <TabsContent value="apply" className="mt-4">
+                    <Card>
                         <CardHeader>
                           <CardTitle className="text-xl">Apply for Leave</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 md:p-6 pt-0 space-y-6 flex-grow">
+                        <CardContent className="p-4 md:p-6 pt-0 space-y-6">
                             <div className="space-y-2">
                             <Label>Leave Type</Label>
                                 <RadioGroup value={leaveType} onValueChange={(value) => setLeaveType(value as LeaveType)} className="grid grid-cols-2 gap-4">
@@ -412,8 +412,8 @@ export default function StudentLeavePage() {
                         </CardFooter>
                     </Card>
                  </TabsContent>
-                 <TabsContent value="upcoming" className="mt-4 flex-grow">
-                    <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={dataLoading} showFooter={false} className="h-full" />
+                 <TabsContent value="upcoming" className="mt-4">
+                    <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={dataLoading} showFooter={false} />
                  </TabsContent>
            </Tabs>
         </div>
@@ -427,7 +427,7 @@ export default function StudentLeavePage() {
                 <CardContent className="flex flex-col items-center justify-center gap-y-4 p-4">
                     {user && <AttendanceCalendar user={user} leaves={leaves} holidays={holidays} month={month} onMonthChange={setMonth} />}
                 </CardContent>
-                 <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t">
+                 <CardFooter className="flex flex-col items-start gap-2 p-4 pt-2 border-t mt-4">
                     <p className="font-semibold text-foreground text-base mb-1">Legend</p>
                     <div className="flex w-full flex-wrap items-center justify-start gap-x-4 gap-y-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-green-500" />Present</div>
@@ -442,3 +442,4 @@ export default function StudentLeavePage() {
     </div>
   );
 }
+

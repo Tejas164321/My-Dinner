@@ -19,7 +19,7 @@ export const adminNavItems = [
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
     { href: '/admin/announcements', label: 'Announcements', icon: 'Megaphone' },
     { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
-    { href: '/admin/support', label: 'Support', icon: 'LifeBuoy' },
+    { href: '/admin/support', label: 'LifeBuoy' },
 ];
 
 export interface BillDetails {
