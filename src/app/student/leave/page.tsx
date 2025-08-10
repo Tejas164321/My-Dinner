@@ -71,6 +71,9 @@ export default function StudentLeavePage() {
   const isLongLeaveTodaySelected = longLeaveFromDate ? isSameDay(longLeaveFromDate, now) : false;
   const isLongLeaveLunchDisabled = isLongLeaveTodaySelected && currentHour >= lunchDeadlineHour;
   const isLongLeaveDinnerDisabled = isLongLeaveTodaySelected && currentHour >= dinnerDeadlineHour;
+  
+  const canTakeLunchLeave = user?.messPlan === 'full_day' || user?.messPlan === 'lunch_only';
+  const canTakeDinnerLeave = user?.messPlan === 'full_day' || user?.messPlan === 'dinner_only';
 
 
   useEffect(() => {
@@ -102,19 +105,27 @@ export default function StudentLeavePage() {
     };
   }, [user, today]);
 
-  // Effect to adjust one-day leave type if deadline passes
+  // Effect to adjust one-day leave type if deadline passes or plan doesn't allow it
   useEffect(() => {
-    if (isOneDayTodaySelected && isOneDayLunchDisabled && oneDayType !== 'dinner_only') {
-        setOneDayType('dinner_only');
+    if (user?.messPlan === 'lunch_only') {
+      setOneDayType('lunch_only');
+    } else if (user?.messPlan === 'dinner_only') {
+      setOneDayType('dinner_only');
+    } else if (isOneDayTodaySelected && isOneDayLunchDisabled && oneDayType !== 'dinner_only') {
+      setOneDayType('dinner_only');
     }
-  }, [isOneDayTodaySelected, isOneDayLunchDisabled, oneDayType]);
+  }, [isOneDayTodaySelected, isOneDayLunchDisabled, oneDayType, user?.messPlan]);
 
-  // Effect to adjust long-leave 'From' type if deadline passes
+  // Effect to adjust long-leave 'From' type if deadline passes or plan doesn't allow it
   useEffect(() => {
-      if (isLongLeaveTodaySelected && isLongLeaveLunchDisabled && longLeaveFromType !== 'dinner_only') {
-          setLongLeaveFromType('dinner_only');
-      }
-  }, [isLongLeaveTodaySelected, isLongLeaveLunchDisabled, longLeaveFromType]);
+    if (user?.messPlan === 'lunch_only') {
+      setLongLeaveFromType('lunch_only');
+    } else if (user?.messPlan === 'dinner_only') {
+      setLongLeaveFromType('dinner_only');
+    } else if (isLongLeaveTodaySelected && isLongLeaveLunchDisabled && longLeaveFromType !== 'dinner_only') {
+      setLongLeaveFromType('dinner_only');
+    }
+  }, [isLongLeaveTodaySelected, isLongLeaveLunchDisabled, longLeaveFromType, user?.messPlan]);
   
   const isActionAllowedForDate = (date: Date, mealType: HolidayType = 'full_day'): boolean => {
     if (isBefore(date, today)) return false; 
@@ -141,7 +152,7 @@ export default function StudentLeavePage() {
 
 
   const handleApplyForLeave = async () => {
-    if (!user) return;
+    if (!user || !user.messPlan) return;
     setIsSaving(true);
     
     const leavesToSubmit: LeavePayload[] = [];
@@ -150,7 +161,12 @@ export default function StudentLeavePage() {
     const holidayMap = new Map(holidays.map(h => [format(h.date, 'yyyy-MM-dd'), h.type]));
 
     if (leaveType === 'one_day' && oneDayDate) {
-        if (!isActionAllowedForDate(oneDayDate, oneDayType)) {
+        let finalOneDayType = oneDayType;
+        if (user.messPlan !== 'full_day') {
+            finalOneDayType = user.messPlan;
+        }
+
+        if (!isActionAllowedForDate(oneDayDate, finalOneDayType)) {
             toast({ variant: "destructive", title: "Deadline Passed", description: "The deadline for applying for this leave has passed." });
             setIsSaving(false);
             return;
@@ -165,7 +181,7 @@ export default function StudentLeavePage() {
              return;
         }
 
-        if (oneDayType === 'full_day') {
+        if (finalOneDayType === 'full_day') {
             if (holidayType !== 'lunch_only' && !existingLeaveMap.has(dateKey + '-lunch_only')) {
                 leavesToSubmit.push({ studentId: user.uid, name: reason, date: oneDayDate, type: 'lunch_only' });
             }
@@ -173,8 +189,8 @@ export default function StudentLeavePage() {
                  leavesToSubmit.push({ studentId: user.uid, name: reason, date: oneDayDate, type: 'dinner_only' });
             }
         } else {
-             if (holidayType !== oneDayType && !existingLeaveMap.has(dateKey + '-' + oneDayType)) {
-                leavesToSubmit.push({ studentId: user.uid, name: reason, date: oneDayDate, type: oneDayType });
+             if (holidayType !== finalOneDayType && !existingLeaveMap.has(dateKey + '-' + finalOneDayType)) {
+                leavesToSubmit.push({ studentId: user.uid, name: reason, date: oneDayDate, type: finalOneDayType });
              }
         }
 
@@ -200,34 +216,40 @@ export default function StudentLeavePage() {
                 continue; // Skip this day entirely
             }
 
-            let intendedLeaveType: HolidayType = 'full_day';
-            if (dates.length === 1) { // Single day "long leave"
-                 if(longLeaveFromType === 'full_day' || longLeaveToType === 'full_day' || (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only')) {
-                    intendedLeaveType = 'full_day';
-                 } else if (longLeaveFromType === 'dinner_only') {
-                    intendedLeaveType = 'dinner_only';
-                 } else {
-                    intendedLeaveType = 'lunch_only';
-                 }
-            } else if (isSameDay(date, longLeaveFromDate)) {
-                intendedLeaveType = longLeaveFromType;
-            } else if (isSameDay(date, longLeaveToDate)) {
-                intendedLeaveType = longLeaveToType;
-            }
-            
-            if (intendedLeaveType === 'full_day') {
-                if (holidayType !== 'lunch_only' && !existingLeaveMap.has(dateKey + '-lunch_only')) {
-                     leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: 'lunch_only' });
+            if (user.messPlan !== 'full_day') {
+                if(holidayType !== user.messPlan && !existingLeaveMap.has(dateKey + '-' + user.messPlan)) {
+                    leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: user.messPlan });
                 }
-                if (holidayType !== 'dinner_only' && !existingLeaveMap.has(dateKey + '-dinner_only')) {
-                     leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: 'dinner_only' });
+            } else {
+                let intendedLeaveType: HolidayType = 'full_day';
+                 if (dates.length === 1) { // Single day "long leave"
+                     if(longLeaveFromType === 'full_day' || longLeaveToType === 'full_day' || (longLeaveFromType === 'dinner_only' && longLeaveToType === 'lunch_only')) {
+                        intendedLeaveType = 'full_day';
+                     } else if (longLeaveFromType === 'dinner_only') {
+                        intendedLeaveType = 'dinner_only';
+                     } else {
+                        intendedLeaveType = 'lunch_only';
+                     }
+                } else if (isSameDay(date, longLeaveFromDate)) {
+                    intendedLeaveType = longLeaveFromType;
+                } else if (isSameDay(date, longLeaveToDate)) {
+                    intendedLeaveType = longLeaveToType;
                 }
-            } else { // Intended leave is partial
-                 if (intendedLeaveType === 'lunch_only' && holidayType !== 'lunch_only' && !existingLeaveMap.has(dateKey + '-lunch_only')) {
-                     leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: 'lunch_only' });
-                 } else if (intendedLeaveType === 'dinner_only' && holidayType !== 'dinner_only' && !existingLeaveMap.has(dateKey + '-dinner_only')) {
-                     leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: 'dinner_only' });
-                 }
+                
+                if (intendedLeaveType === 'full_day') {
+                    if (holidayType !== 'lunch_only' && !existingLeaveMap.has(dateKey + '-lunch_only')) {
+                         leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: 'lunch_only' });
+                    }
+                    if (holidayType !== 'dinner_only' && !existingLeaveMap.has(dateKey + '-dinner_only')) {
+                         leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: 'dinner_only' });
+                    }
+                } else { // Intended leave is partial
+                     if (intendedLeaveType === 'lunch_only' && holidayType !== 'lunch_only' && !existingLeaveMap.has(dateKey + '-lunch_only')) {
+                         leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: 'lunch_only' });
+                     } else if (intendedLeaveType === 'dinner_only' && holidayType !== 'dinner_only' && !existingLeaveMap.has(dateKey + '-dinner_only')) {
+                         leavesToSubmit.push({ studentId: user.uid, name: reason, date, type: 'dinner_only' });
+                     }
+                }
             }
         }
     } else {
@@ -310,6 +332,7 @@ export default function StudentLeavePage() {
                                     <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={oneDayDate} onSelect={setOneDayDate} initialFocus disabled={(date) => isBefore(date, today)} showOutsideDays={false} /></PopoverContent>
                                     </Popover>
                                 </div>
+                                {user?.messPlan === 'full_day' && (
                                 <div className="space-y-3">
                                     <Label>Leave For</Label>
                                     <RadioGroup 
@@ -334,6 +357,7 @@ export default function StudentLeavePage() {
                                         </Label>
                                     </RadioGroup>
                                 </div>
+                                )}
                             </div>
                             )}
                             
@@ -365,6 +389,7 @@ export default function StudentLeavePage() {
                                     </Popover>
                                 </div>
                                 </div>
+                                {user?.messPlan === 'full_day' && (
                                 <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-3">
                                     <Label>From (First Day)</Label>
@@ -401,6 +426,7 @@ export default function StudentLeavePage() {
                                     </RadioGroup>
                                 </div>
                                 </div>
+                                )}
                             </div>
                             )}
                         </CardContent>
@@ -443,3 +469,6 @@ export default function StudentLeavePage() {
   );
 }
 
+
+
+    

@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import type { Bill, Holiday, Leave } from '@/lib/data';
+import type { Bill, Holiday, Leave, Payment } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
-import { FileDown, Wallet, Loader2 } from 'lucide-react';
+import { FileDown, Wallet, Loader2, Hourglass, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -22,7 +23,9 @@ const monthMap: { [key: string]: number } = {
   July: 6, August: 7, September: 8, October: 9, November: 10, December: 11,
 };
 
-const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
+const getPaidAmount = (payments: Payment[]) => payments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + p.amount, 0);
+const getPendingAmount = (payments: Payment[]) => payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+
 
 interface BillDetailDialogProps {
   bill: Bill;
@@ -37,8 +40,10 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
   const [isDownloading, setIsDownloading] = useState(false);
   const monthIndex = monthMap[bill.month];
   const monthDate = new Date(bill.year, monthIndex, 1);
-  const paidAmount = getPaidAmount(bill);
-  const dueAmount = bill.totalAmount - paidAmount;
+  
+  const paidAmount = getPaidAmount(bill.payments);
+  const pendingAmount = getPendingAmount(bill.payments);
+  const dueAmount = bill.totalAmount - paidAmount - pendingAmount;
     
   useEffect(() => {
     if (student?.messId) {
@@ -46,21 +51,13 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
     }
   }, [student?.messId]);
 
-  const getStatusInfo = (status: 'Paid' | 'Due') => {
-    switch (status) {
-      case 'Paid':
-        return {
-          variant: 'secondary',
-          className: 'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80',
-        };
-      case 'Due':
-        return { variant: 'destructive', className: '' };
-      default:
-        return { variant: 'secondary', className: '' };
-    }
+  const getStatusInfo = () => {
+    if (dueAmount > 0) return { variant: 'destructive' as const, className: '', text: 'Due' };
+    if (pendingAmount > 0) return { variant: 'outline' as const, className: 'border-yellow-500/50 text-yellow-500', text: 'Pending' };
+    return { variant: 'secondary' as const, className: 'border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80', text: 'Paid' };
   };
 
-  const statusInfo = getStatusInfo(dueAmount > 0 ? 'Due' : 'Paid');
+  const statusInfo = getStatusInfo();
   
   const handleDownload = async () => {
         if (!student) return;
@@ -105,31 +102,33 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                           <p>Total Bill</p>
                           <p>₹{bill.totalAmount.toLocaleString()}</p>
                       </div>
-                      {bill.payments.length > 0 && (
+                      
+                      {/* Confirmed Payments Section */}
+                      {paidAmount > 0 && (
                           <div className="pt-2">
-                              <p className="font-medium text-foreground/90 mb-2">Payments:</p>
-                              <div className="space-y-1.5 pl-2 border-l-2 border-dashed">
-                              {bill.payments.map((payment, index) => (
-                                  <div key={index} className="flex justify-between items-center text-green-400">
-                                      <p className="text-muted-foreground">
-                                          <span className="text-green-400 font-mono text-xs">✔</span> on {format(new Date(payment.date), 'MMM do')}
-                                      </p>
-                                      <p>- ₹{payment.amount.toLocaleString()}</p>
-                                  </div>
-                              ))}
+                              <div className="flex justify-between items-center text-green-400">
+                                  <p className="text-muted-foreground flex items-center gap-2"><CheckCircle className="h-4 w-4" />Paid</p>
+                                  <p>- ₹{paidAmount.toLocaleString()}</p>
                               </div>
                           </div>
                       )}
-                      <div className="flex justify-between items-center pt-1">
-                          <p className="text-muted-foreground">Total Paid</p>
-                          <p className="text-green-400">- ₹{paidAmount.toLocaleString()}</p>
-                      </div>
+                      
+                      {/* Pending Payments Section */}
+                       {pendingAmount > 0 && (
+                          <div className="pt-2">
+                              <div className="flex justify-between items-center text-yellow-500">
+                                  <p className="text-muted-foreground flex items-center gap-2"><Hourglass className="h-4 w-4" />Pending Confirmation</p>
+                                  <p>- ₹{pendingAmount.toLocaleString()}</p>
+                              </div>
+                          </div>
+                      )}
+
                       <Separator />
                       <div className="flex justify-between items-center font-semibold text-lg">
                           <div className="flex items-center gap-2">
                               <p>Final Due</p>
-                              <Badge variant={statusInfo.variant as any} className={cn('capitalize', statusInfo.className)}>
-                                  {dueAmount > 0 ? 'Due' : 'Paid'}
+                              <Badge variant={statusInfo.variant} className={cn('capitalize', statusInfo.className)}>
+                                  {statusInfo.text}
                               </Badge>
                           </div>
                           <p className={cn(dueAmount > 0 ? 'text-destructive' : 'text-foreground')}>
@@ -158,14 +157,14 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                <h3 className="font-semibold text-base">Attendance Details</h3>
                <div className="p-3 border rounded-lg bg-secondary/30 flex flex-col flex-1">
                   {/* Attendance Summary Stats */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                       <div>
-                          <p className="text-2xl font-bold text-green-400">{bill.details.fullDays}</p>
-                          <p className="text-xs text-muted-foreground">Full Days</p>
+                          <p className="text-2xl font-bold text-green-400">{bill.details.totalMeals}</p>
+                          <p className="text-xs text-muted-foreground">Total Meals</p>
                       </div>
                       <div>
-                          <p className="text-2xl font-bold text-yellow-400">{bill.details.halfDays}</p>
-                          <p className="text-xs text-muted-foreground">Half Days</p>
+                          <p className="text-2xl font-bold text-yellow-400">{bill.details.fullDays}</p>
+                          <p className="text-xs text-muted-foreground">Present Days</p>
                       </div>
                       <div>
                           <p className="text-2xl font-bold text-blue-400">{bill.details.holidays}</p>
@@ -173,7 +172,7 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                       </div>
                       <div>
                           <p className="text-2xl font-bold text-destructive">{bill.details.absentDays}</p>
-                          <p className="text-xs text-muted-foreground">Absent</p>
+                          <p className="text-xs text-muted-foreground">Absent Days</p>
                       </div>
                   </div>
                   
@@ -189,7 +188,7 @@ export function BillDetailDialog({ bill, onPayNow, holidays, leaves }: BillDetai
                           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-green-500" />Present</div>
                           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive" />Leave</div>
                           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500" />Holiday</div>
-                          <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-md ring-2 ring-primary ring-offset-2 ring-offset-background"></div>Today</div>
+                          <div className="flex items-center gap-2"><div className="w-5 h-5 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-background"></div>Today</div>
                       </div>
                   </div>
                </div>

@@ -7,10 +7,10 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Student, Leave, PlanChangeRequest, Holiday } from "@/lib/data";
+import { Student, Leave, PlanChangeRequest, Holiday, AppUser } from "@/lib/data";
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
-import { onUsersUpdate, onHistoricalUsersUpdate } from '@/lib/listeners/users';
+import { onUsersUpdate } from '@/lib/listeners/users';
 import { onPlanChangeRequestsUpdate } from '@/lib/listeners/requests';
 import { Users, Check, X, UserX, Search, Utensils, Sun, Moon, RotateCcw, Loader2, GitCompareArrows, UserPlus, ShieldX, Trash2 } from "lucide-react";
 import {
@@ -39,6 +39,8 @@ import { db } from '@/lib/firebase';
 import { doc, updateDoc, deleteDoc, writeBatch, getDoc, setDoc } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getMessInfo } from '@/lib/services/mess';
+import { leaveMessAction, deleteStudentHistory } from '@/lib/actions/user';
+import { useToast } from '@/hooks/use-toast';
 
 interface StudentsTableProps {
     filterMonth: Date;
@@ -89,10 +91,6 @@ async function suspendStudent(student: Student) {
     await batch.commit();
 }
 
-async function deletePermanently(historicalDocId: string) {
-    const docRef = doc(db, 'suspended_students', historicalDocId);
-    await deleteDoc(docRef);
-}
 
 async function approvePlanChangeRequest(requestId: string, studentUid: string, toPlan: Student['messPlan']) {
     const userRef = doc(db, 'users', studentUid);
@@ -183,6 +181,17 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
 };
 
 const StudentRowCard = ({ student, bill, tab, onOpenDialog }: { student: Student, bill: any, tab: string, onOpenDialog: () => void }) => {
+    const {toast} = useToast();
+
+    const handleDataCleanup = async (student: AppUser) => {
+        try {
+            await deleteStudentHistory(student);
+            toast({ title: 'Student Data Cleared', description: `${student.name}'s mess data has been deleted. They can now join a mess again.` });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Cleanup Failed', description: 'Could not clear the student data.' });
+        }
+    };
+
     const billDisplay = `₹${bill.due.toLocaleString()}`;
     const planDetails = student.messPlan ? planInfo[student.messPlan] : planInfo.full_day;
     const PlanIcon = planDetails.icon;
@@ -259,14 +268,16 @@ const StudentRowCard = ({ student, bill, tab, onOpenDialog }: { student: Student
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Permanently Delete {student.name}?</AlertDialogTitle>
+                                <AlertDialogTitle>Clear History for {student.name}?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action is irreversible and will permanently delete this historical record. This cannot be undone.
+                                    This will delete all of this student's mess data (leaves, notifications, etc.) and reset their account to 'unaffiliated'. Their login will not be deleted. This allows them to start fresh. This action is irreversible.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deletePermanently(student.id)} className={cn(buttonVariants({variant: "destructive"}))}>Delete Permanently</AlertDialogAction>
+                                <AlertDialogAction onClick={() => handleDataCleanup(student)} className={cn(buttonVariants({ variant: "destructive" }))}>
+                                    Clear History
+                                </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -322,20 +333,15 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
 
         const unsubscribes = [
             fetchMessSettings(),
-            onUsersUpdate(user.uid, setUsers),
-            onHistoricalUsersUpdate(user.uid, setHistoricalUsers),
+            onUsersUpdate(user.uid, (users, historicalUsers) => {
+                setUsers(users);
+                setHistoricalUsers(historicalUsers);
+                setIsLoading(false);
+            }),
             onPlanChangeRequestsUpdate(user.uid, setPlanChangeRequests),
             onAllLeavesUpdate(setAllLeaves),
             onHolidaysUpdate(user.uid, setAllHolidays)
         ];
-
-        Promise.all([
-            new Promise(res => onUsersUpdate(user.uid, d => res(d))),
-            new Promise(res => onHistoricalUsersUpdate(user.uid, d => res(d))),
-            new Promise(res => onPlanChangeRequestsUpdate(user.uid, d => res(d))),
-            new Promise(res => onAllLeavesUpdate(d => res(d))),
-            new Promise(res => onHolidaysUpdate(user.uid, d => res(d))),
-        ]).then(() => setIsLoading(false));
 
         return () => unsubscribes.forEach(unsub => typeof unsub === 'function' && unsub());
     }, [user]);
@@ -470,7 +476,7 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Name</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Email</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Requested Plan</TableHead>
                                     <TableHead className="hidden sm:table-cell">Date</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
@@ -479,21 +485,30 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
                                 {isLoading ? (
                                     <TableRow><TableCell colSpan={4} className="text-center h-24"><Loader2 className="mx-auto animate-spin" /></TableCell></TableRow>
                                 ) : processedStudents.pending.length > 0 ? (
-                                    processedStudents.pending.map((req) => (
-                                        <TableRow key={req.uid}>
-                                            <TableCell className="font-medium">{req.name}</TableCell>
-                                            <TableCell className="hidden sm:table-cell">{req.email}</TableCell>
-                                            <TableCell className="hidden sm:table-cell">{req.joinDate ? format(parseISO(req.joinDate), 'MMM do, yyyy') : 'N/A'}</TableCell>
-                                            <TableCell className="text-right space-x-2">
-                                                <Button onClick={() => approveStudent(req.uid)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
-                                                    <Check className="h-4 w-4" />
-                                                </Button>
-                                                <Button onClick={() => rejectStudent(req.uid)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
+                                    processedStudents.pending.map((req) => {
+                                        const planDetails = planInfo[req.messPlan || 'full_day'];
+                                        const PlanIcon = planDetails.icon;
+                                        return (
+                                            <TableRow key={req.uid}>
+                                                <TableCell className="font-medium">{req.name}</TableCell>
+                                                <TableCell className="hidden sm:table-cell">
+                                                    <Badge variant="outline" className="font-semibold">
+                                                        <PlanIcon className={cn("mr-1.5 h-4 w-4", planDetails.color)} />
+                                                        {planDetails.text}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="hidden sm:table-cell">{req.joinDate ? format(parseISO(req.joinDate), 'MMM do, yyyy') : 'N/A'}</TableCell>
+                                                <TableCell className="text-right space-x-2">
+                                                    <Button onClick={() => approveStudent(req.uid)} variant="ghost" size="icon" className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-8 w-8">
+                                                        <Check className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button onClick={() => rejectStudent(req.uid)} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8">
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })
                                 ) : (
                                     <TableRow><TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No pending join requests.</TableCell></TableRow>
                                 )}
@@ -584,3 +599,4 @@ export function StudentsTable({ filterMonth, filterStatus, searchQuery, filterPl
         </div>
     );
 }
+

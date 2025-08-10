@@ -18,16 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DollarSign, Receipt, Users, FileDown } from 'lucide-react';
+import { DollarSign, Receipt, Users, FileDown, BadgeCheck } from 'lucide-react';
 import { RevenueChart } from '@/components/admin/revenue-chart';
 import { BillingTable } from '@/components/admin/billing-table';
 import { onUsersUpdate } from '@/lib/listeners/users';
 import { useAuth } from '@/contexts/auth-context';
-import type { Student, Leave, Holiday } from '@/lib/data';
+import type { Student, Leave, Holiday, Payment } from '@/lib/data';
 import { onAllLeavesUpdate } from '@/lib/listeners/leaves';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { format, subMonths, startOfMonth, getMonth, getYear, getDaysInMonth, isSameDay, isFuture, parseISO, startOfDay } from 'date-fns';
 import { getMessInfo } from '@/lib/services/mess';
+import { onPendingPaymentsUpdate } from '@/lib/listeners/payments';
+import { PaymentConfirmationTable } from '@/components/admin/payment-confirmation-table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[], holidays: Holiday[], perMealCharge: number) => {
     const dateValue = student.planStartDate;
@@ -53,7 +57,10 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
         if (isFuture(day) || day < planStartDate) continue;
 
         const holiday = messHolidays.find(h => isSameDay(h.date, day));
-        if (holiday) continue;
+        if (holiday) {
+             if (holiday.type === 'full_day') continue;
+             if (student.messPlan !== 'full_day' && holiday.type === student.messPlan) continue;
+        }
         
         const leave = studentLeaves.find(l => isSameDay(l.date, day));
         
@@ -63,17 +70,21 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
         // Check for Lunch
         if (student.messPlan === 'full_day' || student.messPlan === 'lunch_only') {
             if (!(isSameDay(day, planStartDate) && student.planStartMeal === 'dinner')) {
-                if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
-                    lunchTaken = true;
-                }
+                 if (!holiday || (holiday.type !== 'full_day' && holiday.type !== 'lunch_only')) {
+                    if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
+                        lunchTaken = true;
+                    }
+                 }
             }
         }
         
         // Check for Dinner
         if (student.messPlan === 'full_day' || student.messPlan === 'dinner_only') {
-            if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
-                dinnerTaken = true;
-            }
+             if (!holiday || (holiday.type !== 'full_day' && holiday.type !== 'dinner_only')) {
+                 if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
+                    dinnerTaken = true;
+                }
+             }
         }
         
         if(lunchTaken) totalMeals++;
@@ -96,6 +107,7 @@ export default function AdminBillingPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
   const [perMealCharge, setPerMealCharge] = useState(65);
   const [isLoading, setIsLoading] = useState(true);
   const [month, setMonth] = useState(startOfMonth(new Date()));
@@ -114,19 +126,22 @@ export default function AdminBillingPage() {
     const unsubUsers = onUsersUpdate(adminUser.uid, setStudents);
     const unsubLeaves = onAllLeavesUpdate(setLeaves);
     const unsubHolidays = onHolidaysUpdate(adminUser.uid, setHolidays);
+    const unsubPayments = onPendingPaymentsUpdate(adminUser.uid, setPendingPayments);
 
     // Consider loading finished when all data is fetched
     Promise.all([
         fetchMessSettings(),
-        new Promise(res => onUsersUpdate(adminUser.uid, d => { setStudents(d); res(d); })),
+        new Promise(res => onUsersUpdate(adminUser.uid, (d,h) => { setStudents(d); res(d); })),
         new Promise(res => onAllLeavesUpdate(d => { setLeaves(d); res(d); })),
-        new Promise(res => onHolidaysUpdate(adminUser.uid, d => { setHolidays(d); res(d); }))
+        new Promise(res => onHolidaysUpdate(adminUser.uid, d => { setHolidays(d); res(d); })),
+        new Promise(res => onPendingPaymentsUpdate(adminUser.uid, d => { setPendingPayments(d); res(d); })),
     ]).then(() => setIsLoading(false));
 
     return () => {
         unsubUsers();
         unsubLeaves();
         unsubHolidays();
+        unsubPayments();
     };
   }, [adminUser]);
   
@@ -177,78 +192,93 @@ export default function AdminBillingPage() {
   }, [isLoading, students, leaves, holidays, perMealCharge]);
 
   return (
-    <div className="flex flex-col gap-2 md:gap-6 animate-in fade-in-0 slide-in-from-top-5 duration-700">
+    <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="hidden md:block">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight">Billing & Payments</h1>
         </div>
-        <div className="flex w-full md:w-auto items-center gap-2">
-          <Select value={format(month, 'yyyy-MM-dd')} onValueChange={(val) => setMonth(new Date(val))}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-                {monthOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" className="flex-shrink-0">
-            <FileDown className="h-4 w-4 mr-2"/>
-            Export
-          </Button>
-        </div>
       </div>
-
-      <div className="grid grid-cols-3 gap-2 md:gap-6">
-        <Card className="transition-transform duration-300 hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 md:h-5 w-4 md:w-5 text-primary" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Payments this month</p>
-          </CardContent>
-        </Card>
-        <Card className="transition-transform duration-300 hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Pending Dues</CardTitle>
-            <Receipt className="h-4 md:h-5 w-4 md:w-5 text-destructive" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold">₹{stats.pendingDues.toLocaleString()}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Outstanding amount</p>
-          </CardContent>
-        </Card>
-        <Card className="transition-transform duration-300 hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Defaulters</CardTitle>
-            <Users className="h-4 md:h-5 w-4 md:w-5 text-destructive" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
-            <div className="text-lg md:text-2xl font-bold">{stats.defaulters}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground truncate">Students with dues</p>
-          </CardContent>
-        </Card>
-      </div>
-
-       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-3">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Monthly Revenue Trend</CardTitle>
-                        <CardDescription>An overview of revenue generated over the past months.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="h-[350px] p-2">
-                       <RevenueChart data={chartData} />
-                    </CardContent>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="confirmations">
+                Confirm Payments
+                {pendingPayments.length > 0 && (
+                    <Badge className="ml-2">{pendingPayments.length}</Badge>
+                )}
+            </TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="mt-6 space-y-6">
+            <div className="flex w-full items-center justify-end gap-2">
+                <Select value={format(month, 'yyyy-MM-dd')} onValueChange={(val) => setMonth(new Date(val))}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Select month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {monthOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Button variant="outline" className="flex-shrink-0">
+                    <FileDown className="h-4 w-4 mr-2"/>
+                    Export
+                </Button>
+            </div>
+            <div className="grid grid-cols-3 gap-2 md:gap-6">
+                <Card className="transition-transform duration-300 hover:-translate-y-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
+                    <CardTitle className="text-xs md:text-sm font-medium">Total Revenue</CardTitle>
+                    <DollarSign className="h-4 md:h-5 w-4 md:w-5 text-primary" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                    <div className="text-lg md:text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div>
+                    <p className="text-[10px] md:text-xs text-muted-foreground truncate">Payments this month</p>
+                </CardContent>
+                </Card>
+                <Card className="transition-transform duration-300 hover:-translate-y-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
+                    <CardTitle className="text-xs md:text-sm font-medium">Pending Dues</CardTitle>
+                    <Receipt className="h-4 md:h-5 w-4 md:w-5 text-destructive" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                    <div className="text-lg md:text-2xl font-bold">₹{stats.pendingDues.toLocaleString()}</div>
+                    <p className="text-[10px] md:text-xs text-muted-foreground truncate">Outstanding amount</p>
+                </CardContent>
+                </Card>
+                <Card className="transition-transform duration-300 hover:-translate-y-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 md:p-6 md:pb-2">
+                    <CardTitle className="text-xs md:text-sm font-medium">Defaulters</CardTitle>
+                    <Users className="h-4 md:h-5 w-4 md:w-5 text-destructive" />
+                </CardHeader>
+                <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                    <div className="text-lg md:text-2xl font-bold">{stats.defaulters}</div>
+                    <p className="text-[10px] md:text-xs text-muted-foreground truncate">Students with dues</p>
+                </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-2">
-                 <BillingTable filterMonth={month} students={students} leaves={leaves} holidays={holidays} isLoading={isLoading} perMealCharge={perMealCharge} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <div className="lg:col-span-3">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Monthly Revenue Trend</CardTitle>
+                                <CardDescription>An overview of revenue generated over the past months.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="h-[350px] p-2">
+                            <RevenueChart data={chartData} />
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <div className="lg:col-span-2">
+                        <BillingTable filterMonth={month} students={students} leaves={leaves} holidays={holidays} isLoading={isLoading} perMealCharge={perMealCharge} />
+                    </div>
             </div>
-       </div>
+        </TabsContent>
+        <TabsContent value="confirmations" className="mt-6">
+            <PaymentConfirmationTable payments={pendingPayments} isLoading={isLoading} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

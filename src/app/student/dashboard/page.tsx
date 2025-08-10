@@ -201,53 +201,47 @@ export default function StudentDashboardPage() {
         if (isBefore(day, planStartDate) || isAfter(day, today)) continue;
 
         const holiday = monthHolidays.find(h => isSameDay(h.date, day));
+        
+        let isHolidayToday = false;
+        // Check if the specific meal is a holiday
         if (holiday) {
-            totalHolidays++;
+             if (holiday.type === 'full_day') {
+                isHolidayToday = true;
+             } else if (user.messPlan === 'full_day') {
+                totalHolidays += 1; // It's a half-day holiday on a full-day plan
+             } else if (holiday.type === user.messPlan) {
+                isHolidayToday = true;
+             }
+        }
+
+        if (isHolidayToday) {
+            totalHolidays += (user.messPlan === 'full_day' ? 2 : 1); // Count meals, not days
             continue;
         }
 
         const leave = studentLeaves.find(l => isSameDay(l.date, day));
         let isPresentToday = false;
-        let mealsAvailableToday = 0;
-
-        // Determine total meals available in plan for the day
-        if (user.messPlan === 'full_day') mealsAvailableToday = 2;
-        else if (user.messPlan === 'lunch_only' || user.messPlan === 'dinner_only') mealsAvailableToday = 1;
-
-        if (isSameDay(day, planStartDate) && user.planStartMeal === 'dinner' && user.messPlan === 'full_day') {
-            mealsAvailableToday = 1; // Only dinner available on start day
-        }
-
-        if (mealsAvailableToday === 0) continue;
-
-        let mealsOnLeave = 0;
-        if (leave) {
-            if (leave.type === 'full_day') mealsOnLeave = 2;
-            else mealsOnLeave = 1;
-        }
-
-        let mealsTakenToday = 0;
-
+        
         // Lunch
         if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
             if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
-                if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
-                    mealsTakenToday++;
-                }
+                 if (!holiday || (holiday.type !== 'full_day' && holiday.type !== 'lunch_only')) {
+                     if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
+                        totalMeals++;
+                        isPresentToday = true;
+                    }
+                 }
             }
         }
 
         // Dinner
         if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
-            if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
-                mealsTakenToday++;
+            if (!holiday || (holiday.type !== 'full_day' && holiday.type !== 'dinner_only')) {
+                 if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
+                    totalMeals++;
+                    isPresentToday = true;
+                }
             }
-        }
-        
-        totalMeals += mealsTakenToday;
-        
-        if (mealsTakenToday > 0) {
-            isPresentToday = true;
         }
         
         if (isPresentToday) {
@@ -261,7 +255,7 @@ export default function StudentDashboardPage() {
     const attendance = totalWorkableDays > 0 ? ((presentDays / totalWorkableDays) * 100).toFixed(0) + '%' : 'N/A';
 
     return {
-        attendance, totalMeals, presentDays, absentDays, dueAmount: totalMeals * perMealCharge, totalHolidays,
+        attendance, totalMeals, presentDays, absentDays, dueAmount: totalMeals * perMealCharge, totalHolidays: Math.ceil(totalHolidays / (user.messPlan === 'full_day' ? 2 : 1)),
     };
   }, [today, user, leaves, holidays, isDataLoading, planStartDate, perMealCharge]);
 
@@ -312,6 +306,10 @@ export default function StudentDashboardPage() {
     }
     return <p className="text-muted-foreground">{items.join(', ')}</p>;
   };
+  
+  const showLunch = user?.messPlan === 'full_day' || user?.messPlan === 'lunch_only';
+  const showDinner = user?.messPlan === 'full_day' || user?.messPlan === 'dinner_only';
+
 
   return (
     <div className="flex flex-col gap-8 animate-in fade-in-0 slide-in-from-top-5 duration-700">
@@ -406,27 +404,31 @@ export default function StudentDashboardPage() {
                   </div>
                   <CardDescription className="pt-2">Select a date to view the menu for that day.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-6 md:grid-cols-2">
-                  <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
-                      {isLunchOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
-                      <div className="bg-secondary/50 p-3 rounded-lg">
-                          <Sun className="h-6 w-6 text-yellow-400"/>
-                      </div>
-                      <div>
-                          <h3 className="font-semibold text-lg">Lunch</h3>
-                          {renderMenuContent(displayedMenu.lunch)}
-                      </div>
-                  </div>
-                  <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
-                      {isDinnerOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
-                      <div className="bg-secondary/50 p-3 rounded-lg">
-                          <Moon className="h-6 w-6 text-purple-400"/>
-                      </div>
-                      <div>
-                          <h3 className="font-semibold text-lg">Dinner</h3>
-                          {renderMenuContent(displayedMenu.dinner)}
-                      </div>
-                  </div>
+                <CardContent className={cn("grid gap-6", showLunch && showDinner && 'md:grid-cols-2')}>
+                    {showLunch && (
+                        <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+                            {isLunchOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
+                            <div className="bg-secondary/50 p-3 rounded-lg">
+                                <Sun className="h-6 w-6 text-yellow-400"/>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-lg">Lunch</h3>
+                                {renderMenuContent(displayedMenu.lunch)}
+                            </div>
+                        </div>
+                    )}
+                    {showDinner && (
+                        <div className="relative flex items-center gap-4 rounded-lg border bg-secondary/30 p-4">
+                            {isDinnerOff && <Badge variant="destructive" className="absolute top-3 right-3">ON LEAVE</Badge>}
+                            <div className="bg-secondary/50 p-3 rounded-lg">
+                                <Moon className="h-6 w-6 text-purple-400"/>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-lg">Dinner</h3>
+                                {renderMenuContent(displayedMenu.dinner)}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
             <UpcomingEventsCard leaves={leaves} holidays={holidays} isLoading={isDataLoading} />
@@ -463,3 +465,7 @@ export default function StudentDashboardPage() {
     </div>
   );
 }
+
+
+
+    

@@ -40,7 +40,10 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
         if (isFuture(day) || day < planStartDate) continue;
 
         const holiday = messHolidays.find(h => isSameDay(h.date, day));
-        if (holiday) continue;
+        if (holiday) {
+             if (holiday.type === 'full_day') continue;
+             if (student.messPlan !== 'full_day' && holiday.type === student.messPlan) continue;
+        }
         
         const leave = studentLeaves.find(l => isSameDay(l.date, day));
         
@@ -50,17 +53,21 @@ const calculateBillForStudent = (student: Student, month: Date, leaves: Leave[],
         // Check for Lunch
         if (student.messPlan === 'full_day' || student.messPlan === 'lunch_only') {
             if (!(isSameDay(day, planStartDate) && student.planStartMeal === 'dinner')) {
-                if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
-                    lunchTaken = true;
-                }
+                 if (!holiday || (holiday.type !== 'full_day' && holiday.type !== 'lunch_only')) {
+                    if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
+                        lunchTaken = true;
+                    }
+                 }
             }
         }
         
         // Check for Dinner
         if (student.messPlan === 'full_day' || student.messPlan === 'dinner_only') {
-            if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
-                dinnerTaken = true;
-            }
+             if (!holiday || (holiday.type !== 'full_day' && holiday.type !== 'dinner_only')) {
+                 if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
+                    dinnerTaken = true;
+                }
+             }
         }
         
         if(lunchTaken) totalMeals++;

@@ -13,12 +13,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Holiday, Leave, AppUser, Bill, BillDetails } from '@/lib/data';
+import { Holiday, Leave, AppUser, Bill, BillDetails, Payment } from '@/lib/data';
 import { useAuth } from '@/contexts/auth-context';
 import { onHolidaysUpdate } from '@/lib/listeners/holidays';
 import { onLeavesUpdate } from '@/lib/listeners/leaves';
+import { onPaymentsUpdate } from '@/lib/listeners/payments';
 import { cn } from '@/lib/utils';
-import { Receipt, Wallet, CreditCard, Banknote, Info, ShieldAlert } from 'lucide-react';
+import { Receipt, Wallet, CreditCard, Banknote, Info, ShieldAlert, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -46,9 +47,11 @@ import { format, getMonth, getYear, getDaysInMonth, isSameDay, startOfMonth, sub
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getMessInfo } from '@/lib/services/mess';
+import { recordCashPayment } from '@/lib/actions/payments';
 
 
-const getPaidAmount = (bill: Bill) => bill.payments.reduce((sum, p) => sum + p.amount, 0);
+const getPaidAmount = (payments: Payment[]) => payments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + p.amount, 0);
+const getPendingAmount = (payments: Payment[]) => payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
 
 const calculateBillDetailsForMonth = (
     monthDate: Date, 
@@ -88,54 +91,46 @@ const calculateBillDetailsForMonth = (
 
         const holiday = holidays.find(h => isSameDay(h.date, day));
         if (holiday) {
-            holidayCount++;
-            continue;
+            if (holiday.type === 'full_day') {
+                holidayCount++;
+                continue;
+            }
+             if (user.messPlan !== 'full_day' && holiday.type === user.messPlan) {
+                holidayCount++;
+                continue;
+            }
         }
         
         const leave = leaves.find(l => isSameDay(l.date, day));
 
         let mealsTakenToday = 0;
-        let mealsAvailableToday = 0;
-        
-        // Determine total meals available in plan for the day
-        if (user.messPlan === 'full_day') {
-            mealsAvailableToday = 2;
-        } else if (user.messPlan === 'lunch_only' || user.messPlan === 'dinner_only') {
-            mealsAvailableToday = 1;
-        }
-
-        // On the start day, adjust total meals if starting with dinner
-        if (isSameDay(day, planStartDate) && user.planStartMeal === 'dinner') {
-            if (user.messPlan === 'full_day') mealsAvailableToday = 1; // Only dinner is available
-        }
-        
-        // If no meals were available today, skip to the next day
-        if (mealsAvailableToday === 0) continue;
         
         // Calculate Lunch
         if (user.messPlan === 'full_day' || user.messPlan === 'lunch_only') {
             if (!(isSameDay(day, planStartDate) && user.planStartMeal === 'dinner')) {
-                if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
-                    mealsTakenToday++;
+                if (!holiday || (holiday.type !== 'full_day' && holiday.type !== 'lunch_only')) {
+                    if (!leave || (leave.type !== 'full_day' && leave.type !== 'lunch_only')) {
+                        mealsTakenToday++;
+                    }
                 }
             }
         }
 
         // Calculate Dinner
         if (user.messPlan === 'full_day' || user.messPlan === 'dinner_only') {
-             if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
-                mealsTakenToday++;
-            }
+             if (!holiday || (holiday.type !== 'full_day' && holiday.type !== 'dinner_only')) {
+                if (!leave || (leave.type !== 'full_day' && leave.type !== 'dinner_only')) {
+                    mealsTakenToday++;
+                }
+             }
         }
         
         totalMeals += mealsTakenToday;
         
-        if (mealsTakenToday === 0 && leave) {
-            absentDays++;
-        } else if (mealsTakenToday > 0 && mealsTakenToday < mealsAvailableToday) {
-            halfDays++;
-        } else if (mealsTakenToday > 0) {
+        if (mealsTakenToday > 0) {
             fullDays++;
+        } else {
+            absentDays++;
         }
     }
     
@@ -154,6 +149,7 @@ export default function StudentBillsPage() {
   const { user } = useAuth();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [perMealCharge, setPerMealCharge] = useState(65);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -182,14 +178,14 @@ export default function StudentBillsPage() {
     };
     
     const leavesUnsubscribe = onLeavesUpdate(user.uid, setLeaves);
-    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, (updatedHolidays) => {
-        setHolidays(updatedHolidays);
-    });
+    const holidaysUnsubscribe = onHolidaysUpdate(user.messId, setHolidays);
+    const paymentsUnsubscribe = onPaymentsUpdate(user.uid, setPayments);
 
     Promise.all([
         fetchMessSettings(),
         new Promise(res => onLeavesUpdate(user.uid, d => { setLeaves(d); res(d); })),
-        new Promise(res => onHolidaysUpdate(user.messId, d => { setHolidays(d); res(d); })),
+        new Promise(res => onHolidaysUpdate(user.messId!, d => { setHolidays(d); res(d); })),
+        new Promise(res => onPaymentsUpdate(user.uid, d => { setPayments(d); res(d); })),
     ]).then(() => {
         if(user) setIsLoading(false);
     });
@@ -197,6 +193,7 @@ export default function StudentBillsPage() {
     return () => {
         leavesUnsubscribe();
         holidaysUnsubscribe();
+        paymentsUnsubscribe();
     };
   }, [user]);
 
@@ -215,9 +212,7 @@ export default function StudentBillsPage() {
         const details = calculateBillDetailsForMonth(loopDate, user, holidays, userLeaves, perMealCharge);
         const totalAmount = details.totalMeals * details.chargePerMeal;
         
-        // In a real app, payments would be fetched from Firestore.
-        // For now, payments are an empty array.
-        const payments: Bill['payments'] = [];
+        const billPayments = payments.filter(p => p.billMonth === format(loopDate, 'MMMM') && p.billYear === getYear(loopDate));
 
         bills.push({
             id: `bill-${format(loopDate, 'yyyy-MM')}`,
@@ -225,8 +220,7 @@ export default function StudentBillsPage() {
             year: getYear(loopDate),
             generationDate: format(startOfMonth(subMonths(today, -1)), 'yyyy-MM-dd'),
             totalAmount,
-            payments,
-            status: totalAmount - getPaidAmount({payments} as Bill) > 0 ? 'Due' : 'Paid',
+            payments: billPayments,
             details,
         });
 
@@ -234,7 +228,7 @@ export default function StudentBillsPage() {
     }
 
     return bills.reverse();
-  }, [user, holidays, leaves, isLoading, perMealCharge]);
+  }, [user, holidays, leaves, isLoading, perMealCharge, payments]);
   
   const openedBill = useMemo(() => {
       if (!billIdToView) return null;
@@ -268,26 +262,43 @@ export default function StudentBillsPage() {
     setAmountToConfirm(null);
   };
 
-  const handleMakePayment = (amountToPay: number) => {
-    if (!selectedBill || isNaN(amountToPay) || amountToPay <= 0) {
-      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number.' });
-      return;
+  const handleMakePayment = async (amountToPay: number) => {
+    if (!selectedBill || !user?.messId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Bill or user information is missing.' });
+        return;
     }
-    const paidAmount = getPaidAmount(selectedBill);
-    const dueAmount = selectedBill.totalAmount - paidAmount;
-    if (amountToPay > dueAmount) {
-      toast({ variant: 'destructive', title: 'Invalid Amount', description: `Payment cannot be more than the due amount of ₹${dueAmount.toLocaleString()}.` });
-      return;
-    }
-    toast({ title: 'Payment Recorded', description: `A payment of ₹${amountToPay.toLocaleString()} for your ${selectedBill.month} bill has been recorded. This is a demo and will reset.` });
-    handleClosePaymentDialogs();
-  };
 
-  const dueBillForDialog = selectedBill ? selectedBill.totalAmount - getPaidAmount(selectedBill) : 0;
+    try {
+        await recordCashPayment({
+            studentId: user.uid,
+            studentName: user.name || 'Unknown',
+            messId: user.messId,
+            amount: amountToPay,
+            billMonth: selectedBill.month,
+            billYear: selectedBill.year,
+        });
+
+        toast({
+            title: 'Payment Request Sent',
+            description: `Your cash payment of ₹${amountToPay.toLocaleString()} is pending admin confirmation.`,
+        });
+        handleClosePaymentDialogs();
+    } catch (error) {
+        console.error("Error recording cash payment:", error);
+        toast({ variant: 'destructive', title: 'Submission Failed', description: 'Could not record your payment. Please try again.' });
+    }
+};
+
+
+  const dueBillForDialog = selectedBill ? selectedBill.totalAmount - getPaidAmount(selectedBill.payments) - getPendingAmount(selectedBill.payments) : 0;
   
   const initiatePaymentConfirmation = (amount: number) => {
       if (isNaN(amount) || amount <= 0) {
         toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number.' });
+        return;
+      }
+      if (amount > dueBillForDialog) {
+        toast({ variant: 'destructive', title: 'Invalid Amount', description: `Payment cannot be more than the due amount of ₹${dueBillForDialog.toLocaleString()}.` });
         return;
       }
       setAmountToConfirm(amount);
@@ -338,8 +349,9 @@ export default function StudentBillsPage() {
         <CardContent className="p-0">
           <div className="space-y-3 sm:p-4">
             {dynamicallyGeneratedBills.length > 0 ? dynamicallyGeneratedBills.map((bill) => {
-              const paidAmount = getPaidAmount(bill);
-              const dueAmount = bill.totalAmount - paidAmount;
+              const paidAmount = getPaidAmount(bill.payments);
+              const pendingAmount = getPendingAmount(bill.payments);
+              const dueAmount = bill.totalAmount - paidAmount - pendingAmount;
               const billDate = new Date(bill.year, getMonth(new Date(bill.month + " 1, 2000")));
 
               return (
@@ -357,6 +369,7 @@ export default function StudentBillsPage() {
                     </button>
 
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        {pendingAmount > 0 && <Badge variant="outline" className="border-yellow-500/50 text-yellow-500">Pending</Badge>}
                         <Badge variant={dueAmount > 0 ? 'destructive' : 'secondary'} className={cn('text-xs', dueAmount <= 0 && "border-transparent bg-green-600 text-primary-foreground hover:bg-green-600/80")}>
                             Due: ₹{dueAmount.toLocaleString()}
                         </Badge>
@@ -426,8 +439,7 @@ export default function StudentBillsPage() {
               <Info className="h-4 w-4" />
               <AlertTitle>Instructions</AlertTitle>
               <AlertDescription>
-                Please hand over the cash amount to the mess admin to complete
-                this transaction.
+                This will create a payment request. Please hand over the cash amount to the mess admin for confirmation.
               </AlertDescription>
             </Alert>
             <div className="space-y-2">
@@ -466,9 +478,9 @@ export default function StudentBillsPage() {
             <AlertDialogHeader>
             <AlertDialogTitle>Confirm Cash Payment</AlertDialogTitle>
             <AlertDialogDescription>
-                You are about to record a cash payment of{' '}
+                You are about to record a cash payment request of{' '}
                 <span className="font-bold text-foreground">₹{amountToConfirm?.toLocaleString()}</span>. 
-                Please ensure you have handed this amount to the mess admin.
+                This will be marked as pending until confirmed by the admin.
             </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -19,7 +19,6 @@ export const adminNavItems = [
     { href: '/admin/holidays', label: 'Holidays', icon: 'CalendarDays' },
     { href: '/admin/announcements', label: 'Announcements', icon: 'Megaphone' },
     { href: '/admin/settings', label: 'Settings', icon: 'Settings' },
-    { href: '/admin/support', label: 'LifeBuoy' },
 ];
 
 export interface BillDetails {
@@ -40,6 +39,7 @@ export interface JoinRequest {
     contact: string;
     roomNo: string;
     date: string;
+    messPlan?: 'full_day' | 'lunch_only' | 'dinner_only';
 }
 
 export interface PlanChangeRequest {
@@ -104,14 +104,28 @@ export interface Leave {
     type: 'full_day' | 'lunch_only' | 'dinner_only';
 }
 
+export interface Payment {
+    id: string;
+    studentId: string;
+    studentName: string;
+    messId: string;
+    amount: number;
+    billMonth: string;
+    billYear: number;
+    date: string;
+    status: 'pending' | 'confirmed' | 'rejected';
+    paymentMethod: 'cash' | 'online';
+    confirmedBy?: string;
+    confirmationDate?: string;
+}
+
 export interface Bill {
     id: string;
     month: string;
     year: number;
     generationDate: string;
     totalAmount: number;
-    payments: { amount: number; date: string }[];
-    status: 'Paid' | 'Due';
+    payments: Payment[];
     details: BillDetails;
 }
 

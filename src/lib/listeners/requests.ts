@@ -26,6 +26,7 @@ export function onJoinRequestsUpdate(messId: string, callback: (requests: JoinRe
         contact: data.contact,
         roomNo: data.roomNo,
         date: data.joinDate,
+        messPlan: data.messPlan // Include the meal plan in the request data
       } as JoinRequest;
     });
     callback(requests);
