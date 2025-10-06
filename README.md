@@ -1,4 +1,4 @@
-# MessoMate - Smart Mess Management
+# MyDinner - Smart Mess Management
 
 This is a [Next.js](https://nextjs.org/) project for MessoMate, a smart mess and canteen management system, bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
