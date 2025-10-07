@@ -198,5 +198,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-  <p><strong>Eat Smart, Live Better – Revolutionizing Campus Dining</strong></p>
+  <p><strong>Eat Smart, Live Better – Revolutionizing Meal Dining</strong></p>
 </div>
