@@ -1,4 +1,4 @@
-# 🍽️ MyDinner – Digital Dining Suite.
+# 🍽️ MyDinner – Digital Dining Suite..
 
 <div align="center">
   <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
