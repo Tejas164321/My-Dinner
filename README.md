@@ -1,202 +1,195 @@
-# 🍽️ MyDinner - Digital Dining Suite..
-
 <div align="center">
-  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
-  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Google_AI-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Google AI" />
+
+# MyDinner
+
+**A modern digital dining suite for meal coordination, attendance, and billing.**
+
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-FFCA28?logo=firebase&logoColor=black)
+![Genkit](https://img.shields.io/badge/Genkit-Google_AI-4285F4?logo=google&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+<img src="./public/hero-banner.png" alt="MyDinner dashboard" width="800" />
+
 </div>
 
-<div align="center">
-  <h3>Elevating Digital Dining through Modern Design and Smart Technology.</h3>
-  <p>A modern, AMOLED-inspired dining experience platform offering seamless meal coordination, user interaction, and billing — all in one unified system. Built for elegance, responsiveness, and everyday convenience. Designed to deliver a refined digital dining experience that connects users and administrators effortlessly.</p>
-</div>
+---
+
+## Overview
+
+MyDinner connects mess administrators and students in one platform. Admins manage students, menus, billing, and announcements. Students track attendance, apply for leave, and view their bills. An AMOLED-inspired dark interface keeps it fast, clean, and easy to use on any device.
 
 ---
 
-## 📋 Table of Contents
+## Features
 
-- [✨ Features](#-features)
-- [🚀 Tech Stack](#-tech-stack)
-- [📦 Installation](#-installation)
-- [🚀 Usage](#-usage)
-- [📁 Project Structure](#-project-structure)
-- [📄 License](#-license)
-
----
-
-## ✨ Features
-
-### 👨‍💼 Admin Portal
-- Mess Registration & Management
-- Student Management
-- Meal Menu Scheduling
-- Billing & Payments
-- Announcements
-- Holiday Management
-- Analytics Dashboard
-
-### 👨‍🎓 Student Portal
-- Dashboard Overview
-- Leave Management
-- Attendance Tracking
-- Bill Viewing
-- Notifications
-- Mess Selection
-- Settings Management
-
-### 🤖 AI-Powered Features
-- Smart Menu Suggestions
-- Automated Notifications
-- Predictive Analytics
-
-### 🔐 Security & Authentication
-- Role-Based Access Control
-- Firebase Authentication
-- Firestore Security Rules
-- Real-time Data Sync
+| Portal | Capabilities |
+|--------|--------------|
+| **Admin** | Mess registration and management, student approvals, menu scheduling, billing and payments, announcements, holiday management, analytics dashboard |
+| **Student** | Dashboard overview, attendance tracking, leave requests, bill viewing, notifications, mess selection, settings |
+| **AI** | Smart menu suggestions, automated notifications, predictive analytics |
+| **Security** | Role-based access control, Firebase Authentication, Firestore security rules, real-time data sync |
 
 ---
 
-## 🚀 Tech Stack
+## How It Works
 
-### Frontend
-- **Framework**: [Next.js 14](https://nextjs.org/) - React framework with App Router
-- **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-- **UI Components**: [Shadcn/ui](https://ui.shadcn.com/) - Modern component library
-- **Icons**: [Lucide React](https://lucide.dev/) - Beautiful icon set
+```mermaid
+flowchart LR
+    A([Admin]) --> APP
+    S([Student]) --> APP
 
-### Backend & Database
-- **Backend-as-a-Service**: [Firebase](https://firebase.google.com/)
-  - Authentication
-  - Firestore NoSQL database
-  - Security Rules
-  - Hosting
+    subgraph APP[Next.js App]
+        direction TB
+        AP[Admin Portal]
+        SP[Student Portal]
+    end
 
-### AI & Analytics
-- **AI Framework**: [Genkit](https://genkit.dev/) - Google's generative AI toolkit
-- **Charts**: [Recharts](https://recharts.org/) - Composable charting library
+    APP -->|Server actions| FB
+    APP -->|Prompts| AI[Genkit<br/>Google AI]
 
-### Development Tools
-- Package Manager: npm/yarn
-- Build Tool: Next.js built-in
-- Linting: ESLint
-- Type Checking: TypeScript
-- Version Control: Git
+    subgraph FB[Firebase]
+        direction TB
+        AUTH[Authentication]
+        DB[(Firestore)]
+        RULES[Security Rules]
+    end
 
----
-
-## 📦 Installation
-
-### Prerequisites
-- Node.js 18.x or higher
-- npm or yarn package manager
-- Firebase project with Firestore enabled
-- Google AI API key (for AI features)
-
-### Step-by-Step Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/mydinner.git
-   cd mydinner
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-3. **Environment Setup**
-   ```bash
-   cp .env.example .env.local
-   ```
-
-4. **Configure Firebase**
-   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
-   - Enable Authentication and Firestore
-   - Copy your Firebase config to `.env.local`
-
-5. **Configure Google AI**
-   - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Add it to your `.env.local`
-
----
-
-## 🚀 Usage
-
-### Development
-```bash
-npm run dev
-# or
-yarn dev
+    DB -.->|Real-time listeners| APP
+    AUTH --- RULES
+    RULES --- DB
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to access the application.
+### Mess Lifecycle
 
-### Admin Workflow
-1. Sign Up/Login as Admin
-2. Create Mess with unique join code
-3. Manage Students - Approve registrations
-4. Schedule Menus - Plan daily meals
-5. Handle Billing - Generate and confirm payments
-6. Send Announcements - Communicate with students
+```mermaid
+flowchart LR
+    A1[Admin signs up] --> A2[Creates mess<br/>and join code]
+    A2 --> S1[Student signs up<br/>with join code]
+    S1 --> A3[Admin approves<br/>registration]
+    A3 --> D[Daily use]
 
-### Student Workflow
-1. Sign Up with mess join code
-2. View Dashboard - Check meals and attendance
-3. Apply for Leave - Request time off
-4. View Bills - Check payment status
-5. Stay Updated - Read announcements
+    subgraph D[Daily Use]
+        direction TB
+        M[Menu and<br/>attendance]
+        L[Leave<br/>requests]
+        B[Billing and<br/>payments]
+        N[Announcements]
+    end
+```
 
 ---
 
-## 📁 Project Structure.
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18 or later
+- npm or yarn
+- A [Firebase](https://console.firebase.google.com/) project with Authentication and Firestore enabled
+- A [Google AI Studio](https://aistudio.google.com/app/apikey) API key (for AI features)
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/your-username/mydinner.git
+cd mydinner
+npm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` and fill in:
+
+- Your **Firebase** project configuration
+- Your **Google AI** API key
+
+### 3. Run
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+---
+
+## Usage
+
+| Step | Admin | Student |
+|------|-------|---------|
+| 1 | Sign up or log in as admin | Sign up with the mess join code |
+| 2 | Create a mess and get its join code | Open the dashboard to see meals and attendance |
+| 3 | Approve student registrations | Apply for leave |
+| 4 | Schedule daily menus | View bills and payment status |
+| 5 | Generate bills and confirm payments | Read announcements |
+| 6 | Send announcements | Manage settings |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Framework** | [Next.js 14](https://nextjs.org/) (App Router) |
+| **Language** | [TypeScript](https://www.typescriptlang.org/) |
+| **Styling** | [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/) |
+| **Icons & Charts** | [Lucide React](https://lucide.dev/), [Recharts](https://recharts.org/) |
+| **Backend** | [Firebase](https://firebase.google.com/) (Authentication, Firestore, Security Rules, Hosting) |
+| **AI** | [Genkit](https://genkit.dev/) with Google AI |
+| **Tooling** | ESLint, Git |
+
+---
+
+## Project Structure
 
 ```
 mydinner/
 ├── src/
-│   ├── ai/                    # AI integration (Genkit)
-│   ├── app/                   # Next.js App Router
-│   │   ├── admin/            # Admin portal pages
-│   │   ├── auth/             # Authentication actions
-│   │   ├── student/          # Student portal pages
-│   │   └── globals.css       # Global styles
-│   ├── components/           # Reusable UI components
-│   │   ├── admin/           # Admin-specific components
-│   │   ├── student/         # Student-specific components
+│   ├── ai/                  # Genkit AI flows
+│   ├── app/
+│   │   ├── admin/           # Admin portal pages
+│   │   ├── student/         # Student portal pages
+│   │   ├── auth/            # Authentication actions
+│   │   └── globals.css      # Global styles
+│   ├── components/
+│   │   ├── admin/           # Admin components
+│   │   ├── student/         # Student components
 │   │   ├── shared/          # Shared components
-│   │   └── ui/              # Shadcn/ui components
+│   │   └── ui/              # shadcn/ui components
 │   ├── contexts/            # React contexts
-│   ├── hooks/               # Custom React hooks
-│   ├── lib/                 # Utility libraries
+│   ├── hooks/               # Custom hooks
+│   ├── lib/
 │   │   ├── actions/         # Server actions
 │   │   ├── listeners/       # Firestore listeners
 │   │   └── services/        # Business logic
-│   └── types/               # TypeScript definitions
+│   └── types/               # TypeScript types
 ├── docs/                    # Documentation
 ├── public/                  # Static assets
-├── firebase.json            # Firebase configuration
-├── firestore.rules          # Database security rules
+├── firebase.json            # Firebase config
+├── firestore.rules          # Security rules
 ├── firestore.indexes.json   # Database indexes
-├── next.config.js           # Next.js configuration
-├── tailwind.config.ts       # Tailwind CSS config
-├── tsconfig.json            # TypeScript config
-└── package.json             # Dependencies
+├── next.config.js
+├── tailwind.config.ts
+└── tsconfig.json
 ```
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Released under the [MIT License](./LICENSE).
 
 ---
 
 <div align="center">
-  <p><strong>Eat Smart, Live Better – Revolutionizing Meal Dining</strong></p>
+
+**Eat Smart, Live Better.**
+
 </div>
