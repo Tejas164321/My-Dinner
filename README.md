@@ -11,7 +11,7 @@
 ![Genkit](https://img.shields.io/badge/Genkit-Google_AI-4285F4?logo=google&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-<img src="./hero-banner.png" alt="MyDinner dashboard" width="800" />
+<img src="./src/hero-banner.png" alt="MyDinner dashboard" width="800" />
 
 </div>
 
